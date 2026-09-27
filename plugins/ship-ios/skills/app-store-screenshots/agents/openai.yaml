@@ -1,0 +1,4 @@
+interface:
+  display_name: "App Store Screenshots"
+  short_description: "On-brand store screenshot sets from real captures, rendered and uploaded to ASC"
+  default_prompt: "Use $app-store-screenshots to make a new App Store screenshot set for this app and compare it with the current one."

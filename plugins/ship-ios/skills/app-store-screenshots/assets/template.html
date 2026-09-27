@@ -1,0 +1,91 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>APP — App Store</title>
+<!--
+  One strip of slides. Copy to <set>/source/index.html, put captures in
+  source/assets/ and the app's own font files in source/fonts/.
+  Render: node <skill>/scripts/render.cjs <set>
+  Preview one slide: open index.html?slide=3
+
+  Slide = 440 x 956 logical px, rendered at 3x = 1320 x 2868 (6.9" iPhone).
+  For 13" iPad (2064 x 2752) put data-slide-w="1032" data-slide-h="1376"
+  data-dpr="2" on <body> and use 1032 instead of 440 in the CSS and script.
+-->
+<style>
+/* Fonts: the app's own files, never a lookalike. */
+@font-face{font-family:Display;font-weight:600;src:url(fonts/DISPLAY_FILE.ttf)}
+@font-face{font-family:Text;font-weight:400;src:url(fonts/TEXT_FILE.ttf)}
+
+/* Tokens: copy the values from the app's theme file and cite the path here. */
+:root{
+  --ground:#F5F5F0; --ground-2:#ECE8DE;   /* light grounds */
+  --dark:#1A1A1A;   --dark-2:#111111;     /* dark ground */
+  --ink:#1B1917; --ink-dim:#6B665F;        /* text on light */
+  --paper:#F5F5F0; --paper-dim:rgba(245,245,240,.66); /* text on dark */
+  --accent:#8B1538;                        /* the brand's one accent */
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{--sheet:#dcdcd4;background:var(--ground);color:var(--ink);font-family:Text;-webkit-font-smoothing:antialiased}
+.strip{position:relative;height:956px;overflow:hidden}
+.slide{position:absolute;top:0;width:440px;height:956px;overflow:hidden;background:var(--ground)}
+.slide.dark{background:linear-gradient(180deg,var(--dark),var(--dark-2));color:var(--paper)}
+
+.h{position:absolute;left:34px;right:26px;font-family:Display;font-weight:600;font-size:50px;line-height:1.02;letter-spacing:-.02em}
+.h em{font-style:normal;color:var(--accent)}
+.sub{position:absolute;left:34px;right:54px;font-size:17px;line-height:1.45;color:var(--ink-dim)}
+.dark .sub{color:var(--paper-dim)}
+
+/* Device frame. --w is the outer width. Set aspect-ratio to the capture's
+   own ratio (1320/2868 simulator, 1206/2622 iPhone 16 Pro device, etc.). */
+.phone{position:absolute;width:var(--w);aspect-ratio:1320/2868;z-index:2;
+  padding:calc(var(--w)*.026);border-radius:calc(var(--w)*.158);
+  background:linear-gradient(155deg,#45464b,#151618 22%,#0d0e10 70%,#2c2d31);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.12),0 44px 80px -30px rgba(0,0,0,.4),0 16px 30px -16px rgba(0,0,0,.3)}
+.dark .phone{box-shadow:inset 0 0 0 1px rgba(255,255,255,.16),0 60px 100px -30px rgba(0,0,0,.7),0 18px 34px -16px rgba(0,0,0,.5)}
+.phone img{display:block;width:100%;height:100%;border-radius:calc(var(--w)*.135)}
+/* Device captures have no Dynamic Island; add <i class="island"></i> for those. */
+.phone .island{position:absolute;left:50%;top:calc(var(--w)*.05);width:calc(var(--w)*.29);height:calc(var(--w)*.085);
+  transform:translateX(-50%);background:#000;border-radius:99px}
+
+/* A lifted detail: a crop of the SAME capture, shown larger. Coordinates are
+   source pixels; data-s is logical px per source px (1/3 = native at 3x). */
+.lift{position:absolute;z-index:3;background-repeat:no-repeat;border-radius:16px;
+  box-shadow:0 0 0 1px rgba(0,0,0,.05),0 30px 50px -20px rgba(0,0,0,.4),0 8px 16px -8px rgba(0,0,0,.25)}
+</style>
+</head>
+<body>
+<div class="strip" id="strip">
+
+<section class="slide dark" data-name="hero" style="left:0">
+  <h1 class="h" style="top:84px">Headline that<br><em>sells the job.</em></h1>
+  <p class="sub" style="top:210px">One plain line that says what<br>the app does for you.</p>
+  <div class="phone" style="--w:340px;left:50px;top:312px"><img src="assets/01-home.png"></div>
+</section>
+
+<section class="slide" data-name="feature-one" style="left:440px">
+  <h1 class="h" style="top:84px">Second<br><em>feature.</em></h1>
+  <p class="sub" style="top:210px">What it does, in the user's words.</p>
+  <div class="phone" style="--w:330px;left:55px;top:312px"><img src="assets/02-feature.png"></div>
+  <!-- Centre the lift over the same region in the phone so it reads as a zoom. -->
+  <div class="lift" data-src="assets/02-feature.png" data-x="60" data-y="900" data-w="1200" data-h="300" data-s=".34" style="left:16px;top:520px"></div>
+</section>
+
+</div>
+<script>
+for (const el of document.querySelectorAll('.lift')) {
+  const s = +el.dataset.s, x = +el.dataset.x, y = +el.dataset.y, sw = +(el.dataset.sw || 1320);
+  el.style.width = el.dataset.w * s + 'px';
+  el.style.height = el.dataset.h * s + 'px';
+  el.style.backgroundImage = `url(${el.dataset.src})`;
+  el.style.backgroundSize = sw * s + 'px auto';
+  el.style.backgroundPosition = `${-x * s}px ${-y * s}px`;
+}
+const strip = document.getElementById('strip');
+strip.style.width = document.querySelectorAll('.slide').length * 440 + 'px';
+const one = new URLSearchParams(location.search).get('slide');
+if (one) strip.style.transform = `translateX(${-(one - 1) * 440}px)`;
+</script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+# Staging stack: a SEPARATE file, never an override of the production one.
+# Every name differs from production: project, services, container_name,
+# volumes, router and service labels. Replace myapp, api-stg.example.com,
+# the build context, the port and the env vars with your app's.
+name: myapp-stg
+
+services:
+  api-stg:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile        # same Dockerfile as production
+    image: myapp-api:stg
+    container_name: myapp_api_stg
+    restart: unless-stopped
+    environment:
+      # ${VAR:?required} fails the deploy when VAR is missing.
+      # A bare ${VAR} would pass an EMPTY string, not an absent variable.
+      DATABASE_URL: ${DATABASE_URL:?required}
+      JWT_SECRET: ${JWT_SECRET:?required}     # NOT production's value
+      APP_ENV: staging
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    depends_on:
+      db-stg:
+        condition: service_healthy
+    networks:
+      - default
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.myapp-api-stg.rule=Host(`api-stg.example.com`)"
+      - "traefik.http.routers.myapp-api-stg.service=myapp-api-stg"
+      - "traefik.http.routers.myapp-api-stg.entrypoints=websecure"
+      - "traefik.http.routers.myapp-api-stg.tls.certresolver=cloudflare"
+      - "traefik.http.services.myapp-api-stg.loadbalancer.server.port=8080"
+
+  db-stg:
+    image: postgres:17                        # the SAME image and major as production
+    container_name: myapp_db_stg
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required}
+      POSTGRES_DB: ${POSTGRES_DB:?required}
+    volumes:
+      - myapp-db-stg:/var/lib/postgresql/data  # same mount path as production's service
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      retries: 20
+    labels:
+      - "onebox.backup=false"                 # nightly backup skips staging
+    networks:
+      - default                               # NEVER the proxy network (see gotchas)
+    # no ports: a published 5432 clashes with production and, on a VPS, is public
+
+volumes:
+  myapp-db-stg:
+
+networks:
+  proxy:
+    external: true

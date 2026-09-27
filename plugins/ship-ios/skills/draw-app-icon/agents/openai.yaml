@@ -1,0 +1,4 @@
+interface:
+  display_name: "Draw App Icon"
+  short_description: "Precise SVG logos and native Apple app icons"
+  default_prompt: "Use $draw-app-icon to turn this logo concept into a clean SVG and a verified Apple app icon."

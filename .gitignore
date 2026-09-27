@@ -1,0 +1,10 @@
+*.local.md
+.onebox.json
+.env
+.env.*
+node_modules/
+.DS_Store
+__pycache__/
+dist/
+.astro/
+**/evals/results/

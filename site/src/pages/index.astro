@@ -1,0 +1,356 @@
+---
+import Base from "../layouts/Base.astro";
+import { PLUGINS, SKILLS, skillsFor, APPS, REPO_SLUG } from "../data/kit";
+import { GUIDES } from "../data/guides";
+
+const count = SKILLS.length;
+const n = (k: number, word: string) => `${k} ${word}${k === 1 ? "" : "s"}`;
+const bill = [
+  { item: "A small VPS, or a mini PC you already own", cost: "€5", per: "month" },
+  { item: "Your domain", cost: "€10", per: "year" },
+  { item: "Apple Developer Program", cost: "$99", per: "year" },
+  { item: "Cloudflare DNS and Tunnel", cost: "€0", per: "" },
+  { item: "iOS builds on your own Mac", cost: "€0", per: "" },
+  { item: "AWS, Kubernetes, a DevOps person", cost: "—", per: "not needed" },
+];
+---
+
+<Base
+  title="onebox — ship your app from one box"
+  description="Free Claude Code skills and plain guides for getting an Expo app onto the App Store, with the backend on one cheap server."
+>
+  <main>
+    <!-- ============ HERO: the label ============ -->
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <p class="kicker">Claude Code skills · Expo · iOS</p>
+          <h1 class="display hero-title"><span>Ship your app</span> <span>from one box.</span></h1>
+          <p class="lede">
+            You built something with Claude Code. It works on your phone. Then come certificates,
+            App Review, payments and a backend that is still on <code>localhost</code>.
+            These skills and guides take you the rest of the way, cheaply, the way I ship my own apps.
+          </p>
+          <div class="hero-actions">
+            <a class="btn" href="/guides/start-here/">Start here <span aria-hidden="true">→</span></a>
+            <a class="btn ghost" href="#contents">What’s in the box</a>
+          </div>
+        </div>
+
+        <aside class="label-card" aria-label="Shipping label">
+          <div class="label-head">
+            <span class="kicker">Shipping label</span>
+            <span class="label">Nº 001</span>
+          </div>
+          <dl class="label-rows">
+            <div><dt class="label">From</dt><dd>A mini PC in a home office in Norway</dd></div>
+            <div><dt class="label">To</dt><dd class="big">The App Store</dd></div>
+            <div><dt class="label">Contents</dt><dd>{n(count, "skill")} · {n(PLUGINS.length, "plugin")} · {n(GUIDES.length, "guide")}</dd></div>
+            <div><dt class="label">Postage</dt><dd>About €5 a month</dd></div>
+            <div><dt class="label">Handling</dt><dd>No AWS. No Kubernetes. No purple gradients.</dd></div>
+          </dl>
+          <div class="barcode" aria-hidden="true">
+            {Array.from({ length: 46 }, (_, i) => (
+              <i style={`--w:${[1, 3, 1, 2, 1, 1, 4, 1, 2, 3][i % 10]}px`} />
+            ))}
+          </div>
+          <span class="stamp" aria-hidden="true">Free<br />MIT</span>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ============ INSTALL ============ -->
+    <section class="install">
+      <div class="wrap install-grid">
+        <div>
+          <h2 class="kicker">Install</h2>
+          <p class="muted">In Claude Code, add the box once. Then take only the plugins you need.</p>
+        </div>
+        <div class="cmds">
+          <div class="cmd"><code>/plugin marketplace add {REPO_SLUG}</code><button data-copy={`/plugin marketplace add ${REPO_SLUG}`}>Copy</button></div>
+          <div class="cmd"><code>/plugin install ship-ios@onebox</code><button data-copy="/plugin install ship-ios@onebox">Copy</button></div>
+          <p class="label other">Codex, Cursor and others: <code>npx skills add {REPO_SLUG}</code></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PACKING LIST ============ -->
+    <section id="contents" class="packing">
+      <div class="wrap">
+        <header class="section-head">
+          <h2 class="display h2">Packing list</h2>
+          <p class="muted">Four compartments. Each is a plugin you can install on its own.</p>
+        </header>
+
+        {PLUGINS.map((p) => (
+          <div class="compartment">
+            <div class="comp-head">
+              <span class="comp-letter" aria-hidden="true">{p.letter}</span>
+              <div>
+                <h3 class="comp-title">{p.title} <span class="label">{p.id}</span></h3>
+                <p class="comp-blurb">{p.blurb}</p>
+              </div>
+              <span class="label runs">Runs on · {p.runsOn}</span>
+            </div>
+            <ol class="items">
+              {skillsFor(p.id).map((s, i) => (
+                <li>
+                  <span class="label qty">{String(i + 1).padStart(2, "0")}</span>
+                  <code class="skill">{s.name}</code>
+                  <span class="line">{s.line}</span>
+                </li>
+              ))}
+              {skillsFor(p.id).length === 0 && <li class="empty"><span class="line">Being packed.</span></li>}
+            </ol>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- ============ THE BILL ============ -->
+    <section class="bill-section">
+      <div class="wrap bill-grid">
+        <div class="bill-copy">
+          <h2 class="display h2">You don’t need AWS for your first thousand users.</h2>
+          <p>
+            One machine runs the API, the database and the landing page. Cloudflare Tunnel puts it on the
+            internet without opening a port. Your Mac builds the app for free. When one box is not enough,
+            you will know, and you will have users to pay for the next one.
+          </p>
+        </div>
+        <figure class="receipt" aria-label="Monthly cost">
+          <p class="label receipt-head">Receipt · running one app</p>
+          <ul>
+            {bill.map((b) => (
+              <li>
+                <span>{b.item}</span>
+                <span class="dots" aria-hidden="true"></span>
+                <span class="cost">{b.cost}{b.per && <small> / {b.per}</small>}</span>
+              </li>
+            ))}
+          </ul>
+          <p class="total"><span>Total</span><span>≈ €14 a month</span></p>
+          <p class="label receipt-foot">Apple’s fee spread over 12 months. Your Claude plan not included.</p>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ============ PROOF ============ -->
+    <section class="proof">
+      <div class="wrap">
+        <header class="section-head">
+          <h2 class="display h2">Shipped this way</h2>
+          <p class="muted">Solo, at night, next to a full-time job. Same skills, same box.</p>
+        </header>
+        <ul class="apps">
+          {APPS.map((a) => (
+            <li>
+              <span class="app-name">{a.name}</span>
+              <span class="app-what">{a.what}</span>
+              {a.url
+                ? <a class="app-status" href={a.url}>{a.status} ↗</a>
+                : <span class="app-status soon">{a.status}</span>}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+
+    <!-- ============ HELP ============ -->
+    <section id="help" class="help">
+      <div class="wrap help-grid">
+        <div>
+          <p class="kicker signal">Stuck on the last mile?</p>
+          <h2 class="display h2">I’ll get your app live.</h2>
+        </div>
+        <div class="help-body">
+          <p>
+            Your Expo app on TestFlight, or submitted to App Review. A fixed price, agreed up front.
+            You keep your own Apple account and your own server. I set them up with you and hand them over.
+          </p>
+          <p>
+            I take three launches at a reduced price in return for a short case study.
+          </p>
+          <a class="btn" href="mailto:geir@lokkesveen.com?subject=Get%20my%20app%20live">Write to me <span aria-hidden="true">→</span></a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ GUIDES ============ -->
+    <section class="guides-list">
+      <div class="wrap">
+        <header class="section-head">
+          <h2 class="display h2">Guides</h2>
+          <p class="muted">The accounts, keys and clicks a skill cannot do for you. In the order you need them.</p>
+        </header>
+        <ol class="toc">
+          {GUIDES.map((g) => (
+            <li><a href={`/guides/${g.slug}/`}><span class="label">{String(g.n).padStart(2, "0")}</span><span>{g.title}</span></a></li>
+          ))}
+        </ol>
+      </div>
+    </section>
+  </main>
+</Base>
+
+<style>
+  section { padding-block: clamp(56px, 9vw, 112px); }
+  .muted { color: var(--ink-2); margin: 0; }
+  code { font-family: var(--mono); font-size: 0.86em; }
+
+  /* hero */
+  .hero { padding-block: clamp(40px, 7vw, 96px) clamp(48px, 8vw, 104px); }
+  .hero-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    gap: clamp(32px, 5vw, 72px);
+    align-items: center;
+  }
+  .hero-title { font-size: clamp(2.5rem, 6.2vw, 5.4rem); margin-block: 14px 26px; }
+  .hero-title span { display: inline-block; }
+  .lede { font-size: clamp(1.15rem, 1.6vw, 1.32rem); max-width: 34em; color: var(--ink-2); margin: 0; }
+  .lede code { background: var(--code-bg); padding: 1px 6px; color: var(--ink); }
+  .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+
+  .label-card {
+    position: relative;
+    border: 2px solid var(--ink);
+    background: var(--paper);
+    box-shadow: 10px 10px 0 var(--paper-3);
+    padding: 0;
+  }
+  .label-head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 16px; background: var(--ink); color: var(--paper);
+  }
+  .label-head .label { color: var(--paper); opacity: 0.7; }
+  .label-rows { margin: 0; }
+  .label-rows > div {
+    display: grid; grid-template-columns: 92px 1fr; gap: 12px;
+    padding: 12px 16px; border-bottom: 1px solid var(--ink);
+    animation: print 520ms cubic-bezier(.2,.8,.2,1) both;
+  }
+  .label-rows > div:nth-child(1) { animation-delay: 120ms; }
+  .label-rows > div:nth-child(2) { animation-delay: 220ms; }
+  .label-rows > div:nth-child(3) { animation-delay: 320ms; }
+  .label-rows > div:nth-child(4) { animation-delay: 420ms; }
+  .label-rows > div:nth-child(5) { animation-delay: 520ms; }
+  .label-rows dt { padding-top: 3px; }
+  .label-rows dd { margin: 0; font-family: var(--display); font-stretch: 100%; font-weight: 500; font-size: 1rem; line-height: 1.3; }
+  .label-rows dd.big { font-stretch: 125%; font-weight: 800; font-size: clamp(1.5rem, 2.6vw, 2rem); letter-spacing: -0.02em; line-height: 1; }
+  .barcode { display: flex; gap: 2px; height: 46px; padding: 12px 16px; align-items: stretch; }
+  .barcode i { width: var(--w); background: var(--ink); }
+  .stamp {
+    position: absolute; right: 18px; bottom: 16px;
+    border: 2.5px solid var(--signal); color: var(--signal);
+    font-family: var(--display); font-stretch: 125%; font-weight: 800;
+    font-size: 0.82rem; line-height: 1.05; letter-spacing: 0.08em; text-transform: uppercase; text-align: center;
+    padding: 6px 10px; background: var(--paper);
+    transform: rotate(-8deg);
+    animation: stamp 420ms cubic-bezier(.2,.8,.2,1) 820ms both;
+  }
+
+  /* install */
+  .install { padding-block: 28px; border-block: 1px solid var(--rule); background: var(--paper-2); }
+  .install-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 16px 48px; align-items: center; }
+  .install h2 { margin: 0 0 6px; }
+  .cmds { display: grid; gap: 8px; min-width: 0; }
+  .other { margin: 4px 0 0; text-transform: none; letter-spacing: 0.02em; }
+  .other code { color: var(--ink); }
+
+  /* sections */
+  .section-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 32px; margin-bottom: clamp(28px, 4vw, 48px); }
+  .h2 { font-size: clamp(2rem, 4.6vw, 3.6rem); }
+  .section-head .muted { max-width: 36ch; }
+
+  /* packing list */
+  .compartment { border-top: 2px solid var(--ink); padding-block: 22px 12px; }
+  .compartment + .compartment { margin-top: 28px; }
+  .comp-head { display: grid; grid-template-columns: auto 1fr auto; gap: 18px; align-items: start; margin-bottom: 10px; }
+  .comp-letter {
+    display: grid; place-items: center; width: 48px; height: 48px;
+    border: 2px solid var(--ink);
+    font-family: var(--display); font-stretch: 125%; font-weight: 800; font-size: 1.5rem;
+  }
+  .comp-title { margin: 0; font-family: var(--display); font-stretch: 112%; font-weight: 700; font-size: 1.35rem; display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .comp-title .label { text-transform: none; letter-spacing: 0.02em; }
+  .comp-blurb { margin: 2px 0 0; color: var(--ink-2); }
+  .runs { white-space: nowrap; padding-top: 6px; }
+  .items { list-style: none; margin: 0; padding: 0; }
+  .items li {
+    position: relative;
+    display: grid; grid-template-columns: 40px minmax(170px, 230px) 1fr; gap: 16px; align-items: baseline;
+    padding: 12px 0 12px 0; border-bottom: 1px dashed var(--rule);
+    transition: padding 160ms cubic-bezier(.2,.8,.2,1);
+  }
+  .items li::before {
+    content: ""; position: absolute; left: -14px; top: 12px; bottom: 12px; width: 3px;
+    background: var(--signal); transform: scaleY(0); transform-origin: top; transition: transform 180ms cubic-bezier(.2,.8,.2,1);
+  }
+  .items li:hover::before { transform: scaleY(1); }
+  .skill { font-family: var(--mono); font-size: 0.92rem; font-weight: 500; }
+  .line { color: var(--ink-2); }
+  .items li.empty { grid-template-columns: 1fr; color: var(--ink-3); font-style: italic; }
+
+  /* bill */
+  .bill-section { background: var(--ink); color: var(--paper); }
+  .bill-section a:hover { color: var(--signal); }
+  .bill-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: clamp(32px, 6vw, 80px); align-items: center; }
+  .bill-copy p { color: color-mix(in oklab, var(--paper) 78%, transparent); max-width: 40ch; margin: 22px 0 0; font-size: 1.2rem; }
+  .receipt {
+    margin: 0; background: var(--paper); color: var(--ink); padding: 22px 22px 18px;
+    font-family: var(--mono); font-size: 0.86rem;
+    transform: rotate(1.2deg);
+    -webkit-mask: radial-gradient(circle 6px at 50% 0, #0000 98%, #000) 50% 0 / 16px 100% repeat-x,
+                  radial-gradient(circle 6px at 50% 100%, #0000 98%, #000) 50% 100% / 16px 100% repeat-x;
+    -webkit-mask-composite: source-in; mask-composite: intersect;
+  }
+  .receipt-head { margin: 4px 0 14px; text-align: center; }
+  .receipt ul { list-style: none; margin: 0; padding: 0; }
+  .receipt li { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: baseline; padding: 6px 0; }
+  .receipt li > span:first-child { font-family: var(--text); font-size: 1rem; }
+  .dots { border-bottom: 1px dotted var(--ink-3); transform: translateY(-4px); min-width: 12px; }
+  .cost { text-align: right; white-space: nowrap; }
+  .cost small { color: var(--ink-3); font-size: 0.78em; }
+  .total { display: flex; justify-content: space-between; margin: 12px 0 0; padding-top: 12px; border-top: 2px solid var(--ink); font-weight: 500; font-size: 1rem; }
+  .receipt-foot { margin: 14px 0 6px; text-align: center; text-transform: none; letter-spacing: 0.02em; }
+
+  /* proof */
+  .apps { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--ink); }
+  .apps li { display: grid; grid-template-columns: minmax(120px, 220px) 1fr auto; gap: 8px 24px; align-items: baseline; padding: 18px 0; border-bottom: 1px solid var(--rule); }
+  .app-name { font-family: var(--display); font-stretch: 125%; font-weight: 800; font-size: clamp(1.4rem, 2.6vw, 2rem); letter-spacing: -0.02em; }
+  .app-what { color: var(--ink-2); }
+  .app-status { font-family: var(--mono); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; }
+  .app-status.soon { color: var(--ink-3); }
+
+  /* help */
+  .help { background: var(--paper-2); border-block: 1px solid var(--rule); }
+  .help-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px clamp(32px, 6vw, 80px); align-items: end; }
+  .signal { color: var(--signal); margin: 0 0 14px; }
+  .help-body p { margin: 0 0 16px; max-width: 42ch; font-size: 1.2rem; }
+  .help-body .btn { margin-top: 10px; }
+
+  /* guides */
+  .toc { list-style: none; margin: 0; padding: 0; columns: 2 320px; column-gap: 48px; }
+  .toc li { break-inside: avoid; border-top: 1px solid var(--rule); }
+  .toc a { display: grid; grid-template-columns: 40px 1fr; gap: 12px; padding: 14px 0; text-decoration: none; font-family: var(--display); font-stretch: 100%; font-weight: 600; font-size: 1.05rem; }
+  .toc a:hover span:last-child { text-decoration: underline; text-decoration-color: var(--signal); text-decoration-thickness: 2px; }
+  .toc .label { padding-top: 4px; }
+
+  /* phone */
+  @media (max-width: 860px) {
+    .hero-grid, .install-grid, .bill-grid, .help-grid { grid-template-columns: 1fr; }
+    .label-card { box-shadow: 6px 6px 0 var(--paper-3); }
+    .receipt { transform: none; }
+  }
+  @media (max-width: 640px) {
+    .comp-head { grid-template-columns: auto 1fr; }
+    .runs { grid-column: 2; padding-top: 0; }
+    .items li { grid-template-columns: 32px 1fr; gap: 4px 12px; }
+    .items li .line { grid-column: 2; }
+    .items li::before { left: -10px; }
+    .apps li { grid-template-columns: 1fr auto; }
+    .app-what { grid-column: 1 / -1; grid-row: 2; }
+    .label-rows > div { grid-template-columns: 76px 1fr; }
+  }
+</style>

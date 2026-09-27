@@ -1,0 +1,79 @@
+---
+import "../styles/global.css";
+import { REPO } from "../data/kit";
+
+interface Props {
+  title: string;
+  description: string;
+  section?: "home" | "guides";
+}
+const { title, description, section = "home" } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta name="theme-color" content="#f2eee4" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#131210" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="alternate" type="text/plain" href="/llms.txt" title="llms.txt" />
+    <slot name="head" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&display=swap"
+    />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="wrap">
+        <a class="brand" href="/">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5v-9Z" stroke-linejoin="round" />
+            <path d="M3 7.5 12 12l9-4.5M12 12v9" stroke-linejoin="round" />
+          </svg>
+          onebox
+        </a>
+        <nav aria-label="Main">
+          <a href="/#contents">Skills</a>
+          <a href="/guides/" aria-current={section === "guides" ? "page" : undefined}>Guides</a>
+          <a href="/#help">Help</a>
+          <a href={REPO}>GitHub</a>
+        </nav>
+      </div>
+    </header>
+
+    <slot />
+
+    <footer class="footer">
+      <div class="wrap">
+        <p>
+          Made by Geir-Stian Løkkesveen in Norway, mostly after the kids are asleep.
+          Skills and guides are MIT licensed.
+        </p>
+        <p><a href={REPO}>Source on GitHub</a> · <a href="/guides/start-here/">Start here</a></p>
+      </div>
+    </footer>
+
+    <script>
+      document.querySelectorAll<HTMLButtonElement>("[data-copy]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          try {
+            await navigator.clipboard.writeText(btn.dataset.copy ?? "");
+            btn.dataset.done = "";
+            btn.textContent = "Copied";
+            setTimeout(() => { delete btn.dataset.done; btn.textContent = "Copy"; }, 1400);
+          } catch { btn.textContent = "Select it"; }
+        });
+      });
+    </script>
+  </body>
+</html>

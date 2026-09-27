@@ -1,0 +1,52 @@
+# .github/workflows/deploy-stg.yml
+# Deploys any qa/** branch to the staging stack on the box.
+# This file must exist ON the pushed branch, or nothing runs (see gotchas).
+name: Deploy staging
+on:
+  push:
+    branches: ["qa/**"]
+  workflow_dispatch:
+concurrency:
+  group: deploy-myapp-stg         # one staging environment: one deploy at a time
+  cancel-in-progress: false
+permissions:
+  contents: read
+jobs:
+  deploy:
+    runs-on: [self-hosted, box]   # box.runnerLabel
+    timeout-minutes: 20
+    env:
+      PROJECT: myapp-stg
+      COMPOSE_FILE: docker-compose.stg.yml
+      HOST: api-stg.example.com
+      HEALTH_PATH: /health
+    steps:
+      - uses: actions/checkout@v4
+
+      # --- secrets: keep ONE of these three -------------------------------
+      # env (default): a file on the box, outside the checkout, mode 600.
+      - name: Up (env file)
+        run: docker compose -p "$PROJECT" -f "$COMPOSE_FILE" --env-file /srv/apps/myapp-stg/.env up -d --build --wait --wait-timeout 180
+
+      # doppler: a service token scoped to the stg config, in GitHub secrets.
+      # - name: Up (doppler)
+      #   env:
+      #     DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN_STG }}
+      #   run: doppler run -- docker compose -p "$PROJECT" -f "$COMPOSE_FILE" up -d --build --wait --wait-timeout 180
+
+      # 1password: a service account token in GitHub secrets, op:// refs in .env.stg.tpl.
+      # - name: Up (1password)
+      #   env:
+      #     OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN_STG }}
+      #   run: op run --env-file .env.stg.tpl -- docker compose -p "$PROJECT" -f "$COMPOSE_FILE" up -d --build --wait --wait-timeout 180
+      # ---------------------------------------------------------------------
+
+      - name: Health check through Traefik
+        run: |
+          curl -fsS -k --retry 20 --retry-delay 3 --retry-all-errors -o /dev/null \
+            --resolve "$HOST:443:127.0.0.1" "https://$HOST$HEALTH_PATH"
+          echo "staging is up at https://$HOST"
+
+      - name: Logs on failure
+        if: failure()
+        run: docker compose -p "$PROJECT" -f "$COMPOSE_FILE" logs --tail 200 || true

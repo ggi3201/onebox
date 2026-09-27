@@ -1,0 +1,23 @@
+# Replace: myapp-landing (router/service/image), myapp_landing (container),
+# www.example.com (hostname), proxy (your box.proxyNetwork).
+services:
+  myapp-landing:
+    build: .
+    image: myapp-landing:latest
+    container_name: myapp_landing
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.myapp-landing.rule=Host(`www.example.com`)"
+      - "traefik.http.routers.myapp-landing.service=myapp-landing"
+      - "traefik.http.routers.myapp-landing.entrypoints=websecure"
+      - "traefik.http.routers.myapp-landing.tls.certresolver=cloudflare"
+      - "traefik.http.services.myapp-landing.loadbalancer.server.port=3000"
+    networks:
+      - proxy
+    # No ports: Traefik reaches the container over the proxy network.
+
+networks:
+  proxy:
+    external: true

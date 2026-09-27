@@ -1,0 +1,43 @@
+---
+import Base from "../../layouts/Base.astro";
+import { GUIDES } from "../../data/guides";
+---
+
+<Base title="Guides — onebox" description="The accounts, keys and clicks a skill cannot do for you, in the order you need them." section="guides">
+  <main class="wrap page">
+    <p class="kicker">Guides</p>
+    <h1 class="display title">The clicks a skill can’t do for you.</h1>
+    <p class="intro">
+      Accounts, keys and settings in Apple, Expo, Cloudflare and the rest. Each guide says what it costs,
+      what to click, where the value goes, and how to check it worked. Read them in order the first time.
+    </p>
+    <ol class="list">
+      {GUIDES.map((g) => (
+        <li>
+          <a href={`/guides/${g.slug}/`}>
+            <span class="n">{String(g.n).padStart(2, "0")}</span>
+            <span class="t">{g.title}</span>
+            <span class="arrow" aria-hidden="true">→</span>
+          </a>
+        </li>
+      ))}
+    </ol>
+  </main>
+</Base>
+
+<style>
+  .page { padding-top: clamp(40px, 7vw, 88px); }
+  .title { font-size: clamp(2.3rem, 6vw, 4.8rem); margin: 14px 0 22px; max-width: 14ch; }
+  .intro { max-width: 46ch; color: var(--ink-2); font-size: 1.2rem; margin: 0 0 48px; }
+  .list { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--ink); }
+  .list li { border-bottom: 1px solid var(--rule); }
+  .list a {
+    display: grid; grid-template-columns: 56px 1fr auto; gap: 16px; align-items: baseline;
+    padding: 20px 0; text-decoration: none;
+  }
+  .n { font-family: var(--mono); font-size: 0.85rem; color: var(--ink-3); }
+  .t { font-family: var(--display); font-stretch: 112%; font-weight: 700; font-size: clamp(1.15rem, 2.2vw, 1.5rem); letter-spacing: -0.01em; }
+  .arrow { font-family: var(--display); transition: transform 160ms cubic-bezier(.2,.8,.2,1); }
+  .list a:hover .arrow { transform: translateX(4px); color: var(--signal); }
+  .list a:hover .t { text-decoration: underline; text-decoration-color: var(--signal); text-decoration-thickness: 2px; text-underline-offset: 0.2em; }
+</style>

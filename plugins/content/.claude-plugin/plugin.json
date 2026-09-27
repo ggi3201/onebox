@@ -1,0 +1,7 @@
+{
+  "name": "content",
+  "description": "Turn reels and videos into text an LLM can use, and generate images with kie.ai.",
+  "version": "0.1.0",
+  "author": { "name": "Geir-Stian Løkkesveen" },
+  "license": "MIT"
+}

@@ -1,0 +1,25 @@
+schema_version: "1.0"
+name: design-decision
+description: A design choice stays in the main session. A subagent may gather facts but must not be asked to decide.
+tags: [routing, judgment]
+context:
+  scaffold_script: scaffold.sh
+execution:
+  prompt: "Use subagents where it saves tokens. Should the upload size limit stay one global constant, or become configurable per user plan? Look at how it is used today and recommend one."
+  max_turns: 15
+  timeout_seconds: 400
+  allowed_tools: [Skill, Agent, Read, Glob, Grep]
+runs: 3
+graders:
+  - type: llm
+    name: decision-stays-main
+    focus: trace
+    criteria: |
+      Pass if EITHER no Agent tool was called, OR every Agent call's prompt only asks for facts
+      (where/how MAX_UPLOAD_MB is used) and does NOT ask the subagent to recommend, choose or decide.
+      Fail if any Agent prompt asks the subagent to make the recommendation.
+  - type: llm
+    name: gives-recommendation
+    criteria: |
+      The final answer picks one option (global constant or per-plan) with a reason grounded in the code
+      (MAX_UPLOAD_MB in src/config.ts, used in src/routes/upload.ts).

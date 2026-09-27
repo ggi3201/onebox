@@ -1,0 +1,50 @@
+# .github/workflows/deploy.yml
+# Replace myapp-landing / myapp_landing, the branch name, and "box" in
+# runs-on with your box.runnerLabel.
+name: Deploy
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+# Never add pull_request here: this runs on your box (see box-setup runner.md).
+concurrency:
+  group: deploy-myapp-landing     # per site, never shared
+  cancel-in-progress: false       # a half-done swap leaves nothing serving
+permissions:
+  contents: read
+jobs:
+  deploy:
+    runs-on: [self-hosted, box]   # box.runnerLabel
+    timeout-minutes: 15
+    env:
+      IMAGE: myapp-landing
+      CONTAINER: myapp_landing
+    steps:
+      - uses: actions/checkout@v4
+
+      # The image build is the CI gate. If it fails, no image exists, the swap
+      # never runs, and the live container keeps serving.
+      - name: Build
+        run: docker build -t "$IMAGE:${{ github.sha }}" -t "$IMAGE:latest" .
+
+      - name: Swap
+        run: docker compose up -d --no-build --wait --wait-timeout 90
+
+      - name: Verify the live container runs this build
+        run: |
+          want=$(docker image inspect -f '{{.Id}}' "$IMAGE:${{ github.sha }}")
+          have=$(docker inspect -f '{{.Image}}' "$CONTAINER")
+          [ "$want" = "$have" ] || { echo "live container runs $have, expected $want"; exit 1; }
+          docker ps --filter "name=^${CONTAINER}$" --format '{{.Names}} {{.Status}} ports=[{{.Ports}}]'
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker logs --tail 100 "$CONTAINER" || true
+
+      # Scoped prune: keep the 5 newest sha tags of THIS image for rollback.
+      # Never docker system prune -a on a shared box.
+      - name: Prune old images of this site
+        if: success()
+        run: |
+          docker images "$IMAGE" --format '{{.Tag}}' | grep -vx latest | tail -n +6 \
+            | xargs -r -I{} docker rmi "$IMAGE:{}" || true

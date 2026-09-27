@@ -1,0 +1,54 @@
+# Writing a onebox skill
+
+## Layout
+
+```
+plugins/<plugin>/skills/<skill>/
+  SKILL.md          the entry point, lean (aim under ~150 lines)
+  references/*.md   detail the model reads only when needed
+  scripts/*         executable helpers
+  assets/*          templates
+```
+
+`SKILL.md` frontmatter has `name` (same as the folder) and `description`.
+The description says what the skill does, then "Use when ..." with the words a
+user would really type. It is the only part the model sees before it decides to
+load the skill, so it must carry the trigger phrases.
+
+## Rules
+
+1. **No personal values.** No hostnames, IPs, domains, app names, bundle IDs,
+   team IDs, usernames or file paths from anyone's machine. Read them from the
+   config (see `CONFIG.md`). Examples use `example.com`, `myapp`,
+   `com.example.myapp`, `user@host`.
+2. **Secrets by reference only.** Follow the table in `CONFIG.md`. Never print a
+   secret, never put one in a URL, never commit one.
+3. **Missing config is normal.** If a key is missing, ask the user once, then
+   offer to write it to `~/.config/onebox/config.json` or `.onebox.json`.
+4. **Read config with jq**, merging project over user:
+   ```bash
+   cfg() { jq -s '.[0] * .[1]' ~/.config/onebox/config.json .onebox.json 2>/dev/null \
+     || cat ~/.config/onebox/config.json 2>/dev/null || echo '{}'; }
+   cfg | jq -r '.box.ssh // empty'
+   ```
+   Scripts may take the same values as flags or env vars instead.
+5. **Cheap first.** Local builds before paid cloud builds. One box before many.
+   Do not add scale the user did not ask for.
+6. **Say where it runs.** State near the top: "Runs on: your Mac", "Runs on:
+   your box (over SSH)", or "Runs anywhere".
+7. **Plain English.** Short sentences. One idea per sentence. Active voice.
+   Exact technical terms. No filler.
+8. **Link a guide** in `guides/` when a skill needs an account or an API key.
+   The skill tells the user which guide to follow; it does not repeat the guide.
+9. **Keep what was learned.** When adapting a personal skill, keep the hard-won
+   lessons (pitfalls, ordering, verification steps). Remove only what is
+   personal. Turn a personal story into a neutral example if it teaches
+   something.
+
+## Guides
+
+`guides/<service>.md`: one page per account or key. Sections: what it is and
+what it costs; steps (numbered, what to click, what to copy); where the value
+goes (which config key, which secret reference); how to check it works;
+common errors. Do not guess at UI labels you have not verified; say "the page
+for X" rather than inventing a button name.
