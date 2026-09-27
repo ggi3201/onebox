@@ -36,6 +36,13 @@ export const PLUGINS: Plugin[] = [
     runsOn: "Your Mac",
     blurb: "The agent proves its change on the simulator before it says done.",
   },
+  {
+    id: "app-features",
+    letter: "E",
+    title: "App features",
+    runsOn: "Your app",
+    blurb: "An AI chat and agent, cost limits, consent, background jobs and share import, built into your app and API.",
+  },
 ];
 
 const TAGLINES: Record<string, string> = {
@@ -55,6 +62,12 @@ const TAGLINES: Record<string, string> = {
   "video": "Animate an approved still. Chain shots so the cuts disappear.",
   "test-loop": "Lint, types, tests, then the simulator. Proof before “done”.",
   "trim-tests": "Cuts a fifth of your tests and keeps what catches bugs.",
+  "agent-harness": "An agent in your API that calls your tools, streams, and proposes instead of acting.",
+  "chat-feature": "A chat screen that streams word by word, with Stop, photos and tap-to-apply cards.",
+  "ai-usage-limits": "A monthly budget per user, so one account cannot run up your model bill.",
+  "ai-consent": "The AI consent step App Review asks for, enforced on the server too.",
+  "durable-jobs": "Slow work as a background job that survives restarts, with cancel and refunds.",
+  "share-import": "Share a page into your app and get a record back, without the model making things up.",
 };
 
 export type Skill = { name: string; plugin: string; line: string };

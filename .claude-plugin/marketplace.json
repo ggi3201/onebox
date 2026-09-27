@@ -33,6 +33,13 @@
       "description": "Make the coding agent prove its change before it says done: lint, strict types, unit and database tests, then a check in the iOS Simulator with a screenshot. Also trims a bloated test suite. Runs on your Mac.",
       "version": "0.1.0",
       "license": "MIT"
+    },
+    {
+      "name": "app-features",
+      "source": "./plugins/app-features",
+      "description": "Features for an Expo app with its own backend: a streamed AI chat, a server-side agent with tools, cost limits, the AI consent Apple requires, background jobs, and import from a shared link. Runs in your app and your API.",
+      "version": "0.1.0",
+      "license": "MIT"
     }
   ]
 }

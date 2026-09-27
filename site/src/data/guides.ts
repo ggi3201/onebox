@@ -19,6 +19,8 @@ const ORDER = [
   "expo-eas",
   "kie-ai",
   "media-providers",
+  "llm-api-key",
+  "langfuse",
 ];
 
 type MdModule = {

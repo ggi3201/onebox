@@ -59,10 +59,13 @@ In Claude Code:
 /plugin install ship-ios@onebox
 /plugin install box@onebox
 /plugin install content@onebox
+/plugin install app-features@onebox
 ```
 
 `ship-ios` is the app and App Store side. `box` is the server side. `content`
-is a helper for images, video and research. Install only what you need.
+is a helper for images, video and research. `app-features` adds features to
+your app and API: an AI chat and agent, cost limits, AI consent, background
+jobs, import from a shared link. Install only what you need.
 
 For other agent tools (Codex, Cursor and others):
 

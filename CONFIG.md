@@ -79,6 +79,17 @@ it to a file other than the one the user asked for, and never put it in a URL.
       "fal": { "keyRef": "FAL_KEY" },
       "replicate": { "keyRef": "REPLICATE_API_TOKEN" }
     }
+  },
+
+  "llm": {                                 // app-features skills: smoke tests and evals
+    "baseUrl": "https://openrouter.ai/api/v1",   // any OpenAI-compatible Chat Completions API
+    "model": "",                           // the provider's model id
+    "keyRef": "LLM_API_KEY"                 // secret reference
+  },
+
+  "tracing": {                             // optional; tracing is off unless set up
+    "otlpEndpoint": "",                    // e.g. https://cloud.langfuse.com/api/public/otel
+    "authRef": "LANGFUSE_OTLP_AUTH"         // secret reference to the base64 "pk:sk" value
   }
 }
 ```

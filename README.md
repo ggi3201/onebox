@@ -40,8 +40,9 @@ policy, support and terms pages that App Store Connect and your paywall link to.
 |---|---|---|
 | `ship-ios` | your Mac | app-store-ready, expo-local-build, appstore-connect, ios-preview-build, app-store-screenshots, draw-app-icon, draw-icon-set |
 | `box` | your server | box-setup, expose-service, new-landing-page, staging-env |
-| `content` | your Mac | transcribe, image |
+| `content` | your Mac | transcribe, image, video |
 | `dev` | your Mac | test-loop, trim-tests |
+| `app-features` | your app and API | agent-harness, chat-feature, ai-usage-limits, ai-consent, durable-jobs, share-import |
 
 ## Setup
 
