@@ -23,6 +23,17 @@ Other tools (Codex, Cursor and more):
 npx skills add ggi3201/onebox
 ```
 
+## The route
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/route-dark.png">
+  <img alt="How onebox fits together: your Mac runs Claude Code and every skill, builds the app and submits it to Apple, which delivers it to phones. Phones call your API through a Cloudflare tunnel into one box that runs the API, Postgres, staging, backups, Traefik and the landing page with pricing, privacy policy, support and terms. App Store Connect links to that landing page." src="docs/route-light.png">
+</picture>
+
+Every skill runs in Claude Code on your Mac. The `box` skills reach your
+server over SSH, and the landing page on the box holds the pricing, privacy
+policy, support and terms pages that App Store Connect and your paywall link to.
+
 ## What is in the box
 
 | Plugin | Runs on | Skills |

@@ -1,0 +1,341 @@
+---
+// The route map: where each part of the kit lives and what moves between the
+// places. Stops are shipping labels, routes are dashed shipping lines tagged
+// with the skill that does the moving. Desktop draws it as one SVG; phones get
+// the same route as a vertical list, so nothing is shrunk to unreadable.
+//
+// Skill names come from the repo (SKILLS), so a skill that does not exist is
+// never drawn. A skill placed on a route is not repeated at a stop.
+import { PLUGINS, SKILLS } from "../data/kit";
+
+const has = (name: string) => SKILLS.some((s) => s.name === name);
+const letterOf = (plugin: string) => PLUGINS.find((p) => p.id === plugin)?.letter ?? "?";
+
+type Line = { t: string; mono?: boolean };
+type Stop = {
+  id: string; x: number; y: number; w: number; h: number;
+  tag: string; title: string; sub: string; lines: Line[]; skills: string[];
+};
+type Route = {
+  id: string; from: string; to: string; d: string; verb: string; skills: string[];
+  label: { x: number; y: number; anchor: "start" | "middle" | "end" };
+};
+
+// Skills drawn on routes, and the one skill that belongs on the phone.
+const ON_ROUTES = ["expo-local-build", "appstore-connect", "expose-service", "box-setup", "staging-env", "new-landing-page"];
+const AT_PHONE = ["ios-preview-build"];
+const atMac = SKILLS.filter((s) => s.plugin !== "box" && !ON_ROUTES.includes(s.name) && !AT_PHONE.includes(s.name));
+
+const STOPS: Stop[] = [
+  {
+    id: "mac", x: 20, y: 60, w: 290, h: 290, tag: "01 · The workbench",
+    title: "Your Mac", sub: "Claude Code runs every skill here.",
+    lines: [{ t: "Your Expo app’s code" }, { t: "Xcode, for free local builds" }],
+    skills: atMac.map((s) => s.name),
+  },
+  {
+    id: "apple", x: 455, y: 60, w: 290, h: 220, tag: "02 · The gate",
+    title: "Apple", sub: "App Store Connect.",
+    lines: [{ t: "TestFlight" }, { t: "App Review" }, { t: "Sign in with Apple" }, { t: "Store page, privacy answers" }],
+    skills: [],
+  },
+  {
+    id: "phone", x: 890, y: 60, w: 290, h: 220, tag: "03 · Delivered",
+    title: "The phone", sub: "Where your users are.",
+    lines: [{ t: "Your app, via TestFlight or the store" }, { t: "Signs in with Apple" }, { t: "api.example.com", mono: true }],
+    skills: AT_PHONE.filter(has),
+  },
+  {
+    id: "cloudflare", x: 890, y: 480, w: 290, h: 150, tag: "04 · The door",
+    title: "Cloudflare", sub: "The free plan is enough.",
+    lines: [{ t: "DNS for example.com" }, { t: "A tunnel in. No open ports." }],
+    skills: [],
+  },
+  {
+    id: "outside", x: 890, y: 660, w: 290, h: 150, tag: "06 · Outside",
+    title: "Outside", sub: "Paid per use. All optional.",
+    lines: [{ t: "RevenueCat: subscriptions" }, { t: "kie.ai · fal · Replicate: media" }],
+    skills: [],
+  },
+];
+
+// The box is drawn by hand below; this is its label and its contents.
+const BOX = {
+  x: 20, y: 480, w: 725, h: 330, tag: "05 · The box",
+  title: "The box", sub: "A mini PC at home, or a €5 VPS. Docker on one machine.",
+  rooms: [
+    { x: 40, y: 585, w: 195, h: 60, t: "API", s: "your backend, in Docker" },
+    { x: 245, y: 585, w: 195, h: 60, t: "Postgres", s: "one database per app" },
+    { x: 40, y: 655, w: 195, h: 60, t: "Staging", s: "a second API and database" },
+    { x: 245, y: 655, w: 195, h: 60, t: "Backups", s: "nightly, kept off the box" },
+  ],
+  traefik: { x: 40, y: 725, w: 400, h: 44, t: "Traefik", s: "sends each hostname to its container" },
+  landing: {
+    x: 460, y: 585, w: 265, h: 184, t: "Landing page", host: "example.com",
+    pages: ["Pricing", "Privacy policy", "Support", "Terms of use"],
+    note: ["App Store Connect links here,", "and so does your paywall."],
+  },
+};
+
+const ROUTES: Route[] = [
+  { id: "r1", from: "mac", to: "apple", d: "M310 150 H455", verb: "build + submit",
+    skills: ["expo-local-build", "appstore-connect"], label: { x: 382.5, y: 150, anchor: "middle" } },
+  { id: "r2", from: "apple", to: "phone", d: "M745 150 H890", verb: "installs",
+    skills: [], label: { x: 817.5, y: 150, anchor: "middle" } },
+  { id: "r3", from: "phone", to: "cloudflare", d: "M1035 280 V480", verb: "https",
+    skills: [], label: { x: 1047, y: 385, anchor: "start" } },
+  { id: "r4", from: "cloudflare", to: "box", d: "M890 555 H745", verb: "tunnel",
+    skills: ["expose-service"], label: { x: 817.5, y: 555, anchor: "middle" } },
+  { id: "r5", from: "mac", to: "box", d: "M165 350 V480", verb: "ssh + git push",
+    skills: ["box-setup", "staging-env"], label: { x: 179, y: 415, anchor: "start" } },
+  { id: "r6", from: "apple", to: "landing", d: "M600 280 V585", verb: "privacy + support urls",
+    skills: ["new-landing-page"], label: { x: 586, y: 385, anchor: "end" } },
+  { id: "r7", from: "outside", to: "box", d: "M890 735 H745", verb: "webhooks",
+    skills: [], label: { x: 817.5, y: 735, anchor: "middle" } },
+].map((r) => ({ ...r, skills: r.skills.filter(has) }));
+
+// Skills at a stop, grouped by plugin stamp and wrapped to the label width.
+function skillRows(names: string[], width: number) {
+  const max = Math.floor((width - 64) / 6.9);
+  const rows: { letter: string | null; text: string }[] = [];
+  for (const p of PLUGINS) {
+    const mine = names.filter((n) => SKILLS.find((s) => s.name === n)?.plugin === p.id);
+    let line = "";
+    let first = true;
+    for (const n of mine) {
+      const next = line ? `${line} · ${n}` : n;
+      if (next.length > max && line) {
+        rows.push({ letter: first ? p.letter : null, text: line });
+        first = false;
+        line = n;
+      } else line = next;
+    }
+    if (line) rows.push({ letter: first ? p.letter : null, text: line });
+  }
+  return rows;
+}
+
+const routeNote: Record<string, string> = {
+  r1: "Your Mac builds the app and sends it to TestFlight.",
+  r2: "Testers install from TestFlight, everyone else from the App Store.",
+  r3: "The app only ever talks to your API over HTTPS.",
+  r4: "Cloudflare’s tunnel is the one way into the box.",
+  r5: "Your Mac sets the box up over SSH. A git push deploys.",
+  r6: "Apple needs a privacy policy and a support page. They live on the landing page.",
+  r7: "RevenueCat tells your API when someone subscribes.",
+};
+const stampLetters = [...new Set([...atMac, ...SKILLS.filter((s) => AT_PHONE.includes(s.name))].map((s) => letterOf(s.plugin)))].sort();
+const order = ["mac", "r1", "apple", "r2", "phone", "r3", "cloudflare", "r4", "box", "r7", "outside"];
+const stopById = Object.fromEntries(STOPS.map((s) => [s.id, s]));
+const routeById = Object.fromEntries(ROUTES.map((r) => [r.id, r]));
+---
+
+<figure class="routemap" aria-labelledby="routemap-cap">
+  <svg class="map" viewBox="0 0 1200 830" role="img" aria-labelledby="routemap-title routemap-desc">
+    <title id="routemap-title">How the onebox kit fits together</title>
+    <desc id="routemap-desc">
+      Your Mac runs Claude Code and every skill. It builds the app and submits it to Apple, which delivers it to phones.
+      Phones call your API through a Cloudflare tunnel into one box that runs the API, Postgres, staging, backups,
+      Traefik and the landing page with pricing, privacy policy, support and terms. App Store Connect links to that
+      landing page. Outside services are RevenueCat and media APIs.
+    </desc>
+    <defs>
+      <marker id="rm-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0 0 L10 5 L0 10 z" class="rm-ink-fill" />
+      </marker>
+    </defs>
+
+    <!-- routes first, so labels sit on top of them -->
+    {ROUTES.map((r) => (
+      <g class="rm-route">
+        <path d={r.d} class="rm-line" marker-end="url(#rm-arrow)" />
+        <rect x={Number(r.d.match(/M(\d+)/)![1]) - 3} y={Number(r.d.match(/M\d+ (\d+)/)![1]) - 3} width="6" height="6" class="rm-way" />
+      </g>
+    ))}
+
+    {STOPS.map((s) => {
+      let y = s.y + 34 + 30;
+      return (
+        <g class="rm-stop">
+          <rect x={s.x} y={s.y} width={s.w} height={s.h} class="rm-card" />
+          <rect x={s.x} y={s.y} width={s.w} height="34" class="rm-bar" />
+          <text x={s.x + 14} y={s.y + 22} class="rm-tag">{s.tag}</text>
+          <text x={s.x + 14} y={y} class="rm-title">{s.title}</text>
+          <text x={s.x + 14} y={(y += 22)} class="rm-sub">{s.sub}</text>
+          {s.lines.map((l) => (
+            <text x={s.x + 14} y={(y += 22)} class={l.mono ? "rm-line-text rm-mono" : "rm-line-text"}>
+              <tspan class="rm-dash">— </tspan>{l.t}
+            </text>
+          ))}
+          {skillRows(s.skills, s.w).map((row, i) => {
+            const ry = s.y + s.h - 16 - (skillRows(s.skills, s.w).length - 1 - i) * 20;
+            return (
+              <g>
+                {row.letter && (
+                  <g>
+                    <circle cx={s.x + 24} cy={ry - 4} r="10" class="rm-stamp" />
+                    <text x={s.x + 24} y={ry} class="rm-stamp-letter">{row.letter}</text>
+                  </g>
+                )}
+                <text x={s.x + 42} y={ry} class="rm-skill">{row.text}</text>
+              </g>
+            );
+          })}
+        </g>
+      );
+    })}
+
+    <!-- the box -->
+    <g class="rm-stop">
+      <rect x={BOX.x} y={BOX.y} width={BOX.w} height={BOX.h} class="rm-card rm-box" />
+      <rect x={BOX.x} y={BOX.y} width={BOX.w} height="34" class="rm-bar" />
+      <text x={BOX.x + 14} y={BOX.y + 22} class="rm-tag">{BOX.tag}</text>
+      <text x={BOX.x + 14} y={BOX.y + 64} class="rm-title">{BOX.title}</text>
+      <text x={BOX.x + 14} y={BOX.y + 86} class="rm-sub">{BOX.sub}</text>
+      {BOX.rooms.map((r) => (
+        <g>
+          <rect x={r.x} y={r.y} width={r.w} height={r.h} class="rm-room" />
+          <text x={r.x + 12} y={r.y + 25} class="rm-room-title">{r.t}</text>
+          <text x={r.x + 12} y={r.y + 44} class="rm-room-sub">{r.s}</text>
+        </g>
+      ))}
+      <rect x={BOX.traefik.x} y={BOX.traefik.y} width={BOX.traefik.w} height={BOX.traefik.h} class="rm-room rm-strip" />
+      <text x={BOX.traefik.x + 12} y={BOX.traefik.y + 27} class="rm-room-title">{BOX.traefik.t}
+        <tspan class="rm-room-sub" dx="10">{BOX.traefik.s}</tspan>
+      </text>
+      <rect x={BOX.landing.x} y={BOX.landing.y} width={BOX.landing.w} height={BOX.landing.h} class="rm-room rm-landing" />
+      <text x={BOX.landing.x + 14} y={BOX.landing.y + 27} class="rm-room-title">{BOX.landing.t}</text>
+      <text x={BOX.landing.x + 14} y={BOX.landing.y + 46} class="rm-room-sub rm-mono">{BOX.landing.host}</text>
+      {BOX.landing.pages.map((p, i) => (
+        <text x={BOX.landing.x + 14} y={BOX.landing.y + 74 + i * 20} class="rm-line-text"><tspan class="rm-check">▪ </tspan>{p}</text>
+      ))}
+      {BOX.landing.note.map((n, i) => (
+        <text x={BOX.landing.x + 14} y={BOX.landing.y + BOX.landing.h - 32 + i * 17} class="rm-note">{n}</text>
+      ))}
+    </g>
+
+    <!-- route labels, on a paper backing so the dashed line breaks under them -->
+    {ROUTES.map((r) => {
+      const lines = [{ t: r.verb, cls: "rm-verb" }, ...r.skills.map((s) => ({ t: s, cls: "rm-skill" }))];
+      return (
+        <g class="rm-label">
+          {lines.map((l, i) => (
+            <text x={r.label.x} y={r.label.y - 12 + i * 16 + (r.d.includes("H") ? -6 : 0)} text-anchor={r.label.anchor} class={`${l.cls} rm-halo`}>{l.t}</text>
+          ))}
+          {lines.map((l, i) => (
+            <text x={r.label.x} y={r.label.y - 12 + i * 16 + (r.d.includes("H") ? -6 : 0)} text-anchor={r.label.anchor} class={l.cls}>{l.t}</text>
+          ))}
+        </g>
+      );
+    })}
+  </svg>
+
+  <!-- phones: the same route, top to bottom -->
+  <ol class="list" aria-label="The route, step by step">
+    {order.map((id) => {
+      if (id.startsWith("r")) {
+        const r = routeById[id];
+        return (
+          <li class="hop">
+            <span class="hop-verb">{r.verb}</span>
+            <span class="hop-note">{routeNote[id]}</span>
+            {r.skills.length > 0 && <span class="hop-skills">{r.skills.join(" · ")}</span>}
+          </li>
+        );
+      }
+      if (id === "box") {
+        return (
+          <li class="stop">
+            <p class="stop-tag">{BOX.tag}</p>
+            <p class="stop-title">{BOX.title}</p>
+            <p class="stop-sub">{BOX.sub}</p>
+            <ul>
+              {BOX.rooms.map((r) => <li><b>{r.t}</b>, {r.s}</li>)}
+              <li><b>{BOX.traefik.t}</b>, {BOX.traefik.s}</li>
+              <li class="landing"><b>{BOX.landing.t}</b> at <code>{BOX.landing.host}</code>: {BOX.landing.pages.join(", ").toLowerCase()}. {BOX.landing.note.join(" ")}</li>
+            </ul>
+            <p class="stop-skills">
+              {routeNote.r5} <code>{routeById.r5.skills.join(" · ")}</code><br />
+              {routeNote.r6} <code>{routeById.r6.skills.join(" · ")}</code>
+            </p>
+          </li>
+        );
+      }
+      const s = stopById[id];
+      return (
+        <li class="stop">
+          <p class="stop-tag">{s.tag}</p>
+          <p class="stop-title">{s.title}</p>
+          <p class="stop-sub">{s.sub}</p>
+          <ul>{s.lines.map((l) => <li>{l.mono ? <code>{l.t}</code> : l.t}</li>)}</ul>
+          {s.skills.length > 0 && <p class="stop-skills"><code>{s.skills.join(" · ")}</code></p>}
+        </li>
+      );
+    })}
+  </ol>
+
+  <figcaption id="routemap-cap" class="label cap">
+    Stamps {stampLetters.map((l) => <span class="cap-stamp">{l}</span>)} are plugins from the packing list below.
+    Tags on a route are the skills that move things along it.
+  </figcaption>
+</figure>
+
+<style>
+  .routemap { margin: 0; }
+  .map { width: 100%; height: auto; display: block; overflow: visible; }
+
+  .map :global(.rm-card) { fill: var(--paper); stroke: var(--ink); stroke-width: 1.75; }
+  .map :global(.rm-box) { stroke-width: 2.5; }
+  .map :global(.rm-bar) { fill: var(--ink); }
+  .map :global(.rm-tag) { fill: var(--paper); font-family: var(--display); font-stretch: 112%; font-weight: 700; font-size: 11.5px; letter-spacing: 0.14em; text-transform: uppercase; }
+  .map :global(.rm-title) { fill: var(--ink); font-family: var(--display); font-stretch: 125%; font-weight: 800; font-size: 24px; letter-spacing: -0.02em; }
+  .map :global(.rm-sub) { fill: var(--ink-2); font-family: var(--text); font-style: italic; font-size: 15px; }
+  .map :global(.rm-line-text) { fill: var(--ink); font-family: var(--text); font-size: 15px; }
+  .map :global(.rm-mono) { font-family: var(--mono); font-size: 13px; }
+  .map :global(.rm-dash) { fill: var(--ink-3); }
+  .map :global(.rm-check) { fill: var(--signal); }
+  .map :global(.rm-skill) { fill: var(--ink); font-family: var(--mono); font-size: 11.5px; font-weight: 500; }
+  .map :global(.rm-verb) { fill: var(--ink-3); font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; }
+  .map :global(.rm-halo) { stroke: var(--paper); stroke-width: 6px; stroke-linejoin: round; }
+  .map :global(.rm-stamp) { fill: none; stroke: var(--signal); stroke-width: 1.75; }
+  .map :global(.rm-stamp-letter) { fill: var(--signal); font-family: var(--display); font-stretch: 125%; font-weight: 800; font-size: 11px; text-anchor: middle; }
+  .map :global(.rm-room) { fill: var(--paper-2); stroke: var(--ink); stroke-width: 1; }
+  .map :global(.rm-strip) { fill: var(--paper-3); }
+  .map :global(.rm-landing) { fill: var(--paper); stroke: var(--signal); stroke-width: 1.75; stroke-dasharray: 5 4; }
+  .map :global(.rm-room-title) { fill: var(--ink); font-family: var(--display); font-stretch: 112%; font-weight: 700; font-size: 15px; }
+  .map :global(.rm-room-sub) { fill: var(--ink-2); font-family: var(--text); font-size: 13.5px; font-weight: 400; font-stretch: 100%; }
+  .map :global(.rm-note) { fill: var(--signal); font-family: var(--text); font-style: italic; font-size: 12.5px; }
+  .map :global(.rm-line) { fill: none; stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 6 5; }
+  .map :global(.rm-way) { fill: var(--signal); }
+  .map :global(.rm-ink-fill) { fill: var(--ink); }
+
+  .list { display: none; list-style: none; margin: 0; padding: 0; }
+  .cap { display: block; margin-top: 18px; text-transform: none; letter-spacing: 0.02em; }
+  .cap-stamp {
+    display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%;
+    border: 1.5px solid var(--signal); color: var(--signal); font-family: var(--display); font-weight: 800; font-size: 10px;
+  }
+
+  @media (max-width: 760px) {
+    .map { display: none; }
+    .list { display: block; }
+    .stop { border: 2px solid var(--ink); background: var(--paper); }
+    .stop-tag {
+      margin: 0; padding: 8px 12px; background: var(--ink); color: var(--paper);
+      font-family: var(--display); font-stretch: 112%; font-weight: 700; font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase;
+    }
+    .stop-title { margin: 12px 12px 0; font-family: var(--display); font-stretch: 125%; font-weight: 800; font-size: 1.5rem; letter-spacing: -0.02em; line-height: 1.1; }
+    .stop-sub { margin: 2px 12px 8px; color: var(--ink-2); font-style: italic; font-size: 1rem; }
+    .stop ul { margin: 0 12px 12px; padding-left: 1.1em; font-size: 1rem; }
+    .stop ul li { margin: 3px 0; }
+    .stop li.landing { border: 1.5px dashed var(--signal); padding: 8px 10px; margin: 8px 0 4px -1.1em; list-style: none; }
+    .stop code { font-family: var(--mono); font-size: 0.84em; }
+    .stop-skills { margin: 0; padding: 10px 12px; border-top: 1px dashed var(--rule); font-size: 0.95rem; color: var(--ink-2); }
+    .stop-skills code { color: var(--ink); }
+    .hop { position: relative; margin-left: 22px; padding: 14px 0 14px 18px; border-left: 2px dashed var(--ink); display: grid; gap: 3px; }
+    .hop::after { content: ""; position: absolute; left: -6px; bottom: -1px; border: 5px solid transparent; border-top: 7px solid var(--ink); }
+    .hop-verb { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+    .hop-note { font-size: 0.98rem; }
+    .hop-skills { font-family: var(--mono); font-size: 0.8rem; font-weight: 500; }
+  }
+</style>

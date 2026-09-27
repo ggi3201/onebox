@@ -1,5 +1,6 @@
 ---
 import Base from "../layouts/Base.astro";
+import RouteMap from "../components/RouteMap.astro";
 import { PLUGINS, SKILLS, skillsFor, APPS, REPO_SLUG } from "../data/kit";
 import { GUIDES } from "../data/guides";
 
@@ -71,6 +72,17 @@ const bill = [
           <div class="cmd"><code>/plugin install ship-ios@onebox</code><button data-copy="/plugin install ship-ios@onebox">Copy</button></div>
           <p class="label other">Codex, Cursor and others: <code>npx skills add {REPO_SLUG}</code></p>
         </div>
+      </div>
+    </section>
+
+    <!-- ============ ROUTE MAP ============ -->
+    <section id="route" class="route">
+      <div class="wrap">
+        <header class="section-head">
+          <h2 class="display h2">The route</h2>
+          <p class="muted">Where each part lives, and what carries your app from your Mac to a phone.</p>
+        </header>
+        <RouteMap />
       </div>
     </section>
 
