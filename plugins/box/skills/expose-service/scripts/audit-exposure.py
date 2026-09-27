@@ -12,6 +12,12 @@ cannot run counts as a problem, not a pass: a silent false negative here is
 worse than no audit.
 
   audit-exposure.py --domain example.com [--domain other.example] [--token-stdin]
+                    [--public-ok grafana.example.com]
+
+It also requests every tunnelled hostname whose name looks like an admin tool
+(grafana, portainer, admin, dash, ...) and flags it when the answer is not a
+Cloudflare Access login redirect. --public-ok accepts one you made public on
+purpose, for example a tool with its own strong login.
 
 Token: CLOUDFLARE_API_TOKEN in the environment, or one line on stdin with
 --token-stdin. It needs DNS read on the zone(s). It is never printed.
@@ -63,6 +69,32 @@ def sh(cmd):
         return ""
 
 
+# Names of admin tools and dashboards. Matched as whole parts of the first label,
+# so "grafana", "grafana-stg" and "stg-admin" match and "qrcode" does not.
+ADMIN_NAMES = re.compile(
+    r"(^|-)(admin|dash|dashboard|traefik|portainer|dozzle|grafana|prometheus|alertmanager|kibana|"
+    r"pgadmin|adminer|phpmyadmin|kuma|uptime|netdata|glances|cockpit|webmin|n8n|metabase|minio|"
+    r"console|langfuse|jupyter|code|vault|studio|supabase|airflow|flower|rabbitmq|mailpit|registry)(-|$)",
+    re.I)
+
+
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *args, **kwargs):
+        return None
+
+
+def access_state(host):
+    """'access' if Cloudflare Access answers with its login redirect, else the status seen."""
+    opener = urllib.request.build_opener(NoRedirect)
+    try:
+        r = opener.open(urllib.request.Request(f"https://{host}/", headers={"User-Agent": "onebox-audit"}), timeout=10)
+        return f"HTTP {r.status}"
+    except urllib.error.HTTPError as e:
+        if "cloudflareaccess.com" in (e.headers.get("Location") or ""):
+            return "access"
+        return f"HTTP {e.code}"
+
+
 def private(addr):
     try:
         ip = ipaddress.ip_address(addr)
@@ -78,6 +110,7 @@ def main():
     p.add_argument("--resolver", default="cloudflare", help="the only certResolver that renews behind the tunnel")
     p.add_argument("--tunnel-config", default="/etc/cloudflared/config.yml")
     p.add_argument("--token-stdin", action="store_true")
+    p.add_argument("--public-ok", action="append", default=[], help="admin-looking hostname that is public on purpose; repeat for more")
     a = p.parse_args()
     domains = a.domain or [d for d in [os.environ.get("BOX_DOMAIN")] if d]
     if not domains:
@@ -167,6 +200,26 @@ def main():
             print(f"  ingress but no DNS: {n}")
         if not unprox and cn == ing_hosts:
             print(f"  {len(cn)} hostnames, DNS and ingress match")
+
+    print("\n== admin-looking hostnames without Cloudflare Access ==")
+    admin_hosts = sorted(h for h in ing_hosts if ADMIN_NAMES.search(h.split(".")[0]))
+    for h in admin_hosts:
+        if h in a.public_ok:
+            print(f"  {h}: public on purpose (--public-ok)")
+            continue
+        try:
+            state = access_state(h)
+        except Exception as exc:
+            print(f"  {h}: COULD NOT CHECK - {exc}")
+            problems.append(f"admin-check:{h}")
+            continue
+        if state == "access":
+            print(f"  {h}: behind Cloudflare Access")
+        else:
+            print(f"  {h}: PUBLIC ({state}), no Access login in front of it")
+            problems.append(f"admin-no-access:{h}")
+    if not admin_hosts:
+        print("  none by name (a public admin tool under another name is not detected)")
 
     print("\n== certificate resolvers that cannot renew behind the tunnel ==")
     try:

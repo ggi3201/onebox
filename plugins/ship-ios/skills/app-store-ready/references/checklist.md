@@ -318,6 +318,57 @@ submit. The `ios-preview-build` skill does this without TestFlight.
 
 ---
 
+## Security in the app
+
+App Review rarely rejects for these. Users get hurt by them. The script checks
+the first four.
+
+**public-secrets**. Everything in `EXPO_PUBLIC_*` variables and in the app
+config's `extra` is inside the app, readable by anyone who downloads it. So is
+any string in the source. The script looks for secret-looking values (`sk_`,
+`sk-`, private keys, GitHub, AWS and Slack tokens) in `eas.json`, the `.env`
+files, `extra` and the source, and for secret-looking names (`SECRET`,
+`PASSWORD`, `OPENAI_API_KEY` and similar). Only public values belong in the
+app: the API URL, the RevenueCat `appl_` key, the Expo project ID. Call AI
+providers from your backend. A secret that was ever in a build must be
+**rotated**: the builds people already installed keep it. Confirm on the real
+bundle: `npx expo export --platform ios` and search the output
+(`guides/expo-app.md`, step 8).
+
+**google-key** (CHECK). Firebase and Maps keys are designed to be public. Restrict
+each one to the bundle ID and to the APIs it needs in the Google Cloud console.
+A Gemini (Google AI) key is a secret and must not be in the app.
+
+**token-storage**. Access and refresh tokens go in `expo-secure-store` (the
+Keychain), not in AsyncStorage. AsyncStorage is a plain file that goes into
+device backups. The script flags `AsyncStorage.setItem` calls whose line
+mentions a token, a session or auth, and a persisted store that holds tokens.
+A push notification token is not a secret; ignore that hit.
+
+**ats**. `NSAllowsArbitraryLoads`, `NSAllowsArbitraryLoadsInWebContent`, or
+`NSExceptionAllowsInsecureHTTPLoads` for a public domain turn off App Transport
+Security in release builds too. Review asks you to justify them. Serve every
+host over `https`. Local addresses in development work without them.
+
+**dev-flags**. The production profile must not set `developmentClient: true`,
+and must not turn on `EXPO_PUBLIC_*` switches such as `DEBUG`, `MOCK`,
+`BYPASS` or `SKIP_PAYWALL`. Put debug features behind `__DEV__`, which is
+false in release builds. The script cannot see a debug screen that is reachable
+by a gesture or a hidden tap: check by hand that a release build has no server
+picker, test login or "grant premium" switch.
+
+**backend-debug** (CHECK). Debug, admin and test endpoints on the API check the
+environment and a role on the server. Hiding a button in the app protects
+nothing, because anyone can call the URL. See `guides/backend.md`, "Protect the
+API".
+
+**cert-pinning** (CHECK, usually "not needed"). HTTPS with App Transport Security
+is enough for most apps. A certificate pin that stops matching (Cloudflare
+renews its edge certificates on its own schedule) breaks the app for every
+user until they update.
+
+---
+
 ## App Store Connect metadata
 
 Set by hand in the web UI (see `guides/app-store-connect-setup.md`):

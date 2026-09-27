@@ -641,7 +641,10 @@ phase_check() {
   if [ "$TYPE" = vps ]; then
     S ufw status 2>/dev/null | grep -qE '^(80|443)(/tcp)? ' && meh "ufw allows 80/443; not needed with a tunnel"
   fi
-  [ -f /etc/apt/apt.conf.d/20auto-upgrades ] && ok "unattended-upgrades configured" || bad "unattended-upgrades not configured"
+  if grep -qs 'Unattended-Upgrade "1"' /etc/apt/apt.conf.d/20auto-upgrades; then
+    systemctl is-enabled unattended-upgrades >/dev/null 2>&1 && ok "unattended-upgrades on" \
+      || bad "unattended-upgrades configured but the service is not enabled"
+  else bad "unattended-upgrades not configured"; fi
   [ -f /var/run/reboot-required ] && meh "a reboot is pending (security update)"
   if [ "$TYPE" = vps ]; then swapon --show --noheadings | grep -q . && ok "swap on" || meh "no swap; image builds may run out of memory"; fi
 
@@ -659,6 +662,21 @@ phase_check() {
         meh "ports published on all interfaces:"; echo "$open" | sed 's/^/          /'
       fi
     else ok "no container port published on all interfaces"; fi
+    # The Docker socket is root on the box, read-only mount or not (:ro does not limit the API).
+    # Traefik needs it. A public service that has it hands the box to whoever breaks that service.
+    local c name sock=0
+    for c in $(S docker ps -q); do
+      S docker inspect -f '{{range .Mounts}}{{.Source}} {{end}}' "$c" 2>/dev/null | grep -qE '(^| )(/var)?/run/docker\.sock( |$)' || continue
+      name="$(S docker inspect -f '{{.Name}}' "$c" | sed 's#^/##')"
+      [ "$name" = traefik ] && continue
+      sock=1
+      if [ "$(S docker inspect -f '{{index .Config.Labels "traefik.enable"}}' "$c" 2>/dev/null)" = true ]; then
+        bad "docker socket mounted in $name, and Traefik routes to it"
+      else
+        meh "docker socket mounted in $name (fine for a backup or update tool; never for a public service)"
+      fi
+    done
+    [ "$sock" = 0 ] && ok "docker socket only in traefik"
   else
     bad "docker not reachable"
   fi

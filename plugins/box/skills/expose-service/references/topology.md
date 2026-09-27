@@ -107,3 +107,22 @@ in the config.
   invented subdomain, so scanners get a live answer for names that never existed.
 - The free edge certificate covers `example.com` and `*.example.com`. A name two
   levels deep (`a.b.example.com`) fails TLS at the edge.
+
+## Rate limit middleware
+
+A Traefik middleware is a cheap first layer for a route whose code
+you do not control, such as a self-hosted tool or a form on a site. Behind the
+tunnel every request comes from the Docker gateway, so count by the header
+Cloudflare sets, not by the remote address:
+
+```yaml
+- "traefik.http.middlewares.myapp-rl.ratelimit.average=10"       # requests per period, per client
+- "traefik.http.middlewares.myapp-rl.ratelimit.period=1s"
+- "traefik.http.middlewares.myapp-rl.ratelimit.burst=50"
+- "traefik.http.middlewares.myapp-rl.ratelimit.sourcecriterion.requestheadername=Cf-Connecting-Ip"
+- "traefik.http.routers.myapp.middlewares=myapp-rl,secure-headers@file"
+```
+
+Traefik answers `429` above the limit. Without `sourcecriterion`, the limit is
+shared by all users. Check it: a loop of 100 quick `curl` calls gets some 429s,
+and a normal page load does not.

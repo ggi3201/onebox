@@ -48,11 +48,16 @@ storage, queue). Staging needs its own copy of each.
 2. **Hostname.** One level below the domain: `api-stg.example.com`. The free
    edge certificate does not cover `api.stg.example.com`.
 3. **Secrets for staging** (by `secrets.tool`):
-   - `env` (default): write `$APPS/myapp-stg/.env` on the box, mode 600. Start
-     from production's keys. Point `DATABASE_URL` at `db-stg`. Give staging a
-     **new** JWT secret and a new database password.
-   - `doppler`: create a `stg` config, copy production into it, change the same
-     keys, then make a token scoped to `stg`:
+   **Never production's secret values.** Start from production's key *names*.
+   Give staging new values for everything that grants access: the JWT secret,
+   the database password, webhook secrets. For paid APIs use a separate key
+   with a low spend limit, or the provider's test mode (RevenueCat sandbox,
+   Stripe test keys). A staging bug must not be able to spend production's
+   budget or sign tokens production accepts.
+   - `env` (default): write `$APPS/myapp-stg/.env` on the box, mode 600, with
+     those names and the new values. Point `DATABASE_URL` at `db-stg`.
+   - `doppler`: create a `stg` config with the same key names and the new
+     values, then make a token scoped to `stg`:
      `doppler configs tokens create gha-stg -p <proj> -c stg --plain | gh secret set DOPPLER_TOKEN_STG --repo owner/myapp`
      See gotcha 9 for upload quirks.
    - `1password`: a `.env.stg.tpl` of `op://` references, and a service account
@@ -60,6 +65,8 @@ storage, queue). Staging needs its own copy of each.
 4. **DNS and tunnel.** Use `box:expose-service` for `api-stg.<domain>`. It adds
    the ingress (copy of the production rule, with **both** `hostname` and
    `originServerName` changed) and the proxied CNAME.
+   Staging is public from this moment. Keep it out of search results, and put
+   anything a browser opens behind a login (see "Who can reach staging").
 5. **Deploy workflow.** Start from `assets/deploy-stg.yml`: `push` on
    `qa/**`, one `concurrency` group, `-p myapp-stg`, the staging compose file,
    a health check through Traefik, and logs on failure. Put `$LABEL` in
@@ -91,6 +98,22 @@ storage, queue). Staging needs its own copy of each.
 9. **Tell the user** the staging URL, that it is public, and what data it holds.
    Then hand over to `ship-ios:ios-preview-build` if a phone build should point here.
 
+## Who can reach staging
+
+A staging hostname is on the internet like production. Proportionate defaults:
+
+- **The staging API** stays reachable, because the preview build on your phone
+  calls it. It holds no real user data (gotcha 6), has its own secrets (step 3)
+  and the same rate limits and quotas as production. Add a `noindex` header so
+  search engines drop it (the asset compose file has the labels).
+- **Anything a browser opens** (a staging site, an admin page, API docs) goes
+  behind Cloudflare Access: `guides/cloudflare.md`, "Put admin tools behind
+  Access". The cheaper fallback is Traefik basic auth plus `noindex`
+  (`references/gotchas.md`, gotcha 11).
+- **Never a copy of production's personal data** behind a staging hostname,
+  unless the user asks, knows it is public, and the personal fields are
+  scrubbed.
+
 ## Gotchas
 
 Full list with fixes: `references/gotchas.md`. The short version:
@@ -105,6 +128,7 @@ Full list with fixes: `references/gotchas.md`. The short version:
 8. Object storage and queues need their own staging copy too.
 9. Doppler: upload takes a file, `DOPPLER_*` keys are read-only, tokens are per config.
 10. Webhooks and OAuth callbacks still point at production.
+11. Staging is public. `noindex` for the API; Access or basic auth for pages.
 
 ## Tear down
 

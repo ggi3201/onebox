@@ -272,7 +272,8 @@ instead of failing in odd ways.
 ### 8. Keep secrets out of the app
 
 Everything in the app bundle can be read by anyone who downloads the app.
-`EXPO_PUBLIC_` means public.
+`EXPO_PUBLIC_` means public. So does anything under `extra` in the app config:
+`expo-constants` ships it inside the app.
 
 Fine in the app:
 
@@ -287,8 +288,64 @@ Never in the app:
   database passwords, the App Store Connect `.p8`, the Sign in with Apple
   `.p8`.
 
+If a secret key was ever in a build, **rotate it**. Removing it from the next
+build does not remove it from the builds people already have.
+
+Check it: export the bundle and search it.
+
+```bash
+npx expo export --platform ios --output-dir /tmp/myapp-bundle
+grep -raoE 'sk_(live|test)_[A-Za-z0-9]{8,}|sk-[A-Za-z0-9_-]{20,}|AIza[0-9A-Za-z_-]{30,}|BEGIN [A-Z ]*PRIVATE KEY' /tmp/myapp-bundle | head
+```
+
+Expect no lines. `ship-ios:app-store-ready` runs a similar check on the
+config and the source.
+
+### 9. Store tokens in the Keychain
+
 Store the user's session tokens with `expo-secure-store` (the iOS Keychain),
-not in AsyncStorage.
+not in AsyncStorage. AsyncStorage is a plain file in the app's folder. It goes
+into device backups, and anyone with access to the files can read it. The
+Keychain is encrypted by the system.
+
+```ts
+import * as SecureStore from "expo-secure-store";
+
+await SecureStore.setItemAsync("refreshToken", token);
+const token = await SecureStore.getItemAsync("refreshToken");
+await SecureStore.deleteItemAsync("refreshToken");   // on sign-out and account deletion
+```
+
+AsyncStorage is fine for settings that are not secret: a theme, a dismissed
+tip, a cache of public data. Run only one token refresh at a time; see the
+token part of [backend.md](backend.md) ("Protect the API").
+
+### 10. No debug doors in release builds
+
+- **No `NSAllowsArbitraryLoads`.** It turns off App Transport Security for
+  every host. Review asks you to justify it. The API is `https`, so the app
+  does not need it. The same goes for `NSExceptionAllowsInsecureHTTPLoads` on a
+  public domain. A LAN address during development works without either.
+- **Debug code behind `__DEV__`.** `__DEV__` is `false` in release builds, and
+  the bundler removes the code inside `if (__DEV__) { ... }`. A test login, a
+  "skip paywall" switch, a server picker, extra logging: put them there. Do not
+  gate them on an `EXPO_PUBLIC_` flag. A flag is one wrong `eas.json` line away
+  from production.
+- **The server decides.** A debug or admin endpoint on the API checks the
+  environment and a role on the server. Hiding its button in the app protects
+  nothing: anyone can call the URL.
+- **The development client stays in development.** Only the `development`
+  profile has `developmentClient: true`. Preview and production builds have no
+  developer menu.
+
+**Certificate pinning: usually not.** Pinning makes the app trust only your
+certificate, even when the phone trusts others. It protects against an
+attacker who can install a trusted certificate on the user's phone. For most
+apps that is not the risk. It has a real cost: Cloudflare renews its edge
+certificates on its own schedule, and a pin that no longer matches breaks the
+app for every user until they install an update. HTTPS with App Transport
+Security is enough. Consider pinning only for very sensitive data, with a
+backup pin and a plan to rotate.
 
 ## Where the values go
 

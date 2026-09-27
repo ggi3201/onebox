@@ -29,6 +29,13 @@ export const PLUGINS: Plugin[] = [
     runsOn: "Your Mac",
     blurb: "Reels into text an LLM can use. Images without the stock-photo look.",
   },
+  {
+    id: "dev",
+    letter: "D",
+    title: "Dev loop",
+    runsOn: "Your Mac",
+    blurb: "The agent proves its change on the simulator before it says done.",
+  },
 ];
 
 const TAGLINES: Record<string, string> = {
@@ -46,6 +53,8 @@ const TAGLINES: Record<string, string> = {
   "transcribe": "Timestamped text from a reel, a TikTok or a voice memo. Free and local.",
   "image": "Generate and edit images with kie.ai, fal or Replicate. Look first, pay little, reroll.",
   "video": "Animate an approved still. Chain shots so the cuts disappear.",
+  "test-loop": "Lint, types, tests, then the simulator. Proof before “done”.",
+  "trim-tests": "Cuts a fifth of your tests and keeps what catches bugs.",
 };
 
 export type Skill = { name: string; plugin: string; line: string };

@@ -87,7 +87,8 @@ REF=$(cfg | jq -r '.box.cloudflareTokenRef // "CLOUDFLARE_API_TOKEN"')
 ## Choices, and why
 
 - **SSH on a VPS.** Default: port 22 open, keys only. Simple, and fine with
-  password login off. Stricter: install Tailscale first, then
+  password login off. Stricter: install Tailscale first (see
+  `guides/remote-access.md` in the onebox repo), then
   `--ssh-tailscale-only` closes 22 to the internet. Keep the provider's web
   console as the way back in. A home box sits behind the router, so 22 is
   LAN-only anyway.
@@ -116,6 +117,24 @@ ssh "$BOX" 'sudo onebox-backup --init && sudo onebox-backup && sudo onebox-backu
 ```
 
 A backup you never restored is a guess. Do one test restore: `references/restore.md`.
+
+## What `check` must show
+
+`check` is read-only. Run it after setup and after any change to the box. Each
+line is a real protection, not a formality:
+
+| Line | What it stops | If it fails |
+|---|---|---|
+| SSH password login off | password guessing on port 22 | run `ssh-lockdown`; read `sshd -T` for a cloud-init file that turns it back on |
+| SSH root login off | a stolen key reaching root directly | run `ssh-lockdown --confirmed-key-login` |
+| ufw active | host services (sshd, anything you install) open to the internet | run `base` again |
+| unattended-upgrades on | known holes in the OS staying open for months | run `base` again; reboot when it says a reboot is pending |
+| no container port on all interfaces | a database or admin UI on the public IP. **Docker-published ports skip ufw**, so ufw's "deny" does not cover them. | remove `ports:`, or bind to `127.0.0.1:`. If a port really must be public, limit it in the provider's firewall. |
+| docker socket only in traefik | a public container with the socket is root on the box. `:ro` does not help: it limits the file, not the API. | remove the socket mount from that service. Tools that need it (backups, updaters) stay off the proxy network. |
+
+At home, a `0.0.0.0` port is a warning: the router blocks it from the
+internet, but every device on the LAN can reach it. On a VPS with a tunnel it
+is a failure.
 
 ## Pitfalls
 

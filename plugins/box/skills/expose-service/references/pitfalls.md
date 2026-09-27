@@ -92,13 +92,17 @@ X-Forwarded-For:  172.18.0.1        <- overwritten
 ```
 
 Fix: `--entrypoints.websecure.forwardedHeaders.trustedIPs=<gateway>/32,127.0.0.1/32,::1/128`
-(box-setup sets it). Then the header reads `<client>, <gateway>`.
+(box-setup sets it). Then the header reads `<client>, <gateway>`. A client can
+send its own `X-Forwarded-For`; Cloudflare appends to it rather than replacing
+it. So only the two right-most entries are Cloudflare's and Traefik's, and the
+app must read no further than that.
 
 **In the app.** That added hop means a forward limit of 1 reads the gateway, the
 same value for every request. The app needs a limit of 2 to reach the address
 Cloudflare wrote, and both hops must be in its trusted-proxy list (the proxy
 network's subnet covers them). In ASP.NET Core that is `ForwardLimit = 2`; other
-frameworks call it "trusted hops" or "proxy count".
+frameworks call it "trusted hops" or "proxy count". Code for ASP.NET Core and
+Node: `guides/backend.md`, "Protect the API".
 
 Why it matters: any rate limiter keyed on the remote IP becomes global. A
 per-IP sign-in limit of 10 per minute becomes 10 per minute for all users. Anyone

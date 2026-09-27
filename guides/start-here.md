@@ -22,7 +22,7 @@ parts you do not need on day one.
 |---|---|---|
 | Apple Developer Program | $99 a year | Required to ship on the App Store. See [apple-developer.md](apple-developer.md). |
 | The box | about €5 a month, or €0 | A small VPS ([vps.md](vps.md)), or a mini PC you already own. |
-| A domain | about €10 a year | Any registrar. The DNS moves to Cloudflare. |
+| A domain | about €10 a year | `.com` or `.app` at cost on Cloudflare Registrar ([domain.md](domain.md)). The DNS moves to Cloudflare. |
 | Cloudflare | free | DNS, the tunnel and the edge certificate are on the free plan. See [cloudflare.md](cloudflare.md). |
 | iOS builds | free | Local builds on your Mac with Xcode. Cloud builds on EAS are optional. See [expo-eas.md](expo-eas.md). |
 | Expo account | free | Needed for `eas` commands, also for local builds. |
@@ -99,17 +99,25 @@ build profiles.
 Guide: [expo-app.md](expo-app.md). Skill: `ship-ios:expo-local-build` (for the first
 development build on your phone).
 
-Done when: a development build of your app runs on your iPhone, and the API
-URL comes from `eas.json`, not from a file only your laptop has.
+Then give your agent a way to check its own work: lint, strict types, tests,
+and a look at the change in the Simulator before it says "done". Guide:
+[agent-test-loop.md](agent-test-loop.md). Skill: `dev:test-loop`.
+
+Done when: a development build of your app runs on your iPhone, the API URL
+comes from `eas.json`, not from a file only your laptop has, and your agent
+runs the test loop without you.
 
 ### Phase 2: the box
 
 Get one Linux machine and bring it to a known baseline: SSH keys only,
 firewall, Docker, Traefik, a Cloudflare Tunnel, nightly backups.
 
-1. Put your domain on Cloudflare and make an API token. Guide: [cloudflare.md](cloudflare.md).
-2. Rent a small VPS ([vps.md](vps.md)), or install Ubuntu Server on a mini PC you own.
-3. Run the setup. Skill: `box:box-setup`.
+1. Register a domain that stays cheap at renewal. Guide: [domain.md](domain.md).
+2. Put your domain on Cloudflare and make an API token. Guide: [cloudflare.md](cloudflare.md).
+3. Rent a small VPS ([vps.md](vps.md)), or install Ubuntu Server on a mini PC you own.
+4. Put the box, your Mac and your phone on one private network, so you (or
+   Claude) can fix things from anywhere. Guide: [remote-access.md](remote-access.md).
+5. Run the setup. Skill: `box:box-setup`.
 
 Done when: `box:box-setup`'s `check` phase ends with `0 fail`, and the backup
 has run once to an off-box target.
@@ -119,7 +127,8 @@ has run once to an off-box target.
 Put your API and its Postgres in one Docker Compose project on the box. Give
 the API a health endpoint and a public hostname. Deploy it on every push to
 `main`. Scope every user-owned table to its owner in the database layer, not
-in each endpoint (the "Keep each user's data apart" section).
+in each endpoint (the "Keep each user's data apart" section). Add rate limits,
+per-user AI quotas and safe URL fetching (the "Protect the API" section).
 
 Guide: [backend.md](backend.md). Skills: `box:expose-service` (the hostname),
 `box:box-setup` (the GitHub Actions runner, in its `references/runner.md`).
@@ -243,6 +252,7 @@ Done when: the app is approved and released.
 - [ ] Off-box backup set, one test restore done
 - [ ] API and Postgres in Docker Compose, no published ports
 - [ ] `https://api.example.com/health` answers from mobile data
+- [ ] Real client IP, rate limits and AI quotas checked ("Protect the API")
 - [ ] Push to `main` deploys the API
 - [ ] Sign in with Apple works, server verifies the token
 - [ ] Account deletion in the app, with Apple token revocation

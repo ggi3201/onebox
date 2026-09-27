@@ -1,6 +1,6 @@
 # Cloudflare
 
-Used by: `box:box-setup`, `box:expose-service`, `box:new-landing-page`, `box:staging-env`.
+Used by: `box:box-setup`, `box:expose-service`, `box:new-landing-page`, `box:staging-env`, and the "Protect the API" part of `guides/backend.md`.
 
 ## What it is and what it costs
 
@@ -61,6 +61,61 @@ choose your domain and approve. Then box-setup creates a tunnel named
 `box.tunnelName` and keeps its ingress in `/etc/cloudflared/config.yml` on the
 box.
 
+### 5. Put admin tools behind Access
+
+Cloudflare Access puts a login in front of a hostname, at Cloudflare's edge.
+The request never reaches the tunnel until the person has logged in. Use it
+for every admin tool and dashboard that has a public hostname: Traefik's
+dashboard, Portainer, Grafana, a database UI, n8n, a staging web site. The
+Zero Trust Free plan covers up to 50 users.
+
+1. In the dashboard, open **Zero Trust**. The first time, pick a team name
+   (it becomes `<team>.cloudflareaccess.com`) and the Free plan.
+2. Check that the one-time PIN login method is on, in the Zero Trust settings
+   for authentication. Cloudflare then emails a code to an allowed address. No
+   other identity provider is needed.
+3. Go to **Access controls > Applications**, choose **Create new application**,
+   then **Self-hosted and private**. Add the public hostname, for example
+   `grafana.example.com`.
+4. Add a policy: action Allow, include the email addresses that may log in.
+   Access denies everyone else by default.
+5. Save. Scripts that must reach the tool can use an Access service token
+   (two headers) instead of a login.
+
+Never put Access in front of the API your app calls. The app cannot log in,
+and every request fails.
+
+Check it: open the hostname in a private browser window. You must see the
+Cloudflare Access login, not the tool. From the terminal:
+`curl -sI https://grafana.example.com/ | grep -i location` points at
+`cloudflareaccess.com`. The `box:expose-service` audit runs the same check on
+hostnames that look like admin tools.
+
+### 6. Free-plan protection for the API (optional)
+
+The API limits itself (`guides/backend.md`, "Protect the API"). Cloudflare can
+drop the worst traffic before it reaches the box. What the Free plan gives you
+(checked 2026-09-28):
+
+- **One rate limiting rule.** It counts by client IP, over 10 seconds, and
+  blocks for 10 seconds. It can match on the URL path. Use it for sign-in:
+  expression `starts_with(http.request.uri.path, "/auth/")`, 20 requests per
+  10 seconds, action Block. Keep it generous: many phones on one mobile
+  carrier can share one IP. It sits on the page for rate limiting rules in the
+  domain's Security section.
+- **Five custom (WAF) rules.** One cheap use: block the scanner paths your API
+  never serves, so they do not reach the box at all. Expression:
+  `starts_with(http.request.uri.path, "/.env") or starts_with(http.request.uri.path, "/.git") or starts_with(http.request.uri.path, "/wp-")`,
+  action Block.
+- **Bot Fight Mode: leave it off** on a domain that serves your app's API. It
+  may challenge API and mobile app traffic. An app cannot solve a challenge,
+  so the request fails with an HTML page instead of JSON. On the Free plan it
+  covers the whole domain, and WAF rules cannot skip it.
+
+Check it: 25 quick requests to `/auth/...` from one machine get a Cloudflare
+block page for 10 seconds. `curl -s -o /dev/null -w '%{http_code}\n' https://api.example.com/.env`
+returns `403` and nothing shows in the API log.
+
 ## Where the values go
 
 | Value | Goes to |
@@ -102,4 +157,6 @@ Expect `active`, `active`, and two `*.ns.cloudflare.com` names.
 | Site gives `ERR_SSL_VERSION_OR_CIPHER_MISMATCH` | The hostname is two levels deep (`a.b.example.com`). Use `a-b.example.com`. |
 | `413` on upload, nothing in the box's logs | The 100 MB request-body limit at the edge. |
 | `524` | The origin took more than 100 s to send the first byte. |
+| The app gets `403` with an HTML body; nothing in the API log | Bot Fight Mode or a WAF rule challenged the request. Turn Bot Fight Mode off; check the Security events log. |
+| Every Access login loops back to the login page | The email is not in the application's Allow policy, or the one-time PIN login is off. |
 | Traefik log: DNS challenge `403` | The token in `<appsDir>/traefik/.env` lacks DNS Edit on this zone. |

@@ -1,6 +1,6 @@
 ---
 name: app-store-ready
-description: Audit an Expo / React Native iOS app for everything that blocks a TestFlight upload or App Store approval, and report each item as OK, needs fixing, or blocked, with the fix. Covers app config (bundle ID, versions, icon, permission strings), privacy manifest, export compliance, tracking, account deletion, Sign in with Apple, in-app purchases and the paywall, backend URLs, placeholder content, eas.json, and the App Store Connect metadata a reviewer checks. Use when the user asks "is my app ready for the App Store", "will Apple reject this", "what do I need before TestFlight", "App Review checklist", "why was my app rejected", "Guideline 5.1.1", "Missing Compliance", "ITMS-91053", or before a first submission.
+description: Audit an Expo / React Native iOS app for everything that blocks a TestFlight upload or App Store approval, and report each item as OK, needs fixing, or blocked, with the fix. Covers app config (bundle ID, versions, icon, permission strings), privacy manifest, export compliance, tracking, account deletion, Sign in with Apple, in-app purchases and the paywall, backend URLs, secrets and tokens in the app bundle, App Transport Security, placeholder content, eas.json, and the App Store Connect metadata a reviewer checks. Use when the user asks "is my app ready for the App Store", "will Apple reject this", "what do I need before TestFlight", "App Review checklist", "why was my app rejected", "Guideline 5.1.1", "Missing Compliance", "ITMS-91053", or before a first submission.
 ---
 
 # App Store ready?
@@ -63,7 +63,7 @@ BLOCKED  Account deletion (5.1.1(v))
 ```
 
 Group items under: Build and upload, Privacy, Accounts, Payments, Content,
-App Store Connect. Keep each fix to what the user does next. Cite the
+Security, App Store Connect. Keep each fix to what the user does next. Cite the
 guideline number when there is one.
 
 End the report with the next steps from the rest of this plugin, only the ones

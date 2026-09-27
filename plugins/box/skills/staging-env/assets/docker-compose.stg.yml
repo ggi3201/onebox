@@ -32,6 +32,9 @@ services:
       - "traefik.http.routers.myapp-api-stg.service=myapp-api-stg"
       - "traefik.http.routers.myapp-api-stg.entrypoints=websecure"
       - "traefik.http.routers.myapp-api-stg.tls.certresolver=cloudflare"
+      # Staging is public: keep it out of search results (gotcha 11). secure-headers comes from box-setup.
+      - "traefik.http.middlewares.myapp-stg-noindex.headers.customresponseheaders.X-Robots-Tag=noindex, nofollow"
+      - "traefik.http.routers.myapp-api-stg.middlewares=myapp-stg-noindex,secure-headers@file"
       - "traefik.http.services.myapp-api-stg.loadbalancer.server.port=8080"
 
   db-stg:

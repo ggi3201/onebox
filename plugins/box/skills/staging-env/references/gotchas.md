@@ -86,3 +86,31 @@ twin, or point staging at a separate bucket.
 Third-party webhooks (payments, subscriptions) and OAuth redirect URLs are set to
 production's hostname. Staging will not receive them unless you register the
 staging hostname with each provider, usually in its sandbox or test mode.
+
+## 11. Staging is public, and search engines find it
+
+A hostname with a tunnel ingress answers to anyone. Scanners and search engines
+find new hostnames within days, from certificate logs and DNS.
+
+For every staging router, send a `noindex` header:
+
+```yaml
+- "traefik.http.middlewares.myapp-stg-noindex.headers.customresponseheaders.X-Robots-Tag=noindex, nofollow"
+- "traefik.http.routers.myapp-api-stg.middlewares=myapp-stg-noindex,secure-headers@file"
+```
+
+For pages a browser opens, prefer Cloudflare Access (`guides/cloudflare.md`).
+The fallback is Traefik basic auth. Make the hash with `htpasswd -nB qa` and
+store it in the staging secrets as `STG_BASIC_AUTH`, not in the repo:
+
+```yaml
+- "traefik.http.middlewares.myapp-stg-auth.basicauth.users=${STG_BASIC_AUTH:?required}"
+- "traefik.http.routers.myapp-web-stg.middlewares=myapp-stg-auth,myapp-stg-noindex"
+```
+
+Compose substitutes the variable once, so the `$` signs inside the hash stay as
+they are. Do not put basic auth on the API router: the app does not send it.
+
+Check it: `curl -sI https://api-stg.example.com/health | grep -i x-robots-tag`
+shows `noindex`. A staging page asks for a login in a private window.
+

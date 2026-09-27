@@ -234,9 +234,23 @@ if (localDev.length) add('backend-url-dev', 'CHECK', `Local URLs behind a dev ch
 const cleartext = grep(/['"`]http:\/\/(?!localhost|127\.0\.0\.1|www\.w3\.org|schemas\.)/).filter(r => !devOnly(r) && !localRe.test(lineOf(r)));
 if (local.length) add('backend-url', 'BLOCKED', `Local/LAN addresses in app code: ${first(local)}`, 'A reviewer\'s phone cannot reach your laptop or LAN. Read the API URL from EXPO_PUBLIC_API_URL per EAS profile, and make sure the production value is a public https URL.');
 if (cleartext.length) add('https', 'FIX', `Plain http:// URLs: ${first(cleartext)}`, 'Use https. iOS blocks cleartext by default (App Transport Security), so these requests fail on a phone.');
-const rawAts = (readJson('app.json')?.expo || {}).ios?.infoPlist?.NSAppTransportSecurity;
-if (rawAts?.NSAllowsArbitraryLoads) add('ats', 'FIX', 'app config sets NSAllowsArbitraryLoads: true.', 'Remove it. Serve the API over https. Review asks you to justify this exception.');
-else if (plist.NSAppTransportSecurity?.NSAllowsArbitraryLoads) add('ats', 'CHECK', 'The resolved Info.plist has NSAllowsArbitraryLoads: true (from the native template or a plugin).', 'Check ios/<App>/Info.plist of a release build. Only local networking should be allowed.');
+// App Transport Security: what weakens it for public hosts. Local addresses are for development.
+const localHost = d => /^(localhost|127\.0\.0\.1|\[?::1\]?|[\w-]+\.local|10\.\d|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/i.test(d);
+const atsIssues = ats => {
+  if (!ats || typeof ats !== 'object') return [];
+  const out = [];
+  if (ats.NSAllowsArbitraryLoads === true) out.push('NSAllowsArbitraryLoads: true');
+  for (const k of ['NSAllowsArbitraryLoadsInWebContent', 'NSAllowsArbitraryLoadsForMedia']) if (ats[k] === true) out.push(`${k}: true`);
+  for (const [d, o] of Object.entries(ats.NSExceptionDomains || {}))
+    if (!localHost(d) && (o?.NSExceptionAllowsInsecureHTTPLoads === true || o?.NSTemporaryExceptionAllowsInsecureHTTPLoads === true))
+      out.push(`insecure HTTP allowed for ${d}`);
+  return out;
+};
+const rawAtsIssues = atsIssues((readJson('app.json')?.expo || {}).ios?.infoPlist?.NSAppTransportSecurity);
+const resolvedAtsIssues = atsIssues(plist.NSAppTransportSecurity).filter(i => !rawAtsIssues.includes(i));
+if (rawAtsIssues.length) add('ats', 'FIX', `app.json weakens App Transport Security: ${rawAtsIssues.join('; ')}.`, 'Remove it. Serve every host over https. Review asks you to justify these exceptions, and they apply to release builds too. A LAN address in development does not need them.');
+if (resolvedAtsIssues.length) add('ats', 'CHECK', `The resolved Info.plist weakens App Transport Security: ${resolvedAtsIssues.join('; ')} (from app.config, a plugin or the native template).`, 'Find where it comes from and remove it. Check ios/<App>/Info.plist of a release build: only local networking should be allowed.');
+if (!rawAtsIssues.length && !resolvedAtsIssues.length) add('ats', 'OK', 'App Transport Security is not weakened for public hosts');
 const envVars = [...new Set(src.flatMap(s => [...s.t.matchAll(/process\.env\.(EXPO_PUBLIC_[A-Z0-9_]+)/g)].map(m => m[1])))];
 if (envVars.length && eas?.build) {
   const onlyLocal = envVars.filter(v => !exists('.env') || !fs.readFileSync(path.join(DIR, '.env'), 'utf8').includes(v + '='))
@@ -245,6 +259,71 @@ if (envVars.length && eas?.build) {
   else add('env-in-builds', 'OK', `${envVars.length} EXPO_PUBLIC_ variables defined for builds`);
 }
 if (!results.some(r => ['backend-url', 'https'].includes(r.id))) add('backend-url', 'OK', 'No localhost, LAN or http:// URLs in app code');
+
+// ---- Secrets, tokens and debug switches in the app ----------------------------------------------
+// Everything in EXPO_PUBLIC_* and in the app config's `extra` ships inside the app, readable by anyone.
+const SECRET_VALUES = [
+  [/\bsk_(live|test)_[A-Za-z0-9]{10,}/, 'a secret key (sk_live_/sk_test_)'],
+  [/\bsk_[A-Za-z0-9]{20,}/, 'a secret key (sk_...)'],
+  [/\bsk-(proj-|ant-)?[A-Za-z0-9_-]{20,}/, 'an AI provider key (sk-...)'],
+  [/-----BEGIN [A-Z ]*PRIVATE KEY-----/, 'a private key'],
+  [/\b(ghp_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,})/, 'a GitHub token'],
+  [/\bAKIA[0-9A-Z]{16}\b/, 'an AWS access key'],
+  [/\bxox[abprs]-[A-Za-z0-9-]{10,}/, 'a Slack token'],
+];
+const secretKind = v => SECRET_VALUES.find(([re]) => re.test(String(v)))?.[1];
+const SECRET_NAME = /SECRET|PRIVATE_?KEY|PASSWORD|PASSWD|SERVICE_ROLE|ADMIN_(KEY|TOKEN)|(^|_)SK(_|$)|(OPENAI|ANTHROPIC|CLAUDE|GEMINI|GOOGLE_AI|MISTRAL|GROQ|DEEPSEEK|REPLICATE|ELEVENLABS|FAL|KIE|STRIPE)\w*_(API_)?(KEY|TOKEN)/i;
+const GOOGLE_KEY = /\bAIza[0-9A-Za-z_-]{35}\b/;
+// name/value pairs that end up in the app: eas.json env, EXPO_PUBLIC_ lines of .env files, and `extra`.
+const pairs = [];
+for (const [prof, p] of Object.entries(eas?.build || {})) for (const [k, v] of Object.entries(p?.env || {})) pairs.push({ where: `eas.json build.${prof}.env.${k}`, k, v, pub: k.startsWith('EXPO_PUBLIC_') });
+for (const f of fs.readdirSync(DIR).filter(f => /^\.env(\.|$)/.test(f) && !/\.(example|sample|template)$/.test(f))) {
+  try {
+    for (const m of fs.readFileSync(path.join(DIR, f), 'utf8').matchAll(/^\s*(?:export\s+)?(EXPO_PUBLIC_[A-Z0-9_]+)\s*=\s*(.*)$/gm))
+      pairs.push({ where: `${f}: ${m[1]}`, k: m[1], v: m[2].replace(/^['"]|['"]$/g, ''), pub: true });
+  } catch {}
+}
+(function flat(o, pre) {
+  for (const [k, v] of Object.entries(o || {})) {
+    if (!pre && ['eas', 'router'].includes(k)) continue;
+    if (v && typeof v === 'object') flat(v, `${pre}${k}.`);
+    else if (typeof v === 'string') pairs.push({ where: `app config extra.${pre}${k}`, k, v, pub: true });
+  }
+})(expo.extra, '');
+for (const v of envVars) if (!pairs.some(p => p.k === v)) pairs.push({ where: `process.env.${v} in the source`, k: v, v: '', pub: true });
+
+const rcReported = results.some(r => r.id === 'revenuecat-key');
+const leakedVals = pairs.map(p => ({ ...p, kind: secretKind(p.v) })).filter(p => p.kind && !(rcReported && /sk_/.test(p.kind)));
+const leakedSrc = grep(new RegExp(SECRET_VALUES.map(([re]) => re.source).join('|')));
+const leakedSrcNew = rcReported ? leakedSrc.filter(r => !/['"]sk_/.test(lineOf(r))) : leakedSrc;
+if (leakedVals.length || leakedSrcNew.length)
+  add('public-secrets', 'BLOCKED', `A secret value in the app or its build config: ${first([...leakedVals.map(p => `${p.where} (${p.kind})`), ...leakedSrcNew])}`,
+    'Anyone can read it from the app. Move the call that needs it to your backend, remove the value, and rotate it: builds already out there keep the old one.');
+const badNames = pairs.filter(p => p.pub && SECRET_NAME.test(p.k) && !leakedVals.some(l => l.where === p.where));
+if (badNames.length)
+  add('public-secrets', 'FIX', `Secret-looking names in values the app ships: ${first(badNames.map(p => p.where))}`,
+    'EXPO_PUBLIC_ variables and app config `extra` are public. A provider key or a password there is readable by anyone. Call the provider from your backend. Only public keys (the RevenueCat appl_ key, the API URL) belong in the app.');
+const gkeys = [...pairs.filter(p => GOOGLE_KEY.test(String(p.v))).map(p => p.where), ...grep(GOOGLE_KEY)];
+if (gkeys.length) add('google-key', 'CHECK', `A Google API key ships in the app: ${first(gkeys)}`,
+  'Firebase and Maps keys are meant to be public, but restrict each one to your bundle ID and to the APIs it needs, in the Google Cloud console. A Gemini key must never be in the app.');
+if (!results.some(r => r.id === 'public-secrets')) add('public-secrets', 'OK', `No secret-looking values or names in ${pairs.length} shipped settings or in the source`);
+
+// Session tokens belong in the Keychain (expo-secure-store), not in AsyncStorage.
+const TOKENISH = /token|jwt|refresh|session|auth|password|secret|credential/i;
+const asyncTok = grep(/AsyncStorage\s*\.\s*(setItem|multiSet|mergeItem)\s*\(/).filter(r => TOKENISH.test(lineOf(r)) && !/push|notification|fcm|apns/i.test(lineOf(r)));   // a push token is not a secret
+const persisted = src.filter(s => /createJSONStorage\(\s*\(\)\s*=>\s*AsyncStorage|storage:\s*AsyncStorage\b/.test(s.t) && /accessToken|refreshToken|idToken|authToken|\bjwt\b/i.test(s.t)).map(s => s.f);
+const secureStore = has('expo-secure-store', 'react-native-keychain') || anySrc(/SecureStore\.|from ['"]react-native-keychain['"]/);
+if (asyncTok.length) add('token-storage', 'FIX', `Tokens written to AsyncStorage: ${first(asyncTok)}`, 'AsyncStorage is a plain file that goes into device backups. Store access and refresh tokens with expo-secure-store (the Keychain). Keep AsyncStorage for settings that are not secret.');
+else if (persisted.length) add('token-storage', 'CHECK', `A store that holds tokens is persisted to AsyncStorage: ${first(persisted)}`, 'Check whether the persisted part includes the tokens. If it does, persist the tokens with expo-secure-store instead.');
+else if (accountLike && !secureStore) add('token-storage', 'CHECK', 'The app has accounts but no expo-secure-store or Keychain use was found.', 'Find where the session token is stored. It belongs in expo-secure-store, not in AsyncStorage or a plain file.');
+else if (accountLike) add('token-storage', 'OK', 'Keychain storage (expo-secure-store) in use; no tokens written to AsyncStorage');
+
+// Debug switches in the production profile.
+const prodEnv = prodProfile?.env || {};
+const devFlags = Object.entries(prodEnv).filter(([k, v]) => /DEBUG|DEV_?(MODE|MENU|TOOLS)|MOCK|FAKE|BYPASS|SKIP_(AUTH|LOGIN|PAYWALL)|TEST_(USER|LOGIN|ACCOUNT)|ENABLE_DEV|STORYBOOK/i.test(k) && /^(1|true|yes|on)$/i.test(String(v).trim())).map(([k]) => k);
+if (prodProfile?.developmentClient) add('dev-flags', 'FIX', 'The production profile has developmentClient: true.', 'That builds a development client with the developer menu. Keep developmentClient on the development profile only.');
+if (devFlags.length) add('dev-flags', 'FIX', `Debug switches turned on in the production profile: ${devFlags.join(', ')}`, 'Put debug features behind __DEV__, which is false in release builds, not behind an EXPO_PUBLIC_ flag.');
+if (prodProfile && !results.some(r => r.id === 'dev-flags')) add('dev-flags', 'OK', 'No debug switches on in the production profile');
 
 // ---- Content and platform -------------------------------------------------------------
 const placeholder = grep(/lorem ipsum|coming soon|placeholder text|TODO: ?copy|\bdummy data\b|test@test|foo@bar/i);

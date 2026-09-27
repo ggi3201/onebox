@@ -1,6 +1,6 @@
 ---
 name: expose-service
-description: "Make a service on the box reachable at a hostname under your domain, or change how an existing one is reached - Traefik labels, Cloudflare Tunnel ingress and the DNS record, done in the safe order with a before/after check. Also audits which hostnames leak the origin IP. Use when the user says 'give it a URL', 'make this public', 'expose', 'publish', 'put it on a subdomain', 'add a DNS record', 'point the domain at', 'A record', 'CNAME', 'cloudflare tunnel', 'cloudflared', 'certresolver', 'traefik router', 'host this', or 'make it LAN-only'. Also use when a task only needs a URL on the side - a new site, an API for an app, a webhook - because the DNS step is where the mistake gets made."
+description: "Make a service on the box reachable at a hostname under your domain, or change how an existing one is reached - Traefik labels, Cloudflare Tunnel ingress and the DNS record, done in the safe order with a before/after check. Also audits which hostnames leak the origin IP. Use when the user says 'give it a URL', 'make this public', 'expose', 'publish', 'put it on a subdomain', 'add a DNS record', 'point the domain at', 'A record', 'CNAME', 'cloudflare tunnel', 'cloudflared', 'certresolver', 'traefik router', 'host this', 'make it LAN-only', 'put the dashboard behind a login', 'Cloudflare Access', or 'rate limit this route'. Also use when a task only needs a URL on the side - a new site, an API for an app, a webhook - because the DNS step is where the mistake gets made."
 ---
 
 # Expose a service
@@ -80,6 +80,33 @@ Read `references/pitfalls.md` before you edit tunnel or Traefik config.
    `--mode private --ip <addr>` writes a LAN or tailnet record instead.
 5. **Verify** as below. Then commit the label changes.
 
+## Admin tools and dashboards: behind Cloudflare Access
+
+Traefik's dashboard, Portainer, Grafana, a database UI, n8n, a log viewer: none
+of them should answer to the whole internet. Their own login is one password
+and one unpatched bug away from your box.
+
+Best: no public hostname at all (LAN or tailnet record, above). When you need
+it from anywhere, put **Cloudflare Access** in front. It is free for up to 50
+users. Cloudflare asks for a login (a one-time PIN to your email is enough)
+before any request reaches the tunnel. Steps: `guides/cloudflare.md`, "Put
+admin tools behind Access". Expose the hostname as usual, then add the Access
+application **before** you share the URL.
+
+On a home box, Traefik also listens on the LAN, so devices at home can reach
+the tool without Access. That is usually fine. It is one more reason to keep
+the tool's own login on.
+
+Never put Access in front of the API the app calls. The app cannot log in to
+Access, and every request fails.
+
+## Rate limit a public route (optional)
+
+The app should limit its own endpoints (`guides/backend.md`, "Protect the
+API"). For a route whose code you do not control, add Traefik's `ratelimit`
+middleware, counted by `Cf-Connecting-Ip`: `references/topology.md`, "Rate
+limit middleware".
+
 ## Verify against a baseline, not against 200
 
 A status code alone proves nothing. The tunnel catch-all returns 404, and so
@@ -115,5 +142,12 @@ scripts/secret.sh "$REF" | ssh "$BOX" "sudo python3 /tmp/audit-exposure.py --dom
 
 It lists records that point at the origin IP, wildcards, private addresses in
 public DNS that also have ingress, tunnel CNAMEs that are not proxied, routers on
-a resolver other than `cloudflare`, and tunnel unit health. It exits non-zero on
-any problem, including a check it could not run.
+a resolver other than `cloudflare`, and tunnel unit health. It also requests
+each tunnelled hostname whose name looks like an admin tool (`grafana`,
+`portainer`, `admin`, `dash`, ...) and flags it when no Cloudflare Access login
+answers. `--public-ok <host>` accepts one that is public on purpose. It exits
+non-zero on any problem, including a check it could not run.
+
+The name check cannot see an admin tool under a neutral name. Keep your own
+list, and check each one: `curl -sI https://<host>/ | grep -i location` must
+point at `cloudflareaccess.com`.

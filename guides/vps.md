@@ -75,7 +75,8 @@ hcloud firewall apply-to-resource box --type server --server box
 ```
 
 Closing SSH too (Tailscale only) is possible. Then the Hetzner console is your
-only way in when Tailscale breaks.
+only way in when Tailscale breaks. [remote-access.md](remote-access.md) sets up
+Tailscale on the box, your Mac and your phone.
 
 ### 5. Run box-setup
 
@@ -100,7 +101,10 @@ ssh root@<ip> 'uname -m; . /etc/os-release; echo $PRETTY_NAME'    # x86_64, Ubun
 ```
 
 After box-setup: `ssh alice@<ip> 'sudo bash /root/box-setup.sh check'` (or
-wherever you copied the script) ends with `0 fail`.
+wherever you copied the script) ends with `0 fail`. That covers the security
+baseline too: password and root login off, ufw on, automatic security
+updates, no container port on the public IP, and the Docker socket only in
+Traefik.
 
 ## Common errors
 
