@@ -29,13 +29,6 @@ export const PLUGINS: Plugin[] = [
     runsOn: "Your Mac",
     blurb: "Reels into text an LLM can use. Images without the stock-photo look.",
   },
-  {
-    id: "budget",
-    letter: "D",
-    title: "Budget",
-    runsOn: "Claude Code",
-    blurb: "Spend fewer tokens. The expensive model only does the thinking.",
-  },
 ];
 
 const TAGLINES: Record<string, string> = {
@@ -53,7 +46,6 @@ const TAGLINES: Record<string, string> = {
   "transcribe": "Timestamped text from a reel, a TikTok or a voice memo. Free and local.",
   "image": "Generate and edit images with kie.ai, fal or Replicate. Look first, pay little, reroll.",
   "video": "Animate an approved still. Chain shots so the cuts disappear.",
-  "delegate": "Sends the heavy lifting to cheaper models. Keeps the judgment.",
 };
 
 export type Skill = { name: string; plugin: string; line: string };

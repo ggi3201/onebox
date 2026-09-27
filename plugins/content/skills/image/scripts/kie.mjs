@@ -13,8 +13,13 @@
  *   seedream/5-pro-text-to-image, seedream/5-pro-image-to-image, kling/v2-1-pro
  * See ../../../../guides/kie-ai.md for the account/pricing side of this.
  *
+ * `still` can also target fal.ai or Replicate with [--provider fal|replicate]
+ * [--model id] [--extra '<json>'] — see ./providers.mjs (the queue/poll/upload
+ * mechanics shared with the video skill) and guides/media-providers.md (when
+ * to pick which). The default path below (no --provider) is unchanged.
+ *
  * COMMANDS
- *   still  <prompt> <out.png> [--ar 16:9] [--ref a.png] [--model id] [--quality high|basic]
+ *   still  <prompt> <out.png> [--ar 16:9] [--ref a.png] [--model id] [--quality high|basic] [--dry-run]
  *          seedream/5-pro-text-to-image (or -image-to-image with one or more
  *          --ref). Photoreal by default. Stills are cheap: generate, look,
  *          reroll rather than over-specifying the first prompt.
@@ -41,6 +46,12 @@ import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import { execFileSync } from "node:child_process";
+import {
+  resolveProviderName as resolveMediaProvider,
+  loadProviderKey,
+  makeAdapter,
+  asUrl as providerAsUrl,
+} from "./providers.mjs";
 
 const API = "https://api.kie.ai";
 const UPLOAD = "https://kieai.redpandaai.co/api/file-base64-upload";
@@ -232,6 +243,8 @@ function printUsage() {
   node kie.mjs still "<prompt>" <out.png> [--ar 16:9] [--ref ref.png] [--model id] [--quality high|basic]
   node kie.mjs shot  "<prompt>" <head.png> <out.mp4> [--tail tail.png] [--dur 5] [--model id]
 
+\`still\` also takes [--provider kie|fal|replicate] [--extra '<json>'] [--dry-run] —
+see guides/media-providers.md for when to reach for fal.ai or Replicate instead.
 Verified aspect ratios: ${VERIFIED_ASPECT_RATIOS.join(", ")} (others may work but are unconfirmed).
 No API key is needed just to see this message.`);
 }
@@ -251,28 +264,66 @@ try {
 
   } else if (cmd === "still") {
     const [prompt, out] = rest;
-    if (!prompt || !out) throw new Error('usage: kie.mjs still "<prompt>" <out.png> [--ar 16:9] [--ref a.png] [--model id]');
+    if (!prompt || !out) {
+      throw new Error('usage: kie.mjs still "<prompt>" <out.png> [--ar 16:9] [--ref a.png] [--model id] [--provider kie|fal|replicate] [--dry-run]');
+    }
     const ar = flag(rest, "--ar", "16:9");
     const refs = flags(rest, "--ref");
     const modelOverride = flag(rest, "--model");
-    let model = modelOverride || (refs.length ? MODELS.stillEdit : MODELS.still);
-    // aspect_ratio, quality and output_format are all required by seedream;
-    // omitting any one returns a bare "This field is required" that does not
-    // name the field, so keep them explicit rather than relying on defaults.
-    const input = {
-      prompt,
-      aspect_ratio: ar,
-      quality: flag(rest, "--quality", "high"),
-      output_format: flag(rest, "--format", "png"),
-      nsfw_checker: false,
-    };
-    if (refs.length) {
-      input.image_urls = await Promise.all(refs.map(asUrl));
+    const dryRun = rest.includes("--dry-run");
+    const cfg = loadConfig();
+    const providerName = resolveMediaProvider(cfg, "image", flag(rest, "--provider"));
+
+    if (providerName !== "kie") {
+      // Only kie.ai gets a hand-built seedream request below. Another
+      // provider needs --model plus its own input shape — pass that via
+      // --extra '<json>'. See guides/media-providers.md.
+      if (!modelOverride) throw new Error(`--provider ${providerName} needs --model <id> — this script only knows seedream's shape for kie.ai.`);
+      let input = { prompt, aspect_ratio: ar };
+      const extraRaw = flag(rest, "--extra");
+      if (extraRaw) {
+        try { input = { ...input, ...JSON.parse(extraRaw) }; } catch (err) { throw new Error(`--extra is not valid JSON: ${err.message}`); }
+      }
+      if (dryRun) {
+        console.log(JSON.stringify({ provider: providerName, model: modelOverride, input }, null, 2));
+        console.log("\nEstimated cost: no built-in estimate for this provider — check its pricing page.");
+        console.log("(--dry-run: no request was sent, no key was read)");
+      } else {
+        const key = loadProviderKey(cfg, providerName);
+        const adapter = makeAdapter(providerName, key);
+        if (refs.length) input.image_urls = await Promise.all(refs.map((r) => providerAsUrl(adapter, r)));
+        const jobId = await adapter.submit(modelOverride, input);
+        const { urls } = await adapter.poll(jobId, { label: path.basename(out) });
+        await download(urls[0], out);
+        console.log(out);
+      }
+
+    } else {
+      let model = modelOverride || (refs.length ? MODELS.stillEdit : MODELS.still);
+      // aspect_ratio, quality and output_format are all required by seedream;
+      // omitting any one returns a bare "This field is required" that does not
+      // name the field, so keep them explicit rather than relying on defaults.
+      const input = {
+        prompt,
+        aspect_ratio: ar,
+        quality: flag(rest, "--quality", "high"),
+        output_format: flag(rest, "--format", "png"),
+        nsfw_checker: false,
+      };
+      if (refs.length) {
+        input.image_urls = await Promise.all(refs.map(asUrl));
+      }
+      if (dryRun) {
+        console.log(JSON.stringify({ provider: "kie", model, input }, null, 2));
+        console.log("\nEstimated cost: a seedream still runs roughly $0.03-$0.08 depending on quality tier — see guides/kie-ai.md.");
+        console.log("(--dry-run: no request was sent, no key was read)");
+      } else {
+        const id = await createTask(model, input);
+        const urls = await waitTask(id, { label: path.basename(out) });
+        await download(urls[0], out);
+        console.log(out);
+      }
     }
-    const id = await createTask(model, input);
-    const urls = await waitTask(id, { label: path.basename(out) });
-    await download(urls[0], out);
-    console.log(out);
 
   } else if (cmd === "shot") {
     const [prompt, head, out] = rest;

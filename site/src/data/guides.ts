@@ -15,6 +15,7 @@ const ORDER = [
   "app-store-connect-api-key",
   "expo-eas",
   "kie-ai",
+  "media-providers",
 ];
 
 type MdModule = {

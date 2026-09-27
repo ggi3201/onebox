@@ -26,13 +26,6 @@
       "description": "Run your backend and sites on one cheap box: a mini PC at home or a small VPS, with Docker, Traefik and Cloudflare Tunnel.",
       "version": "0.1.0",
       "license": "MIT"
-    },
-    {
-      "name": "budget",
-      "source": "./plugins/budget",
-      "description": "Spend fewer tokens: send reading and well-specified coding to cheaper models, keep the judgment in the main session.",
-      "version": "0.1.0",
-      "license": "MIT"
     }
   ]
 }

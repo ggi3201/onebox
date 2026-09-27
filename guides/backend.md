@@ -336,6 +336,173 @@ a backup; set the off-box target. Then restore once to prove it works
 (`box:box-setup`, `references/restore.md`). A backup you never restored is a
 guess.
 
+## Keep each user's data apart
+
+Every row a user creates belongs to that user (or to their household). Another
+user must never read or change it.
+
+Agents usually get the simple case right. Ask for "GET /workouts/:id" and they
+filter by the logged-in user. In our tests, current Claude models did that in
+17 of 18 runs, and refused to trust a `userId` sent by the app. The leaks come
+from the places nobody looks at twice:
+
+- a query that turns the filter off to search across all users, and forgets
+  to add the scope back;
+- a filter that lets everything through when the user is missing;
+- a new table that nobody added to the filter;
+- a public endpoint that looks something up by email or id;
+- a webhook that trusts a user id from its payload.
+
+So do not rely on every endpoint remembering. Make the database layer do it,
+and make a test fail when someone forgets.
+
+### 1. One owner column, set from the token
+
+Give every user-owned table an owner column (`OwnerId`, or `TenantId` when a
+household shares data). Take its value from the token on the server. Never
+read it from the request body, the query string or the route.
+
+Mark those entities with an interface, so code and tests can find them:
+
+```csharp
+public interface IOwned { string OwnerId { get; set; } }
+
+public sealed class CurrentUser(IHttpContextAccessor http)
+{
+    // Throws instead of returning null: "no user" must never mean "all rows".
+    public string Id =>
+        http.HttpContext?.User.FindFirstValue("sub")
+        ?? throw new UnauthorizedAccessException("no user on this request");
+}
+```
+
+### 2. A global query filter on every owned table
+
+EF Core adds a query filter to every LINQ query on that entity, including
+`Find`, `Include` and joins. A handler that looks up by id alone is then still
+scoped.
+
+```csharp
+public sealed class AppDb(DbContextOptions<AppDb> options, CurrentUser user) : DbContext(options)
+{
+    string OwnerId => user.Id;   // read per query, so it is always this request's user
+
+    protected override void OnModelCreating(ModelBuilder b)
+    {
+        // There is no "all entities" hook. Every new owned table goes here,
+        // and the test in step 5 fails if one is missing.
+        b.Entity<Workout>().HasQueryFilter(w => w.OwnerId == OwnerId);
+        b.Entity<Comment>().HasQueryFilter(c => c.OwnerId == OwnerId);
+    }
+
+    public override Task<int> SaveChangesAsync(CancellationToken ct = default)
+    {
+        // Stamp the owner on insert, and refuse to move a row to another owner.
+        foreach (var e in ChangeTracker.Entries<IOwned>())
+        {
+            if (e.State == EntityState.Added) e.Entity.OwnerId = OwnerId;
+            else if (e.State == EntityState.Modified && e.Property(x => x.OwnerId).IsModified)
+                throw new InvalidOperationException("OwnerId cannot change");
+        }
+        return base.SaveChangesAsync(ct);
+    }
+}
+```
+
+The filter must **fail closed**. `w.OwnerId == OwnerId` with a throwing
+`OwnerId` does that. A filter like `OwnerId == null || w.OwnerId == OwnerId`
+fails open: on a request where the user did not load, it returns every row.
+
+Shared content (a curated exercise list, public recipes) can live in the same
+table. Say so in the filter: `e => e.OwnerId == "" || e.OwnerId == OwnerId`.
+
+### 3. Composite keys (optional, strong)
+
+Make the primary key `(OwnerId, Id)`:
+
+```csharp
+b.Entity<Workout>().HasKey(w => new { w.OwnerId, w.Id });
+```
+
+Foreign keys then carry the owner too. A comment cannot point at another
+user's workout, even through a bug in a handler.
+
+### 4. Treat every `IgnoreQueryFilters()` as a review point
+
+Background jobs, admin tools and duplicate checks sometimes need to look
+across all users. `IgnoreQueryFilters()` turns the filter off for that query.
+Each use must add its own scope back and say why:
+
+```csharp
+// Duplicate check looks across users, but only at rows they chose to share.
+var dup = await db.Recipes.IgnoreQueryFilters()
+    .Where(r => r.Url == url && (r.OwnerId == me || r.IsShared))
+    .FirstOrDefaultAsync(ct);
+```
+
+A duplicate check that forgets the `IsShared` part tells user A the name and
+image of user B's private recipe. Keep the list of uses short and check it in
+review:
+
+```bash
+git grep -n "IgnoreQueryFilters" -- '*.cs'
+```
+
+### 5. A test that fails when a table has no filter
+
+The weak point of this design is a new table that nobody adds to step 2. Close
+it with a test that walks the model:
+
+```csharp
+[Fact]
+public void every_owned_entity_has_a_query_filter()
+{
+    using var scope = factory.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AppDb>();
+
+    var unguarded = db.Model.GetEntityTypes()
+        .Where(e => typeof(IOwned).IsAssignableFrom(e.ClrType))
+        .Where(e => e.GetDeclaredQueryFilters().Count == 0)   // EF Core 10; older versions: GetQueryFilter() == null
+        .Select(e => e.ClrType.Name)
+        .ToList();
+
+    Assert.True(unguarded.Count == 0,
+        $"Owned entities with no query filter, so their rows leak across users: {string.Join(", ", unguarded)}");
+}
+```
+
+Add one behaviour test next to it: create a row as user A, request it as user
+B, expect 404.
+
+### 6. The endpoints that skip auth
+
+List every endpoint that does not require a logged-in user: health, webhooks,
+public pages, sign-in. For each one:
+
+- **Webhooks** check a signature or a shared secret in constant time, and fail
+  closed when the secret is not set. Treat user ids in the payload as data,
+  not as permission. The RevenueCat `app_user_id` is only as trustworthy as
+  the app that set it, so set it to your server's user id at login.
+- **Lookups by email or id** (a waitlist position, an invite, a share link)
+  leak whether that person exists. Require login, or use a random token
+  instead of the email or id.
+- **Admin endpoints** check a role on the server, not a flag from the app.
+
+### On Node
+
+Prisma and Drizzle have no built-in global filter. Two options that keep the
+"cannot forget" property:
+
+- **Postgres row-level security.** Enable RLS on each owned table with a policy
+  `owner_id = current_setting('app.user_id')`, and set that setting at the
+  start of each request's transaction. The database refuses other users' rows
+  whatever the query says. Connect as a role that is not the table owner, or
+  the policy does not apply.
+- **A scoped repository.** Handlers never import the raw client. They get a
+  `db.forUser(userId)` object whose methods always add `where owner_id = ?`.
+  Add a lint rule or a grep in CI that fails on raw client imports in route
+  files.
+
 ## Where the values go
 
 | Value | Where |

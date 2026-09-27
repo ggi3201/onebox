@@ -1,0 +1,401 @@
+#!/usr/bin/env node
+/**
+ * Shared provider adapters for image and video generation (kie.ai, fal.ai,
+ * Replicate). This file is kept byte-identical in
+ * plugins/content/skills/image/scripts/providers.mjs and
+ * plugins/content/skills/video/scripts/providers.mjs, because each skill
+ * must install standalone (see CONTRIBUTING.md). If you edit one copy, copy
+ * it over the other.
+ *
+ * The kie.ai adapter below calls the same two endpoints already used in
+ * image/scripts/kie.mjs (createTask / recordInfo / the redpandaai upload
+ * host) — see that file and NOTICE.md for the third-party attribution on
+ * where that pattern came from. Nothing in this file is copied from
+ * anywhere; it is freshly written glue around each provider's own public
+ * HTTP API.
+ *
+ * fal.ai and Replicate API shapes verified 2026-09-28 against:
+ *   https://fal.ai/docs (queue API: submit/status/result, `Authorization: Key`)
+ *   https://replicate.com/docs/reference/http (predictions API, `Authorization: Bearer`)
+ * fal's raw REST upload endpoint is not publicly documented (only its SDKs
+ * are) — see uploadLocal() below for what this file does instead.
+ *
+ * CONFIG.md's `media` section decides which provider each skill uses:
+ *   media.imageProvider / media.videoProvider (default "kie")
+ *   media.providers.<name>.keyRef            (default env var per provider)
+ * The old `images.provider` / `images.keyRef` keys still work as a fallback
+ * for the image skill — see resolveProvider() below.
+ */
+
+import fs from "node:fs";
+import path from "node:path";
+import os from "node:os";
+import { execFileSync } from "node:child_process";
+
+// ------------------------------------------------------------- config ----
+function readJsonSafe(file) {
+  try {
+    return JSON.parse(fs.readFileSync(file, "utf8"));
+  } catch {
+    return {};
+  }
+}
+
+function merge(base, over) {
+  const out = { ...base };
+  for (const k of Object.keys(over || {})) {
+    const b = base?.[k], o = over[k];
+    out[k] = (o && typeof o === "object" && !Array.isArray(o) && b && typeof b === "object")
+      ? merge(b, o)
+      : o;
+  }
+  return out;
+}
+
+export function loadConfig() {
+  const user = readJsonSafe(path.join(os.homedir(), ".config", "onebox", "config.json"));
+  const project = readJsonSafe(path.join(process.cwd(), ".onebox.json"));
+  return merge(user, project);
+}
+
+const DEFAULT_KEY_REF = {
+  kie: "KIE_AI_API_KEY",
+  fal: "FAL_KEY",
+  replicate: "REPLICATE_API_TOKEN",
+};
+
+// Picks the provider name for `kind` ("image" | "video"), honoring a CLI
+// override first, then media.<kind>Provider, then (image only) the legacy
+// images.provider, then "kie".
+export function resolveProviderName(cfg, kind, cliOverride) {
+  if (cliOverride) return cliOverride;
+  const mediaKey = kind === "video" ? "videoProvider" : "imageProvider";
+  if (cfg?.media?.[mediaKey]) return cfg.media[mediaKey];
+  if (kind === "image" && cfg?.images?.provider) return cfg.images.provider;
+  return "kie";
+}
+
+// Picks the secret reference for a resolved provider name.
+export function resolveKeyRef(cfg, providerName) {
+  const fromMedia = cfg?.media?.providers?.[providerName]?.keyRef;
+  if (fromMedia) return fromMedia;
+  // Legacy fallback: images.keyRef only ever meant the kie.ai key.
+  if (providerName === "kie" && cfg?.images?.keyRef) return cfg.images.keyRef;
+  return DEFAULT_KEY_REF[providerName] || null;
+}
+
+// ------------------------------------------------------------- secret ----
+function findInEnvFile(varName, start) {
+  let dir = path.resolve(start);
+  for (let i = 0; i < 8; i++) {
+    const p = path.join(dir, ".env");
+    if (fs.existsSync(p)) {
+      const re = new RegExp(`^\\s*${varName}\\s*=\\s*(.+?)\\s*$`);
+      for (const line of fs.readFileSync(p, "utf8").split(/\r?\n/)) {
+        const m = line.match(re);
+        if (m) return m[1].replace(/^["']|["']$/g, "");
+      }
+    }
+    const up = path.dirname(dir);
+    if (up === dir) break;
+    dir = up;
+  }
+  return null;
+}
+
+// Resolves a secret reference per CONFIG.md's `secrets.tool` table. Never
+// prints the value — callers put it straight into a header.
+export function loadSecret(cfg, ref) {
+  const tool = cfg?.secrets?.tool || "env";
+
+  if (tool === "doppler") {
+    const { project = "", config = "" } = cfg?.secrets?.doppler || {};
+    try {
+      return execFileSync(
+        "doppler", ["secrets", "get", ref, "--plain", "-p", project, "-c", config],
+        { encoding: "utf8" },
+      ).trim();
+    } catch (err) {
+      throw new Error(`doppler could not read ${ref} (project=${project}, config=${config}): ${err.message}`);
+    }
+  }
+
+  if (tool === "1password") {
+    try {
+      return execFileSync("op", ["read", ref], { encoding: "utf8" }).trim();
+    } catch (err) {
+      throw new Error(`\`op read ${ref}\` failed: ${err.message}`);
+    }
+  }
+
+  // env (default): the environment first, then a .env file walking up from cwd.
+  if (process.env[ref]) return process.env[ref];
+  const fromEnvFile = findInEnvFile(ref, process.cwd());
+  if (fromEnvFile) return fromEnvFile;
+
+  throw new Error(
+    `could not resolve secret ${ref} — looked for an env var and a .env entry ` +
+    `for it. Set media.providers.<provider>.keyRef / secrets.tool in your ` +
+    `onebox config if it lives somewhere else. See guides/media-providers.md.`,
+  );
+}
+
+// Loads the key for a resolved provider, by name, lazily (only call this
+// from inside a command that actually reaches the network).
+export function loadProviderKey(cfg, providerName) {
+  const ref = resolveKeyRef(cfg, providerName);
+  if (!ref) throw new Error(`no key reference configured for provider "${providerName}"`);
+  return loadSecret(cfg, ref);
+}
+
+// ------------------------------------------------------------- helpers ----
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+function guessMime(file) {
+  const ext = path.extname(file).slice(1).toLowerCase();
+  if (ext === "jpg") return "image/jpeg";
+  if (ext === "png" || ext === "webp" || ext === "gif") return `image/${ext}`;
+  return "application/octet-stream";
+}
+
+// Walks an arbitrary JSON value looking for output URLs, since fal and
+// Replicate models each shape their result differently (a bare string, an
+// array of strings, or objects with a `url`/`video_url`/`image_url` field).
+// This is deliberately generic rather than per-model — "in spirit" shared
+// adapter code, not a normalized schema.
+function findUrls(value, out = []) {
+  if (typeof value === "string" && /^https?:\/\//i.test(value)) out.push(value);
+  else if (Array.isArray(value)) value.forEach((v) => findUrls(v, out));
+  else if (value && typeof value === "object") {
+    for (const k of ["url", "video_url", "image_url", "video", "output"]) {
+      if (value[k] != null) findUrls(value[k], out);
+    }
+    if (!("url" in value) && !("video_url" in value) && !("image_url" in value)
+      && !("video" in value) && !("output" in value)) {
+      Object.values(value).forEach((v) => findUrls(v, out));
+    }
+  }
+  return out;
+}
+
+// -------------------------------------------------------- kie.ai adapter --
+function kieAdapter(key) {
+  const API = "https://api.kie.ai";
+  const UPLOAD = "https://kieai.redpandaai.co/api/file-base64-upload";
+  const headers = { "Content-Type": "application/json", Authorization: `Bearer ${key}` };
+
+  return {
+    name: "kie",
+
+    async uploadLocal(file) {
+      const abs = path.resolve(file);
+      if (!fs.existsSync(abs)) throw new Error("input not found: " + abs);
+      const dataUrl = `data:${guessMime(abs)};base64,${fs.readFileSync(abs).toString("base64")}`;
+      const res = await fetch(UPLOAD, {
+        method: "POST", headers,
+        body: JSON.stringify({ base64Data: dataUrl, uploadPath: "onebox", fileName: path.basename(abs) }),
+      });
+      const j = await res.json();
+      const url = j?.data?.downloadUrl || j?.data?.fileUrl || j?.data?.url;
+      if (!url) throw new Error("kie.ai upload failed: " + JSON.stringify(j));
+      return url; // hosted for 3 days upstream — consume it in this same run
+    },
+
+    async submit(model, input) {
+      const res = await fetch(`${API}/api/v1/jobs/createTask`, {
+        method: "POST", headers, body: JSON.stringify({ model, input }),
+      });
+      const j = await res.json();
+      if (j.code !== 200 || !j?.data?.taskId) throw new Error(`kie.ai createTask ${model}: ${JSON.stringify(j)}`);
+      return j.data.taskId;
+    },
+
+    async poll(jobId, { label = "job", timeoutMs = 15 * 60 * 1000 } = {}) {
+      const t0 = Date.now();
+      let delay = 4000;
+      for (;;) {
+        if (Date.now() - t0 > timeoutMs) throw new Error(`${label}: timed out after ${Math.round((Date.now() - t0) / 1000)}s`);
+        const res = await fetch(`${API}/api/v1/jobs/recordInfo?taskId=${encodeURIComponent(jobId)}`, { headers });
+        const j = await res.json();
+        const d = j?.data || {};
+        const state = d.state || d.status;
+        if (state === "success") {
+          let out = d.resultJson;
+          if (typeof out === "string") { try { out = JSON.parse(out); } catch {} }
+          const urls = out?.resultUrls || out?.result_urls || out?.urls || [];
+          if (!urls.length) throw new Error(`${label}: success with no result url: ${JSON.stringify(d)}`);
+          if (d.creditsConsumed != null) process.stderr.write(`  ${label}: ${d.creditsConsumed} credits consumed\n`);
+          // Some kie.ai video models echo a last-frame image back in the
+          // same payload (e.g. as lastFrameUrl) — hand it back so callers
+          // (chain, in particular) can skip an ffmpeg extraction step.
+          const lastFrameUrl = out?.lastFrameUrl || out?.last_frame_url || out?.endFrameUrl || null;
+          return { urls, lastFrameUrl, raw: d };
+        }
+        if (state === "fail" || state === "failed") {
+          throw new Error(`${label} failed: ${d.failMsg || d.failCode || JSON.stringify(d)}`);
+        }
+        process.stderr.write(`  ${label}: ${state || "queued"} (${Math.round((Date.now() - t0) / 1000)}s)\n`);
+        await sleep(delay);
+        delay = Math.min(delay * 1.25, 15000);
+      }
+    },
+  };
+}
+
+// -------------------------------------------------------- fal.ai adapter --
+function falAdapter(key) {
+  const headers = { "Content-Type": "application/json", Authorization: `Key ${key}` };
+
+  return {
+    name: "fal",
+
+    // fal's SDKs (fal_client.upload_file / fal.storage.upload) handle
+    // uploads through an undocumented two-step signed-URL flow. Rather than
+    // guess at that private contract, this adapter embeds the file as a
+    // base64 data URI, which fal's own model docs list as an accepted form
+    // for an image_url field alongside a hosted URL. That works for
+    // reference-image-sized files; for anything large, host it yourself and
+    // pass the https URL instead (any http(s) string bypasses uploadLocal).
+    async uploadLocal(file) {
+      const abs = path.resolve(file);
+      if (!fs.existsSync(abs)) throw new Error("input not found: " + abs);
+      const stat = fs.statSync(abs);
+      if (stat.size > 8 * 1024 * 1024) {
+        throw new Error(
+          `${file} is ${(stat.size / 1e6).toFixed(1)}MB — too large to inline as a data URI. ` +
+          `Host it and pass the https URL instead (fal's REST upload endpoint isn't public).`,
+        );
+      }
+      return `data:${guessMime(abs)};base64,${fs.readFileSync(abs).toString("base64")}`;
+    },
+
+    // `model` is fal's endpoint path, e.g. "fal-ai/kling-video/v2.1/standard/image-to-video".
+    async submit(model, input) {
+      const res = await fetch(`https://queue.fal.run/${model}`, {
+        method: "POST", headers, body: JSON.stringify(input),
+      });
+      const j = await res.json();
+      if (!j?.request_id) throw new Error(`fal submit ${model}: ${JSON.stringify(j)}`);
+      return JSON.stringify({ requestId: j.request_id, model, statusUrl: j.status_url, responseUrl: j.response_url });
+    },
+
+    async poll(jobIdJson, { label = "job", timeoutMs = 15 * 60 * 1000 } = {}) {
+      const { requestId, model, statusUrl, responseUrl } = JSON.parse(jobIdJson);
+      const statusEndpoint = statusUrl || `https://queue.fal.run/${model}/requests/${requestId}/status`;
+      const resultEndpoint = responseUrl || `https://queue.fal.run/${model}/requests/${requestId}`;
+      const t0 = Date.now();
+      let delay = 3000;
+      for (;;) {
+        if (Date.now() - t0 > timeoutMs) throw new Error(`${label}: timed out after ${Math.round((Date.now() - t0) / 1000)}s`);
+        const res = await fetch(statusEndpoint, { headers });
+        const j = await res.json();
+        if (j.status === "COMPLETED") {
+          const r = await fetch(resultEndpoint, { headers });
+          const result = await r.json();
+          const urls = findUrls(result);
+          if (!urls.length) throw new Error(`${label}: completed with no result url found: ${JSON.stringify(result)}`);
+          return { urls, lastFrameUrl: null, raw: result };
+        }
+        if (j.status === "ERROR" || j.status === "FAILED") {
+          throw new Error(`${label} failed: ${JSON.stringify(j)}`);
+        }
+        process.stderr.write(`  ${label}: ${j.status || "queued"} (${Math.round((Date.now() - t0) / 1000)}s)\n`);
+        await sleep(delay);
+        delay = Math.min(delay * 1.25, 10000);
+      }
+    },
+  };
+}
+
+// ------------------------------------------------------ Replicate adapter -
+function replicateAdapter(key) {
+  const API = "https://api.replicate.com/v1";
+  const headers = { "Content-Type": "application/json", Authorization: `Bearer ${key}` };
+
+  return {
+    name: "replicate",
+
+    async uploadLocal(file) {
+      const abs = path.resolve(file);
+      if (!fs.existsSync(abs)) throw new Error("input not found: " + abs);
+      const stat = fs.statSync(abs);
+      if (stat.size <= 256 * 1024) {
+        return `data:${guessMime(abs)};base64,${fs.readFileSync(abs).toString("base64")}`;
+      }
+      // Replicate's file upload endpoint (`POST /v1/files`, multipart,
+      // `content` field) — files expire after 24h, max 100MiB.
+      const form = new FormData();
+      form.append("content", new Blob([fs.readFileSync(abs)]), path.basename(abs));
+      const res = await fetch(`${API}/files`, {
+        method: "POST", headers: { Authorization: headers.Authorization }, body: form,
+      });
+      const j = await res.json();
+      const url = j?.urls?.get;
+      if (!url) throw new Error("Replicate file upload failed: " + JSON.stringify(j));
+      return url;
+    },
+
+    // `model` must be "owner/name:version_id" — Replicate's generic
+    // /v1/predictions endpoint keys off the version id, not just the model
+    // name. Find the version id on the model's page on replicate.com.
+    async submit(model, input) {
+      const [, version] = model.split(":");
+      if (!version) {
+        throw new Error(
+          `Replicate model "${model}" needs a version id: pass --model owner/name:version_id ` +
+          `(find it on the model's replicate.com page).`,
+        );
+      }
+      const res = await fetch(`${API}/predictions`, {
+        method: "POST", headers, body: JSON.stringify({ version, input }),
+      });
+      const j = await res.json();
+      if (!j?.id) throw new Error(`Replicate create prediction: ${JSON.stringify(j)}`);
+      return j.id;
+    },
+
+    async poll(jobId, { label = "job", timeoutMs = 15 * 60 * 1000 } = {}) {
+      const t0 = Date.now();
+      let delay = 3000;
+      for (;;) {
+        if (Date.now() - t0 > timeoutMs) throw new Error(`${label}: timed out after ${Math.round((Date.now() - t0) / 1000)}s`);
+        const res = await fetch(`${API}/predictions/${jobId}`, { headers });
+        const j = await res.json();
+        if (j.status === "succeeded") {
+          const urls = findUrls(j.output);
+          if (!urls.length) throw new Error(`${label}: succeeded with no output url: ${JSON.stringify(j.output)}`);
+          return { urls, lastFrameUrl: null, raw: j };
+        }
+        if (j.status === "failed" || j.status === "canceled") {
+          throw new Error(`${label} ${j.status}: ${j.error || JSON.stringify(j)}`);
+        }
+        process.stderr.write(`  ${label}: ${j.status || "queued"} (${Math.round((Date.now() - t0) / 1000)}s)\n`);
+        await sleep(delay);
+        delay = Math.min(delay * 1.25, 10000);
+      }
+    },
+  };
+}
+
+export const ADAPTERS = { kie: kieAdapter, fal: falAdapter, replicate: replicateAdapter };
+
+// Builds an adapter for a resolved provider name and key. Every adapter
+// exposes the same three async methods: submit(model, input) -> jobId,
+// poll(jobId, opts) -> { urls, lastFrameUrl, raw }, uploadLocal(file) -> url.
+export function makeAdapter(providerName, key) {
+  const factory = ADAPTERS[providerName];
+  if (!factory) throw new Error(`unknown provider "${providerName}" — expected one of: ${Object.keys(ADAPTERS).join(", ")}`);
+  return factory(key);
+}
+
+// A local path becomes a hosted (or inline data:) URL; an http(s) string
+// passes straight through untouched.
+export const asUrl = (adapter, v) => (/^https?:\/\//i.test(v) ? Promise.resolve(v) : adapter.uploadLocal(v));
+
+export async function download(url, out) {
+  fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`download ${res.status} ${url}`);
+  fs.writeFileSync(path.resolve(out), Buffer.from(await res.arrayBuffer()));
+  return out;
+}

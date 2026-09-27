@@ -1,6 +1,9 @@
 # kie.ai
 
-Used by: `content:image` (`plugins/content/skills/image`).
+Used by: `content:image` (`plugins/content/skills/image`) and `content:video`
+(`plugins/content/skills/video`) — kie.ai is the default provider for both.
+See `guides/media-providers.md` for the other providers either skill can use
+instead (`--provider fal` or `--provider replicate`).
 
 ## What it is and what it costs
 
@@ -17,6 +20,26 @@ figures that don't always match that quote exactly. **Treat any number here,
 and any number in the skill, as a ballpark.** kie.ai's dashboard is the only
 authoritative source for your actual balance and what a given task cost —
 check it, don't extrapolate from an old quote.
+
+## Video pricing and credits
+
+Checked on 2026-09-28: video tasks are priced in the same credit system as
+stills, but cost far more per call — kie.ai's own market pages put most video
+models at roughly **100-500 credits per clip** (a few cents to around $2),
+against a still's few credits. The exact rate varies a lot by model and
+tier: Kling's cheaper standard tiers sit near the low end, Veo and 4K/longer
+clips sit near the high end. Each model's own page on kie.ai/market states
+its rate; `guides/media-providers.md` lists the model family names verified
+against docs.kie.ai on the same date. As with stills, treat the published
+credit count and what actually gets debited as two different numbers to
+verify, not one to assume — see the still-pricing note below, which applies
+just as much to video.
+
+`node plugins/content/skills/video/scripts/video.mjs probe` reports your
+credit balance the same way the image skill's `probe` does — run it before
+and after a video batch. Video's `--dry-run` flag (not available on stills)
+prints the exact request and a rough per-model cost note without spending
+anything; use it before running an unfamiliar model or prompt for real.
 
 ## Account and API key
 

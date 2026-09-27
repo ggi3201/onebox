@@ -30,7 +30,6 @@ npx skills add ggi3201/onebox
 | `ship-ios` | your Mac | app-store-ready, expo-local-build, appstore-connect, ios-preview-build, app-store-screenshots, draw-app-icon, draw-icon-set |
 | `box` | your server | box-setup, expose-service, new-landing-page, staging-env |
 | `content` | your Mac | transcribe, image |
-| `budget` | Claude Code | delegate |
 
 ## Setup
 

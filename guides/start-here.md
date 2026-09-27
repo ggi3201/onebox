@@ -59,11 +59,10 @@ In Claude Code:
 /plugin install ship-ios@onebox
 /plugin install box@onebox
 /plugin install content@onebox
-/plugin install budget@onebox
 ```
 
 `ship-ios` is the app and App Store side. `box` is the server side. `content`
-and `budget` are helpers. Install only what you need.
+is a helper for images, video and research. Install only what you need.
 
 For other agent tools (Codex, Cursor and others):
 
@@ -119,14 +118,15 @@ has run once to an off-box target.
 
 Put your API and its Postgres in one Docker Compose project on the box. Give
 the API a health endpoint and a public hostname. Deploy it on every push to
-`main`.
+`main`. Scope every user-owned table to its owner in the database layer, not
+in each endpoint (the "Keep each user's data apart" section).
 
 Guide: [backend.md](backend.md). Skills: `box:expose-service` (the hostname),
 `box:box-setup` (the GitHub Actions runner, in its `references/runner.md`).
 
 Done when: `curl https://api.example.com/health` returns 200 from your phone
-on mobile data, and a push to `main` redeploys the API without you logging
-in to the box.
+on mobile data, a push to `main` redeploys the API without you logging in to
+the box, and the "every owned entity has a query filter" test passes.
 
 ### Phase 4: Sign in with Apple
 
@@ -226,8 +226,8 @@ Done when: the app is approved and released.
   `box:new-landing-page`.
 - **Research.** Turn a video or a reel into text you can work with. Skill:
   `content:transcribe`.
-- **Spend fewer tokens.** Skills: `budget:delegate` (send work to cheaper
-  models) and `budget:usage` (see what you have used).
+- **Images and video** for the store page, the landing page and social posts.
+  Skills: `content:image`, `content:video`.
 
 ## Checklist
 

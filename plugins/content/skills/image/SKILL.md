@@ -34,6 +34,13 @@ node scripts/kie.mjs shot  "<prompt>" head.png out.mp4 --dur 5       # optional:
 different one than the defaults below. Defaults, verified against
 docs.kie.ai on 2026-09-28:
 
+`still` can also target another provider with `--provider fal|replicate`
+plus `--model <id>` (that provider's own model id) and `--extra '<json>'`
+for fields specific to that model — this script only knows seedream's shape
+for kie.ai itself. See `guides/media-providers.md` for when fal.ai or
+Replicate is the better fit, and the `content:video` skill for generating
+clips with the same provider layer.
+
 | command | default model |
 |---|---|
 | `still` (no `--ref`) | `seedream/5-pro-text-to-image` |
