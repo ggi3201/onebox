@@ -48,5 +48,5 @@ means you host those two pages somewhere else yourself.
 ## Do you want to fix things from your phone? (`remote`)
 
 Only asked when you run your own box. **Yes** adds the guide that puts your
-box, Mac and phone on one private network, so you or Claude can reach the box
+box, Mac and phone on one private network, so you or your coding agent can reach the box
 from anywhere.

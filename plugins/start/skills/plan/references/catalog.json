@@ -112,7 +112,7 @@
       "options": [
         {
           "id": "yes",
-          "label": "Yes, let me (or Claude) reach the box from anywhere"
+          "label": "Yes, let me (or my coding agent) reach the box from anywhere"
         },
         {
           "id": "no",

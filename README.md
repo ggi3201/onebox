@@ -21,6 +21,7 @@ Then open Claude Code in your app's folder and run `/start:plan`. It looks at
 what the app already has, asks a few questions, and writes `PLAN.md`: the
 steps in order, and the install line for each plugin you need. Run it again
 later to tick what is done and see the next step.
+[See an example plan](https://onebox.lokkesveen.com/example-plan/).
 
 Other agents (Codex, Cursor, Gemini CLI and more):
 

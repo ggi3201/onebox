@@ -14,6 +14,8 @@ export const GET: APIRoute = ({ site }) => {
     "",
     "Start here: install the `start` plugin, then run `/start:plan` in the app's folder (in other agents, ask for the plan skill). It detects what the app already has, asks what the user wants (server or not, sign-in, paid or free, landing page, AI), and writes PLAN.md with only the guides, skills and plugins that app needs.",
     "",
+    `Example of the PLAN.md it writes: ${base}/example-plan/`,
+    "",
     "## How it fits together",
     "",
     "- Your Mac runs the coding agent and every skill. It builds the app locally and submits it to Apple (App Store Connect, TestFlight, App Review).",

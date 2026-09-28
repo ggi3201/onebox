@@ -1,0 +1,48 @@
+---
+// The file comes from scripts/example-plan.sh, which runs the real planner on
+// a sample repo. Run it again after a change to the catalog or plan.mjs.
+import Base from "../layouts/Base.astro";
+import "../styles/prose.css";
+import { Content } from "../data/example-plan.md";
+---
+
+<Base title="Example plan — onebox" description="The PLAN.md the plan skill writes for a sample Expo app, so you can see what you get before you install anything." section="start">
+  <main class="wrap page">
+    <p class="kicker">Example</p>
+    <h1 class="display title">What the plan looks like.</h1>
+    <p class="intro">
+      This is the <code>PLAN.md</code> the plan skill writes for a sample Expo app. The app runs in the
+      simulator, and the answers ask for its own box, Sign in with Apple, subscriptions, a landing page
+      and an AI chat. Detection ticked the two items it could see in the repo.
+    </p>
+    <p class="intro small">
+      Your plan lists only what your app needs. <a href="/#start">Answer the questions on the home page</a>
+      to see yours, then paste the prompt from your cart.
+    </p>
+
+    <article class="sheet prose">
+      <p class="label sheet-head">PLAN.md</p>
+      <Content />
+    </article>
+  </main>
+</Base>
+
+<style>
+  .page { padding-top: clamp(40px, 7vw, 88px); padding-bottom: clamp(56px, 9vw, 112px); }
+  .title { font-size: clamp(2.3rem, 6vw, 4.8rem); margin: 14px 0 22px; max-width: 16ch; }
+  .intro { max-width: 52ch; color: var(--ink-2); font-size: 1.2rem; margin: 0 0 16px; }
+  .intro code { font-family: var(--mono); font-size: 0.88em; }
+  .intro.small { font-size: 1.05rem; margin-bottom: 40px; }
+
+  .sheet {
+    max-width: 860px; padding: clamp(20px, 4vw, 44px);
+    border: 2px solid var(--ink); background: var(--paper);
+    box-shadow: 10px 10px 0 var(--paper-3);
+  }
+  .sheet-head { margin: 0 0 18px; }
+  .sheet :global(a) { overflow-wrap: anywhere; }
+  .sheet :global(li.task-list-item) { list-style: none; margin-left: -1.3em; }
+  .sheet :global(li.task-list-item input) { accent-color: var(--signal); margin-right: 8px; }
+  .sheet :global(li.task-list-item > ul) { margin: 2px 0 0 1.9em; color: var(--ink-3); }
+  .sheet :global(li) { font-size: 1.02rem; }
+</style>
