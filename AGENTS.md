@@ -21,6 +21,7 @@ never shows it.
 ## Checks before a PR
 
 ```bash
+node scripts/versions.mjs check          # a changed plugin needs a new version (CONTRIBUTING.md, rule 10)
 (cd site && npm ci && npm run build)
 bash site/scripts/example-plan.sh && git diff --stat site/src/data/example-plan.md
 node plugins/start/skills/plan/scripts/plan.mjs write --answers '{"stage":"idea"}' --repo "$(mktemp -d)" --dry-run
@@ -76,8 +77,9 @@ what breaks.
   unticked step decides what to test next. Build or fix a skill when the app
   reaches that step, not before.
 - **Fix the kit, not the app.** When a skill fails in the dogfood app, do not
-  work around it in the app. Fix the skill or the guide here, merge it, then
-  run the step again from the fixed version.
+  work around it in the app. Fix the skill or the guide here, merge it,
+  update the plugin (`README.md`, "To get fixes later"), then run the step
+  again from the fixed version.
 - **Older apps.** Run `/start:plan` in apps that were made before onebox. A
   wrong tick, a missed item or a needless question is a detection bug.
 - **After a step passes**, run `/start:plan` in the dogfood app to tick it.
