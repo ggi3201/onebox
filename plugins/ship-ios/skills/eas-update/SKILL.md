@@ -30,40 +30,63 @@ setup ships with one normal build first.
 From the Expo app folder, never a monorepo root:
 
 ```bash
-npx expo install expo-updates
-eas update:configure -p ios
+npx expo install expo-updates      # pnpm workspace: pnpm --filter <app> exec expo install expo-updates
 ```
 
-Then fix what `update:configure` gets wrong. Read the diff of `app.json`
-before you keep it:
+**Add the config by hand. Do not keep what `eas update:configure` writes to
+`app.json`.** It writes resolved plugin values back into the static file. In
+three real apps it added Android permissions (twice, even with `-p ios`), and
+in one it doubled the associated domain and the Sign in with Apple
+entitlement. A doubled entitlement is the kind of change that breaks signing.
+It also picks the weaker `appVersion` policy.
 
-1. **It writes resolved plugin values back into `app.json`.** In a real app it
-   added `android.permissions` with every location permission twice, even
-   with `-p ios`. Remove anything the command added that is not `updates`,
-   `runtimeVersion` or `channel`.
-2. **Use the `fingerprint` runtime policy, at the top level of `expo`:**
+In `app.json`, under `expo`, add two keys. The project id is in
+`extra.eas.projectId`:
 
-   ```json
-   "runtimeVersion": { "policy": "fingerprint" }
-   ```
+```json
+"runtimeVersion": { "policy": "fingerprint" },
+"updates": { "url": "https://u.expo.dev/<project id>" }
+```
 
-   `update:configure` writes `{"policy": "appVersion"}` under `ios`. With
-   `appVersion`, a native change without a version bump lets old builds
-   download JavaScript they cannot run, and the app crashes at launch.
-   `fingerprint` changes whenever anything native changes, so that cannot
-   happen. The cost: you make a new build more often.
-3. **Check each build profile in `eas.json` has a `channel`**: `development`,
-   `preview`, `production`. A build only gets updates published to its
-   channel.
+In `eas.json`, give each build profile a `channel` with its own name:
+`"channel": "production"` and so on. A build only gets updates published to
+its channel.
+
+Keep the file's own formatting: insert the lines, do not re-serialise the
+JSON. Some apps keep entries on one line on purpose.
+
+**Why `fingerprint`:** it changes whenever anything native changes, so old
+builds never download JavaScript they cannot run. With `appVersion`, a native
+change without a version bump lets them, and the app crashes at launch. The
+cost: you make a new build more often.
 
 Check the setup:
 
 ```bash
-npx expo-updates runtimeversion:resolve --platform ios   # run twice: the same hash both times
+npx expo-updates runtimeversion:resolve --platform ios   # A: in a fresh checkout
 npx expo prebuild --platform ios --no-install            # only if ios/ is git-ignored
+npx expo-updates runtimeversion:resolve --platform ios   # B: must equal A
 plutil -p ios/*/Supporting/Expo.plist | grep EXUpdates   # URL, "file:fingerprint", CheckOnLaunch ALWAYS
 npx expo export --platform ios --output-dir "$TMPDIR/x"  # the bundle still builds
 ```
+
+**A and B must match.** A build computes its runtime version after its own
+prebuild. If B differs, an update published from a fresh checkout targets a
+runtime version no build has, and it never arrives, silently. The usual cause
+is a config plugin that copies files into its own folder in `node_modules`
+during prebuild; `react-native-widget-extension` does this with the widget's
+Swift files. Find it with `--debug` (it lists every source and its hash) and
+diff the two runs. Fix it with `fingerprint.config.js` next to `app.json`:
+
+```js
+module.exports = {
+  // Fingerprint the source folder, and ignore the copies the plugin writes.
+  extraSources: [{ type: 'dir', filePath: 'widgets', reasons: ['widgets'] }],
+  ignorePaths: ['../../node_modules/react-native-widget-extension/ios/*.swift'],
+};
+```
+
+Then check again: A equals B, and an edit in `widgets/` changes both.
 
 Then commit, and make a normal build (`ship-ios:expo-local-build`). Tell the
 user plainly: **no phone gets an update until it runs a build made from this
@@ -88,10 +111,12 @@ What it checks, and why:
   nobody, silently.
 - **The runtime version.** It prints it. An update reaches only builds with
   the same runtime version.
-- **The environment.** `eas update` does **not** read the `env` blocks in
-  `eas.json`; those apply to builds only. The script builds with
-  `eas env:exec <environment>`, so every `EXPO_PUBLIC_*` value must be an EAS
-  environment variable. Check with `eas env:list --environment production`.
+- **The environment.** `eas update` reads neither the profile's
+  `environment` nor its `env` block in `eas.json`; those apply to builds only.
+  The script takes both from the build profile on this channel: it builds with
+  `eas env:exec <environment>` and applies the `env` block on top, so the
+  update gets the same `EXPO_PUBLIC_*` values as the build. That matters for
+  apps that keep them in `eas.json` rather than as EAS environment variables.
 - **`--expect-host`.** The production API host must be in the bundle.
   (To check your own text instead, remember that Hermes stores a string with
   any non-ASCII character, such as "·" or "é", as UTF-16. Plain `strings`

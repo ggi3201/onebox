@@ -32,7 +32,6 @@ warn() { echo "WARN  $*"; }
 [ -n "$channel" ] || fail "--channel is required (development, preview or production)"
 [ -n "$message" ] || fail "-m is required: say what the update changes"
 [ ${#hosts[@]} -gt 0 ] || fail "--expect-host is required: the API host this channel must call, e.g. api.example.com"
-if [ -z "$env" ]; then case "$channel" in production|preview|development) env="$channel" ;; *) fail "--environment is required for channel $channel" ;; esac; fi
 
 # 1. The right folder, and the pieces EAS Update needs.
 { [ -f app.json ] || compgen -G "app.config.*" >/dev/null; } || fail "no app.json or app.config.* here. Run from the Expo app folder"
@@ -43,6 +42,22 @@ url=$(printf '%s' "$cfg" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on
 [ -n "$url" ] || fail "updates.url is not set. Run: eas update:configure -p ios"
 node -e 'const j=require("./eas.json");const c=Object.values(j.build||{}).map(p=>p.channel).filter(Boolean);if(!c.includes(process.argv[1])){console.error("no build profile in eas.json uses channel "+process.argv[1]+" (found: "+(c.join(", ")||"none")+")");process.exit(1)}' "$channel" \
   || fail "no build listens on channel $channel, so nobody would get this update"
+
+# The build profile on this channel decides the environment and extra values.
+# eas update reads neither the profile's "environment" nor its "env" block,
+# so apply both here, or the update gets different values than the build.
+profile_env=$(node -e '
+  const j=require("./eas.json"); const ch=process.argv[1];
+  const [name,p]=Object.entries(j.build||{}).find(([,p])=>p.channel===ch)||[];
+  const env=p?.env||{};
+  process.stdout.write(JSON.stringify({name, environment:p?.environment||"", env}));' "$channel")
+if [ -z "$env" ]; then
+  env=$(printf '%s' "$profile_env" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).environment))')
+  [ -n "$env" ] || case "$channel" in production|preview|development) env="$channel" ;; *) fail "--environment is required for channel $channel" ;; esac
+fi
+exports=$(printf '%s' "$profile_env" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const e=JSON.parse(s).env;for(const[k,v] of Object.entries(e))console.log("export "+k+"=\x27"+String(v).split("\x27").join("\x27\\\x27\x27")+"\x27")})')
+n_env=$(printf '%s' "$exports" | grep -c "^export " || true)
+ok "EAS environment \"$env\"; plus $n_env value(s) from the build profile's env block in eas.json"
 eas whoami >/dev/null 2>&1 || fail "not logged in to Expo. Run: eas login"
 ok "app folder, expo-updates, updates.url, channel $channel in eas.json, logged in"
 
@@ -52,9 +67,10 @@ rv=$(npx expo-updates runtimeversion:resolve --platform ios 2>/dev/null | node -
 # 2. Build the bundle with the channel's EAS environment, not with local .env files alone.
 out="dist-update"
 rm -rf "$out"
-eas env:exec "$env" "npx expo export --platform ios --output-dir $out" --non-interactive >"$out.log" 2>&1 \
+envfile=$(mktemp); printf '%s\n' "$exports" > "$envfile"
+eas env:exec "$env" "set -a; . '$envfile'; set +a; npx expo export --platform ios --output-dir $out" --non-interactive >"$out.log" 2>&1 \
   || { tail -20 "$out.log" >&2; fail "export failed. Full log: $out.log"; }
-rm -f "$out.log"
+rm -f "$out.log" "$envfile"
 bundle=$(find "$out/_expo/static/js/ios" -type f \( -name '*.hbc' -o -name '*.js' \) | head -1)
 [ -n "$bundle" ] || fail "no iOS bundle in $out"
 ok "bundle built with EAS environment \"$env\": $(du -h "$bundle" | cut -f1), all files $(du -sh "$out" | cut -f1)"
