@@ -24,7 +24,7 @@ type Route = {
 // Skills drawn on routes, and the one skill that belongs on the phone.
 const ON_ROUTES = ["expo-local-build", "appstore-connect", "expose-service", "box-setup", "staging-env", "new-landing-page"];
 const AT_PHONE = ["ios-preview-build"];
-const atMac = SKILLS.filter((s) => s.plugin !== "box" && !ON_ROUTES.includes(s.name) && !AT_PHONE.includes(s.name));
+const atMac = SKILLS.filter((s) => s.plugin !== "box" && s.plugin !== "start" && !ON_ROUTES.includes(s.name) && !AT_PHONE.includes(s.name));
 
 const STOPS: Stop[] = [
   {

@@ -43,11 +43,11 @@ const { title, description, section = "home" } = Astro.props;
           onebox
         </a>
         <nav aria-label="Main">
+          <a href="/#start">Start</a>
           <a href="/#route">Route</a>
           <a href="/#contents">Skills</a>
           <a href="/guides/" aria-current={section === "guides" ? "page" : undefined}>Guides</a>
           <a href="/#help">Help</a>
-          <a href={REPO}>GitHub</a>
         </nav>
       </div>
     </header>

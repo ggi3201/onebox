@@ -56,16 +56,19 @@ In Claude Code:
 
 ```
 /plugin marketplace add ggi3201/onebox
-/plugin install ship-ios@onebox
-/plugin install box@onebox
-/plugin install content@onebox
-/plugin install app-features@onebox
+/plugin install start@onebox
 ```
 
-`ship-ios` is the app and App Store side. `box` is the server side. `content`
-is a helper for images, video and research. `app-features` adds features to
-your app and API: an AI chat and agent, cost limits, AI consent, background
-jobs, import from a shared link. Install only what you need.
+Then run `/start:plan` in your app's folder. It checks what your app already
+has, asks what you want (a server or not, sign-in, paid or free, a landing
+page, AI), and writes `PLAN.md` with only the steps below that your app needs,
+plus the exact `/plugin install` lines for the rest. You can answer the same
+questions on the home page first.
+
+The plugins: `ship-ios` is the app and App Store side. `box` is the server
+side. `dev` is the agent's test loop. `content` makes images, video and
+transcripts. `app-features` adds features to your app and API: an AI chat and
+agent, cost limits, AI consent, background jobs, import from a shared link.
 
 For other agent tools (Codex, Cursor and others):
 

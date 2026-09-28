@@ -14,8 +14,13 @@ In Claude Code:
 
 ```
 /plugin marketplace add ggi3201/onebox
-/plugin install ship-ios@onebox
+/plugin install start@onebox
 ```
+
+Then open Claude Code in your app's folder and run `/start:plan`. It looks at
+what the app already has, asks a few questions, and writes `PLAN.md`: the
+steps in order, and the install line for each plugin you need. Run it again
+later to tick what is done and see the next step.
 
 Other tools (Codex, Cursor and more):
 
@@ -38,6 +43,7 @@ policy, support and terms pages that App Store Connect and your paywall link to.
 
 | Plugin | Runs on | Skills |
 |---|---|---|
+| `start` | your Mac | plan |
 | `ship-ios` | your Mac | app-store-ready, expo-local-build, appstore-connect, ios-preview-build, app-store-screenshots, draw-app-icon, draw-icon-set |
 | `box` | your server | box-setup, expose-service, new-landing-page, staging-env |
 | `content` | your Mac | transcribe, image, video |

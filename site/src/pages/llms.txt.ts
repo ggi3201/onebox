@@ -12,6 +12,8 @@ export const GET: APIRoute = ({ site }) => {
     "",
     `Install in Claude Code: \`/plugin marketplace add ${REPO_SLUG}\`, then \`/plugin install <plugin>@onebox\`. Other tools: \`npx skills add ${REPO_SLUG}\`. Source: ${REPO}`,
     "",
+    "Start here: install the `start` plugin, then run `/start:plan` in the app's folder. It detects what the app already has, asks what the user wants (server or not, sign-in, paid or free, landing page, AI), and writes PLAN.md with only the guides, skills and plugins that app needs.",
+    "",
     "## How it fits together",
     "",
     "- Your Mac runs Claude Code and every skill. It builds the app locally and submits it to Apple (App Store Connect, TestFlight, App Review).",

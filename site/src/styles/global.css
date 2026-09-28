@@ -41,7 +41,8 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 
-html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; scroll-padding-top: 72px; scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 
 body {
   margin: 0;
@@ -113,6 +114,10 @@ img, svg { display: block; max-width: 100%; }
 /* ---------- top bar ---------- */
 
 .topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--paper);
   border-bottom: 1px solid var(--rule);
 }
 .topbar .wrap {
@@ -134,8 +139,15 @@ img, svg { display: block; max-width: 100%; }
   letter-spacing: -0.01em;
 }
 .brand svg { width: 22px; height: 22px; }
-.topbar nav { display: flex; gap: clamp(14px, 3vw, 28px); }
+.topbar nav { display: flex; gap: clamp(12px, 3vw, 28px); min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.topbar nav::-webkit-scrollbar { display: none; }
+@media (max-width: 440px) {
+  .brand { font-size: 0.95rem; gap: 8px; }
+  .topbar nav a { font-size: 0.84rem; }
+  .topbar nav a[href="/#route"] { display: none; }
+}
 .topbar nav a {
+  flex: none;
   font-family: var(--display);
   font-stretch: 100%;
   font-weight: 600;

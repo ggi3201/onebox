@@ -1,6 +1,7 @@
 ---
 import Base from "../layouts/Base.astro";
 import RouteMap from "../components/RouteMap.astro";
+import Picker from "../components/Picker.astro";
 import { PLUGINS, SKILLS, skillsFor, APPS, REPO_SLUG } from "../data/kit";
 import { GUIDES } from "../data/guides";
 
@@ -33,8 +34,8 @@ const bill = [
             These skills and guides take you the rest of the way, cheaply, the way I ship my own apps.
           </p>
           <div class="hero-actions">
-            <a class="btn" href="/guides/start-here/">Start here <span aria-hidden="true">→</span></a>
-            <a class="btn ghost" href="#contents">What’s in the box</a>
+            <a class="btn" href="#start">Start in three steps <span aria-hidden="true">↓</span></a>
+            <a class="btn ghost" href="#help">Or let me do it</a>
           </div>
         </div>
 
@@ -60,18 +61,37 @@ const bill = [
       </div>
     </section>
 
-    <!-- ============ INSTALL ============ -->
-    <section class="install">
-      <div class="wrap install-grid">
-        <div>
-          <h2 class="kicker">Install</h2>
-          <p class="muted">In Claude Code, add the box once. Then take only the plugins you need.</p>
-        </div>
-        <div class="cmds">
-          <div class="cmd"><code>/plugin marketplace add {REPO_SLUG}</code><button data-copy={`/plugin marketplace add ${REPO_SLUG}`}>Copy</button></div>
-          <div class="cmd"><code>/plugin install ship-ios@onebox</code><button data-copy="/plugin install ship-ios@onebox">Copy</button></div>
-          <p class="label other">Codex, Cursor and others: <code>npx skills add {REPO_SLUG}</code></p>
-        </div>
+    <!-- ============ START: three steps + the picker ============ -->
+    <section id="start" class="start">
+      <div class="wrap">
+        <header class="section-head">
+          <h2 class="display h2">Three steps</h2>
+          <p class="muted">Not every app needs a server, a paywall or a landing page. Answer six questions and take only what yours needs.</p>
+        </header>
+        <ol class="steps">
+          <li>
+            <span class="step-n" aria-hidden="true">1</span>
+            <div>
+              <h3>Add the box to Claude Code</h3>
+              <p>Paste the lines from your cart below. Codex, Cursor and others: <code>npx skills add {REPO_SLUG}</code>.</p>
+            </div>
+          </li>
+          <li>
+            <span class="step-n" aria-hidden="true">2</span>
+            <div>
+              <h3>Run <code>/start:plan</code> in your app’s folder</h3>
+              <p>It checks what your app already has, asks what is missing, and writes <code>PLAN.md</code>.</p>
+            </div>
+          </li>
+          <li>
+            <span class="step-n" aria-hidden="true">3</span>
+            <div>
+              <h3>Work down the plan</h3>
+              <p>Skills do the work. <a href="/guides/">Guides</a> cover the clicks only you can make. Stuck? <a href="#help">Ask me</a>.</p>
+            </div>
+          </li>
+        </ol>
+        <Picker />
       </div>
     </section>
 
@@ -188,20 +208,6 @@ const bill = [
       </div>
     </section>
 
-    <!-- ============ GUIDES ============ -->
-    <section class="guides-list">
-      <div class="wrap">
-        <header class="section-head">
-          <h2 class="display h2">Guides</h2>
-          <p class="muted">The accounts, keys and clicks a skill cannot do for you. In the order you need them.</p>
-        </header>
-        <ol class="toc">
-          {GUIDES.map((g) => (
-            <li><a href={`/guides/${g.slug}/`}><span class="label">{String(g.n).padStart(2, "0")}</span><span>{g.title}</span></a></li>
-          ))}
-        </ol>
-      </div>
-    </section>
   </main>
 </Base>
 
@@ -218,7 +224,7 @@ const bill = [
     gap: clamp(32px, 5vw, 72px);
     align-items: center;
   }
-  .hero-title { font-size: clamp(2.5rem, 6.2vw, 5.4rem); margin-block: 14px 26px; }
+  .hero-title { font-size: clamp(2.4rem, 5.4vw, 4.7rem); margin-block: 14px 26px; }
   .hero-title span { display: inline-block; }
   .lede { font-size: clamp(1.15rem, 1.6vw, 1.32rem); max-width: 34em; color: var(--ink-2); margin: 0; }
   .lede code { background: var(--code-bg); padding: 1px 6px; color: var(--ink); }
@@ -262,13 +268,19 @@ const bill = [
     animation: stamp 420ms cubic-bezier(.2,.8,.2,1) 820ms both;
   }
 
-  /* install */
-  .install { padding-block: 28px; border-block: 1px solid var(--rule); background: var(--paper-2); }
-  .install-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 16px 48px; align-items: center; }
-  .install h2 { margin: 0 0 6px; }
-  .cmds { display: grid; gap: 8px; min-width: 0; }
-  .other { margin: 4px 0 0; text-transform: none; letter-spacing: 0.02em; }
-  .other code { color: var(--ink); }
+
+  /* start */
+  .start { border-top: 1px solid var(--rule); }
+  .steps { list-style: none; margin: 0 0 clamp(32px, 5vw, 56px); padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .steps li { display: grid; grid-template-columns: auto 1fr; gap: 14px; padding: 18px; border: 2px solid var(--ink); }
+  .step-n {
+    display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%;
+    border: 2.5px solid var(--signal); color: var(--signal);
+    font-family: var(--display); font-stretch: 125%; font-weight: 800; font-size: 1.2rem;
+  }
+  .steps h3 { margin: 4px 0 6px; font-family: var(--display); font-stretch: 112%; font-weight: 700; font-size: 1.12rem; line-height: 1.25; }
+  .steps h3 code, .steps p code { font-family: var(--mono); font-size: 0.85em; }
+  .steps p { margin: 0; color: var(--ink-2); font-size: 1.02rem; }
 
   /* sections */
   .section-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 32px; margin-bottom: clamp(28px, 4vw, 48px); }
@@ -342,16 +354,10 @@ const bill = [
   .help-body p { margin: 0 0 16px; max-width: 42ch; font-size: 1.2rem; }
   .help-body .btn { margin-top: 10px; }
 
-  /* guides */
-  .toc { list-style: none; margin: 0; padding: 0; columns: 2 320px; column-gap: 48px; }
-  .toc li { break-inside: avoid; border-top: 1px solid var(--rule); }
-  .toc a { display: grid; grid-template-columns: 40px 1fr; gap: 12px; padding: 14px 0; text-decoration: none; font-family: var(--display); font-stretch: 100%; font-weight: 600; font-size: 1.05rem; }
-  .toc a:hover span:last-child { text-decoration: underline; text-decoration-color: var(--signal); text-decoration-thickness: 2px; }
-  .toc .label { padding-top: 4px; }
 
   /* phone */
   @media (max-width: 860px) {
-    .hero-grid, .install-grid, .bill-grid, .help-grid { grid-template-columns: 1fr; }
+    .hero-grid, .bill-grid, .help-grid, .steps { grid-template-columns: 1fr; }
     .label-card { box-shadow: 6px 6px 0 var(--paper-3); }
     .receipt { transform: none; }
   }
