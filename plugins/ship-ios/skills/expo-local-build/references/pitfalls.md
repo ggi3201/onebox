@@ -99,6 +99,15 @@ Check with `which ruby pod` in the agent's shell. Fix it for every agent run
 by putting the shims on the PATH in `~/.zshenv`, for example
 `export PATH="$HOME/.rbenv/shims:$PATH"`.
 
+## Upload
+
+**`eas submit` says "Waiting for submission to complete" for a long time.**
+The submission is `IN_QUEUE` on Expo's side, not uploading. Check
+https://status.expo.dev first. Then upload the `.ipa` yourself with
+`xcrun altool --upload-app` and the App Store Connect API key (see SKILL.md,
+"After the build"). It took seconds in a real run where the Expo queue had
+not started after 50 minutes.
+
 ## eas-cli itself
 
 **`Cannot find module 'fdir'` from `npx eas-cli`.**

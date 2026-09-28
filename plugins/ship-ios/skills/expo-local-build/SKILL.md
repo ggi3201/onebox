@@ -69,6 +69,18 @@ Code signing needs the user's unlocked login keychain.
   A second upload of the same build number is rejected as a duplicate.
 - Confirm in App Store Connect, not in EAS output: use the `appstore-connect`
   skill (`asc.mjs builds`, then `asc.mjs wait <buildId>`).
+- **Stuck in Expo's queue?** `eas submit` hands the upload to Expo's servers,
+  and on the free plan it can wait in a queue for a long time. The `.ipa` is
+  already on your Mac, so upload it to Apple directly with the same App Store
+  Connect API key (the `.p8` must be in `~/.appstoreconnect/private_keys/` as
+  `AuthKey_<key id>.p8`):
+
+  ```bash
+  xcrun altool --upload-app -f build/<file>.ipa -t ios --apiKey <key id> --apiIssuer <issuer id>
+  ```
+
+  If the queued Expo submission runs later, Apple rejects it as a duplicate
+  build number. That does no harm.
 - Processing takes 5 to 30 minutes. The TestFlight notification can lag the
   API by up to an hour.
 
