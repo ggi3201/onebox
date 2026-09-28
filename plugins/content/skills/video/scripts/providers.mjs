@@ -136,7 +136,7 @@ export function loadSecret(cfg, ref) {
   throw new Error(
     `could not resolve secret ${ref} — looked for an env var and a .env entry ` +
     `for it. Set media.providers.<provider>.keyRef / secrets.tool in your ` +
-    `onebox config if it lives somewhere else. See guides/media-providers.md.`,
+    `onebox config if it lives somewhere else. See https://onebox.lokkesveen.com/guides/media-providers.md.`,
   );
 }
 

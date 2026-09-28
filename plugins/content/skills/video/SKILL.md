@@ -1,6 +1,6 @@
 ---
 name: video
-description: Generate video with kie.ai (default), fal.ai, or Replicate — text-to-video, image-to-video, first+last frame pinning, and multi-leg chains with invisible cuts. Use for App Store preview videos, landing-page hero loops, social clips, scroll-driven story sites, or any "generate a video", "animate this still", "make a camera move", "chain these shots together" request. Costs real money per call, more than a still image. Needs an API key — see guides/media-providers.md and guides/kie-ai.md.
+description: Generate video with kie.ai (default), fal.ai, or Replicate — text-to-video, image-to-video, first+last frame pinning, and multi-leg chains with invisible cuts. Use for App Store preview videos, landing-page hero loops, social clips, scroll-driven story sites, or any "generate a video", "animate this still", "make a camera move", "chain these shots together" request. Costs real money per call, more than a still image. Needs an API key — see https://onebox.lokkesveen.com/guides/media-providers.md and https://onebox.lokkesveen.com/guides/kie-ai.md.
 ---
 
 # Video
@@ -8,7 +8,7 @@ description: Generate video with kie.ai (default), fal.ai, or Replicate — text
 Runs on: your Mac, or anywhere with Node 18+ — calling a paid provider API.
 kie.ai is the default provider; fal.ai and Replicate also work. Needs an
 account and an API key for whichever you use — read
-`guides/media-providers.md` once to pick a provider, then `guides/kie-ai.md`
+`https://onebox.lokkesveen.com/guides/media-providers.md` once to pick a provider, then `https://onebox.lokkesveen.com/guides/kie-ai.md`
 if you're staying with the default. Every call spends real credits; always
 `--dry-run` a new prompt/model combination before running it for real.
 
@@ -21,7 +21,7 @@ rerolling the still would have.
 ## Setup
 
 The key comes from config, never from a value typed into a prompt. See
-`CONFIG.md`'s `media` section: `media.videoProvider` (default `kie`) and
+the `media` section of https://github.com/ggi3201/onebox/blob/main/CONFIG.md: `media.videoProvider` (default `kie`) and
 `media.providers.<name>.keyRef`. The common case needs no config file: set
 `KIE_AI_API_KEY` in the environment, or drop it in a `.env` file anywhere
 from your project up to your home directory. `scripts/video.mjs` never
@@ -62,7 +62,7 @@ use it on every new combination before spending credits.
 | `kling-2.6/text-to-video` | text | — | default for `text-to-video`. `duration` is `"5"` or `"10"` only |
 | `kling-2.6/image-to-video` | image | first only | default for `image-to-video` with no `--tail` |
 | `kling/v3-turbo-image-to-video` | image | first only | `resolution` 720p/1080p |
-| `kling/v2-1-pro` | image | first + tail | the model `content:image`'s `shot` command already uses — proven in this repo |
+| `kling/v2-1-pro` | image | first + tail | the model `content:image`'s `shot` command already uses |
 | `veo-3-1` | text or image | first, or first+last | Google Veo, served through kie.ai's unified endpoint, not a dedicated one. `resolution` up to 4k |
 | `bytedance/seedance-2` | text or image | first, last, or both | default for `image-to-video --tail` and for `chain` — the only one here with native `first_frame_url`/`last_frame_url` input fields |
 | `runway` | text or image | first only | no tail/last-frame field |
@@ -72,7 +72,7 @@ Only kie.ai gets a hand-built request from this script. For `--provider fal`
 or `--provider replicate`, pass `--model <id>` and put the model's own input
 fields in `--extra '<json>'` — the provider layer (`scripts/providers.mjs`)
 only handles submit/poll/download, not per-model field names, for those two.
-See `guides/media-providers.md`.
+See `https://onebox.lokkesveen.com/guides/media-providers.md`.
 
 ## `chain`: legs with invisible cuts
 
@@ -150,8 +150,8 @@ Must not change:  the one or two things a viewer would notice drifting
 
 ## Troubleshooting
 
-- **`could not resolve secret ...`** — follow `guides/media-providers.md` and
-  `guides/kie-ai.md`, or check `media.videoProvider` /
+- **`could not resolve secret ...`** — follow `https://onebox.lokkesveen.com/guides/media-providers.md` and
+  `https://onebox.lokkesveen.com/guides/kie-ai.md`, or check `media.videoProvider` /
   `media.providers.<name>.keyRef` in your onebox config.
 - **`chain` fails partway with "didn't return a last frame and ffmpeg isn't
   installed"** — install ffmpeg, or switch to a model that returns one.

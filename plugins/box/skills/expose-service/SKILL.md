@@ -36,7 +36,7 @@ REF=$(cfg | jq -r '.box.cloudflareTokenRef // "CLOUDFLARE_API_TOKEN"')
 ```
 
 The token comes from `scripts/secret.sh "$REF"` and goes on stdin. No token
-yet: follow `guides/cloudflare.md`. No box yet: run `box:box-setup`.
+yet: follow `https://onebox.lokkesveen.com/guides/cloudflare.md`. No box yet: run `box:box-setup`.
 
 ## Decide first
 
@@ -89,7 +89,7 @@ and one unpatched bug away from your box.
 Best: no public hostname at all (LAN or tailnet record, above). When you need
 it from anywhere, put **Cloudflare Access** in front. It is free for up to 50
 users. Cloudflare asks for a login (a one-time PIN to your email is enough)
-before any request reaches the tunnel. Steps: `guides/cloudflare.md`, "Put
+before any request reaches the tunnel. Steps: `https://onebox.lokkesveen.com/guides/cloudflare.md`, "Put
 admin tools behind Access". Expose the hostname as usual, then add the Access
 application **before** you share the URL.
 
@@ -102,7 +102,7 @@ Access, and every request fails.
 
 ## Rate limit a public route (optional)
 
-The app should limit its own endpoints (`guides/backend.md`, "Protect the
+The app should limit its own endpoints (`https://onebox.lokkesveen.com/guides/backend.md`, "Protect the
 API"). For a route whose code you do not control, add Traefik's `ratelimit`
 middleware, counted by `Cf-Connecting-Ip`: `references/topology.md`, "Rate
 limit middleware".

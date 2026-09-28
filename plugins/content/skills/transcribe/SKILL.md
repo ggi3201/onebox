@@ -8,9 +8,8 @@ description: Turn a reel, TikTok, YouTube or X video — or a local audio/video 
 Runs on: your Mac. Free, local, no API key, nothing leaves the machine
 except the download itself.
 
-Turns a reel or clip into reel ideas an LLM can actually work with: a
-timestamped transcript you can paste back into a conversation, summarize,
-or mine for hooks and structure.
+It turns a reel or a clip into a timestamped transcript. Paste it back into a
+conversation, summarize it, or mine it for hooks and structure.
 
 One command does everything — dependency install, download, subtitle
 lookup, speech recognition, and output:
@@ -90,7 +89,7 @@ your other automation lives, copy this skill to `box.ssh` from your onebox
 config and run it there over SSH:
 
 ```bash
-scp -r skills/transcribe "$(jq -r '.box.ssh' ~/.config/onebox/config.json):~/transcribe"
+scp -r <skill-dir> "$(jq -r '.box.ssh' ~/.config/onebox/config.json):~/transcribe"
 ssh "$(jq -r '.box.ssh' ~/.config/onebox/config.json)" 'python3 ~/transcribe/scripts/transcribe.py "<url-or-file>"'
 ```
 

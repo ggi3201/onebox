@@ -29,8 +29,8 @@ never secret values, so the copy is safe.
 
 Before you start, the user needs:
 
-- a Cloudflare account with the domain on it, and a DNS token: `guides/cloudflare.md`
-- for a VPS: the server, created with their SSH key: `guides/vps.md`
+- a Cloudflare account with the domain on it, and a DNS token: `https://onebox.lokkesveen.com/guides/cloudflare.md`
+- for a VPS: the server, created with their SSH key: `https://onebox.lokkesveen.com/guides/vps.md`
 - for a mini PC: Ubuntu Server installed and `ssh-copy-id user@host` done
 
 ## Refuse first, then build
@@ -88,7 +88,7 @@ REF=$(cfg | jq -r '.box.cloudflareTokenRef // "CLOUDFLARE_API_TOKEN"')
 
 - **SSH on a VPS.** Default: port 22 open, keys only. Simple, and fine with
   password login off. Stricter: install Tailscale first (see
-  `guides/remote-access.md` in the onebox repo), then
+  `https://onebox.lokkesveen.com/guides/remote-access.md`), then
   `--ssh-tailscale-only` closes 22 to the internet. Keep the provider's web
   console as the way back in. A home box sits behind the router, so 22 is
   LAN-only anyway.

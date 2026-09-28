@@ -333,7 +333,7 @@ app: the API URL, the RevenueCat `appl_` key, the Expo project ID. Call AI
 providers from your backend. A secret that was ever in a build must be
 **rotated**: the builds people already installed keep it. Confirm on the real
 bundle: `npx expo export --platform ios` and search the output
-(`guides/expo-app.md`, step 8).
+(`https://onebox.lokkesveen.com/guides/expo-app.md`, step 8).
 
 **google-key** (CHECK). Firebase and Maps keys are designed to be public. Restrict
 each one to the bundle ID and to the APIs it needs in the Google Cloud console.
@@ -359,7 +359,7 @@ picker, test login or "grant premium" switch.
 
 **backend-debug** (CHECK). Debug, admin and test endpoints on the API check the
 environment and a role on the server. Hiding a button in the app protects
-nothing, because anyone can call the URL. See `guides/backend.md`, "Protect the
+nothing, because anyone can call the URL. See `https://onebox.lokkesveen.com/guides/backend.md`, "Protect the
 API".
 
 **cert-pinning** (CHECK, usually "not needed"). HTTPS with App Transport Security
@@ -371,7 +371,7 @@ user until they update.
 
 ## App Store Connect metadata
 
-Set by hand in the web UI (see `guides/app-store-connect-setup.md`):
+Set by hand in the web UI (see `https://onebox.lokkesveen.com/guides/app-store-connect-setup.md`):
 
 - **privacy-policy** URL and **support-url** that load and have a way to
   contact you.

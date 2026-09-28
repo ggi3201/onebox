@@ -24,7 +24,7 @@ ls ../app.json ../../app.json 2>/dev/null   # a stray config above the app folde
 ```
 
 Always run eas from the app folder, never a monorepo root. See the capability
-trap in `expo-local-build/references/pitfalls.md`.
+trap in the `expo-local-build` skill's `references/pitfalls.md`.
 
 ## 1. The preview profile
 

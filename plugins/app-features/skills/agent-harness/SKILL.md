@@ -48,8 +48,8 @@ MODEL=$(cfg | jq -r '.llm.model // empty'); KEYREF=$(cfg | jq -r '.llm.keyRef //
 TOOL=$(cfg | jq -r '.secrets.tool // "env"')
 ```
 
-No key yet: send the user to `guides/llm-api-key.md`. Read the key by
-reference (see `CONFIG.md`), put it in a variable, never print it.
+No key yet: send the user to `https://onebox.lokkesveen.com/guides/llm-api-key.md`. Read the key by
+reference (see https://github.com/ggi3201/onebox/blob/main/CONFIG.md), put it in a variable, never print it.
 
 ## Before you touch anything
 
@@ -92,7 +92,7 @@ grep -rniE 'openai|anthropic|betalgo|chatclient|langfuse|OTEL_' apps/api --inclu
    at the end means something buffers: see `references/loop.md`, "Streaming".
 7. **Tracing (ask first).** Offer it once: "Do you want traces of each run in
    Langfuse?" Yes: `builder.Services.AddAgentTracing(builder.Configuration)`,
-   `guides/langfuse.md` for the keys, and a line in the privacy policy.
+   `https://onebox.lokkesveen.com/guides/langfuse.md` for the keys, and a line in the privacy policy.
    No: skip; nothing is sent anywhere.
 8. **Evals.** Copy `assets/dotnet/Tests/AgentEvalTests.cs`. Write one eval per
    behaviour the user cares about, asserting on tool calls. Run one only after

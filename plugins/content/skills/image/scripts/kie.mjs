@@ -15,7 +15,7 @@
  *
  * `still` can also target fal.ai or Replicate with [--provider fal|replicate]
  * [--model id] [--extra '<json>'] — see ./providers.mjs (the queue/poll/upload
- * mechanics shared with the video skill) and guides/media-providers.md (when
+ * mechanics shared with the video skill) and https://onebox.lokkesveen.com/guides/media-providers.md (when
  * to pick which). The default path below (no --provider) is unchanged.
  *
  * COMMANDS
@@ -31,7 +31,7 @@
  *
  *   probe  print the account's credit balance and exit. Each call costs
  *          real money — run this before a batch and after, and read
- *          guides/kie-ai.md before your first call.
+ *          https://onebox.lokkesveen.com/guides/kie-ai.md before your first call.
  *
  * KEY
  *   Resolved per CONFIG.md: `secrets.tool` (env | doppler | 1password) and
@@ -149,7 +149,7 @@ function loadKey() {
   throw new Error(
     `could not resolve the kie.ai key — looked for env var ${ref} and a .env ` +
     `entry for it. Set images.keyRef / secrets.tool in your onebox config if ` +
-    `the key lives somewhere else. See guides/kie-ai.md.`,
+    `the key lives somewhere else. See https://onebox.lokkesveen.com/guides/kie-ai.md.`,
   );
 }
 
@@ -237,14 +237,14 @@ function flags(argv, name) {
 }
 
 function printUsage() {
-  console.error(`kie.ai image generator (see guides/kie-ai.md for setup and pricing)
+  console.error(`kie.ai image generator (see https://onebox.lokkesveen.com/guides/kie-ai.md for setup and pricing)
 
   node kie.mjs probe
   node kie.mjs still "<prompt>" <out.png> [--ar 16:9] [--ref ref.png] [--model id] [--quality high|basic]
   node kie.mjs shot  "<prompt>" <head.png> <out.mp4> [--tail tail.png] [--dur 5] [--model id]
 
 \`still\` also takes [--provider kie|fal|replicate] [--extra '<json>'] [--dry-run] —
-see guides/media-providers.md for when to reach for fal.ai or Replicate instead.
+see https://onebox.lokkesveen.com/guides/media-providers.md for when to reach for fal.ai or Replicate instead.
 Verified aspect ratios: ${VERIFIED_ASPECT_RATIOS.join(", ")} (others may work but are unconfirmed).
 No API key is needed just to see this message.`);
 }
@@ -277,7 +277,7 @@ try {
     if (providerName !== "kie") {
       // Only kie.ai gets a hand-built seedream request below. Another
       // provider needs --model plus its own input shape — pass that via
-      // --extra '<json>'. See guides/media-providers.md.
+      // --extra '<json>'. See https://onebox.lokkesveen.com/guides/media-providers.md.
       if (!modelOverride) throw new Error(`--provider ${providerName} needs --model <id> — this script only knows seedream's shape for kie.ai.`);
       let input = { prompt, aspect_ratio: ar };
       const extraRaw = flag(rest, "--extra");
@@ -315,7 +315,7 @@ try {
       }
       if (dryRun) {
         console.log(JSON.stringify({ provider: "kie", model, input }, null, 2));
-        console.log("\nEstimated cost: a seedream still runs roughly $0.03-$0.08 depending on quality tier — see guides/kie-ai.md.");
+        console.log("\nEstimated cost: a seedream still runs roughly $0.03-$0.08 depending on quality tier — see https://onebox.lokkesveen.com/guides/kie-ai.md.");
         console.log("(--dry-run: no request was sent, no key was read)");
       } else {
         const id = await createTask(model, input);

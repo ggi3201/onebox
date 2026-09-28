@@ -160,7 +160,7 @@ const KIE_MODELS = {
 const DEFAULT_MODEL = { t2v: "kling-2.6/text-to-video", i2v: "kling-2.6/image-to-video", tail: "bytedance/seedance-2" };
 
 // Rough per-clip cost, from kie.ai's own market pages, checked 2026-09-28.
-// Ballpark only — see guides/kie-ai.md and guides/media-providers.md.
+// Ballpark only — see https://onebox.lokkesveen.com/guides/kie-ai.md and https://onebox.lokkesveen.com/guides/media-providers.md.
 const KIE_COST_HINTS = {
   "kling-2.6/text-to-video": "kie.ai lists Kling video tasks around 100-500 credits per clip (a few cents to ~$2 depending on tier/duration) — check kie.ai/market/kling for this model's exact rate.",
   "kling-2.6/image-to-video": "same order as kling-2.6/text-to-video — check kie.ai/market/kling.",
@@ -247,7 +247,7 @@ function printDryRun(providerName, modelId, input) {
 }
 
 function printUsage() {
-  console.error(`video generator: kie.ai (default), fal.ai, or Replicate — see guides/media-providers.md
+  console.error(`video generator: kie.ai (default), fal.ai, or Replicate — see https://onebox.lokkesveen.com/guides/media-providers.md
 
   node video.mjs probe                                                            kie.ai credit balance
   node video.mjs text-to-video  "<prompt>" out.mp4 [--ar 16:9] [--dur 5] [opts]

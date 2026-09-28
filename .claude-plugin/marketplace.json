@@ -1,6 +1,6 @@
 {
   "name": "onebox",
-  "description": "Ship iOS apps from one cheap box. Skills for Expo apps, App Store Connect, content and a self-hosted backend on a mini PC or a small VPS.",
+  "description": "Get your Expo app onto the App Store. Skills for readiness checks, builds, App Store Connect and content, plus an optional backend on one cheap box: a mini PC or a small VPS.",
   "owner": {
     "name": "Geir-Stian Løkkesveen",
     "url": "https://github.com/ggi3201"

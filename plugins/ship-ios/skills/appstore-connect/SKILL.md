@@ -12,7 +12,7 @@ The helper is `scripts/asc.mjs`. Its header lists every command.
 
 ## Credentials
 
-The script reads the key from the onebox config (see `CONFIG.md`):
+The script reads the key from the onebox config (see https://github.com/ggi3201/onebox/blob/main/CONFIG.md):
 
 - `apple.ascKeyId` and `apple.ascIssuerId`
 - `apple.ascKeyPath` (path to the `.p8` file), or `apple.ascKeyRef` (a secret
@@ -22,7 +22,7 @@ It also accepts `ASC_KEY_ID`, `ASC_ISSUER_ID` and `ASC_KEY_PATH` env vars, or
 the common `~/.appstoreconnect/config.json` (`key_id`, `issuer_id`, `key_path`).
 
 If nothing is set, ask the user once. If they have no key, send them to
-`guides/app-store-connect-api-key.md`. Offer to write the IDs and the path to
+`https://onebox.lokkesveen.com/guides/app-store-connect-api-key.md`. Offer to write the IDs and the path to
 `~/.config/onebox/config.json`. Never print the key. Never ask for the Apple ID
 password.
 
@@ -76,13 +76,13 @@ introductory offers across all territories, and the Paid Apps Agreement. If the
 price step fails, set the price in the web UI instead of retrying blindly.
 
 For offerings, entitlements and the paywall itself, use RevenueCat's own plugin
-(see `guides/revenuecat.md`).
+(see `https://onebox.lokkesveen.com/guides/revenuecat.md`).
 
 ## Rules
 
 - Apps cannot be created through the API (`POST /v1/apps` answers 403). The
   user creates the app record in the web UI. See
-  `guides/app-store-connect-setup.md`.
+  `https://onebox.lokkesveen.com/guides/app-store-connect-setup.md`.
 - Uploading a build is not this skill's job. Expo apps upload with
   `eas submit` (see the `expo-local-build` skill).
 - When a PR with an iOS change merges, do not start a build or an upload on

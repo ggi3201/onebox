@@ -86,7 +86,7 @@ It writes `PLAN.md` with:
 1. The answers, and where each came from (you, detected, default).
 2. **Install**: the exact `/plugin install <name>@onebox` lines, only for the
    plugins the plan uses.
-3. **Config keys** the chosen path needs (from `CONFIG.md`), marked set or
+3. **Config keys** the chosen path needs (from https://github.com/ggi3201/onebox/blob/main/CONFIG.md), marked set or
    not set. Never values.
 4. One section per phase, in order. Each item is a checkbox with its guide
    link (web and raw Markdown) or its skill (`/plugin:skill`). Items detection

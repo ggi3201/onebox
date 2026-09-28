@@ -74,8 +74,8 @@ that apply:
 - Test on a phone without TestFlight: `ios-preview-build`.
 - Build and upload: `expo-local-build`.
 - Builds, testers, subscriptions in App Store Connect: `appstore-connect`.
-- Accounts and keys: the guides in `guides/` (start with
-  `guides/apple-developer.md`).
+- Accounts and keys: the guides at https://onebox.lokkesveen.com/guides/ (start with
+  https://onebox.lokkesveen.com/guides/apple-developer.md).
 
 ## Rules
 

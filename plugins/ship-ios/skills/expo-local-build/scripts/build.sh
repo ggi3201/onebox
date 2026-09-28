@@ -103,9 +103,9 @@ fi
 if ! eas whoami >/dev/null 2>&1; then
   REF="$(c '.expo.tokenRef')"; REF="${REF:-EXPO_TOKEN}"
   EXPO_TOKEN="$(secret "$REF" || true)"
-  [ -n "$EXPO_TOKEN" ] || die "Not logged in to Expo. Run 'eas login', or set $REF (guides/expo-eas.md)." 2
+  [ -n "$EXPO_TOKEN" ] || die "Not logged in to Expo. Run 'eas login', or set $REF (https://onebox.lokkesveen.com/guides/expo-eas.md)." 2
   export EXPO_TOKEN
-  eas whoami >/dev/null 2>&1 || die "The Expo token did not work. Make a new one (guides/expo-eas.md)." 2
+  eas whoami >/dev/null 2>&1 || die "The Expo token did not work. Make a new one (https://onebox.lokkesveen.com/guides/expo-eas.md)." 2
 fi
 ok "Expo account: $(eas whoami 2>/dev/null | head -1)"
 
@@ -149,15 +149,15 @@ say "Xcode $xv"
 # Checked 2026-09-28 at developer.apple.com/news/upcoming-requirements:
 # since 2026-04-28 uploads must be built with Xcode 26+ and an iOS 26 SDK.
 if [ -n "$xmajor" ] && [ "$xmajor" -lt 26 ]; then
-  warn "App Store Connect requires Xcode 26 or later for uploads. This build will be rejected at upload. See guides/xcode.md."
+  warn "App Store Connect requires Xcode 26 or later for uploads. This build will be rejected at upload. See https://onebox.lokkesveen.com/guides/xcode.md."
 fi
 
 # CocoaPods dies on "Unicode Normalization not appropriate for ASCII-8BIT" when
 # the shell has no UTF-8 locale (cron, CI, agents). The error you then read comes
 # later and points elsewhere.
 case "${LC_ALL:-${LANG:-}}" in *UTF-8|*utf8|*UTF8) ;; *) export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 ;; esac
-command -v pod >/dev/null || die "CocoaPods not found. Install it: brew install cocoapods (guides/xcode.md)."
-command -v fastlane >/dev/null || die "fastlane not found. eas build --local needs it: brew install fastlane (guides/xcode.md)."
+command -v pod >/dev/null || die "CocoaPods not found. Install it: brew install cocoapods (https://onebox.lokkesveen.com/guides/xcode.md)."
+command -v fastlane >/dev/null || die "fastlane not found. eas build --local needs it: brew install fastlane (https://onebox.lokkesveen.com/guides/xcode.md)."
 # macOS system Ruby 2.6 cannot parse Expo's precompiled-module configs. pod install
 # then "succeeds" with a WARNING, and the app installs and dies at launch, or a
 # native module is silently left out.

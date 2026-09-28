@@ -93,10 +93,5 @@ components with state or logic, check in the real app renderer.
   simulator or a device. If a native launch failed, give the browser proof and
   say the native check is still open.
 
-For a hand-off to another agent, give the source path, the recognition cue,
-the known visual issue, and the output path. A helper agent works on its
-assigned icons only, and returns its smallest-size screenshot and any
-remaining ambiguity.
-
 A worked example of a full family, with cues and repairs per subject:
 `references/example-garments.md`.

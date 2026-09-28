@@ -6,7 +6,7 @@ description: Draw or refine a precise SVG app logo from a reference or a sketch,
 # Draw App Icon
 
 Runs on: your Mac. SVG work runs anywhere; Icon Composer rendering and
-`actool` need Xcode (see `guides/xcode.md`).
+`actool` need Xcode (see `https://onebox.lokkesveen.com/guides/xcode.md`).
 
 Create editable vector artwork that retains the reference's identity and reads
 at home-screen size. Native Apple packaging is a separate deliverable from the
@@ -21,8 +21,8 @@ and palette. Distinguish a request about the name from a request about the mark.
 
 For an architectural or blueprint treatment, use precise contours, restrained
 parallel lines, deliberate construction guides and limited edge hatching. Match
-the actual app; do not automatically substitute blue, metallic gold, a crest,
-barbell, marble mockup or an invented monogram. Detailed brand artwork and the
+the actual app; do not add stock motifs such as a crest, a metallic finish or
+an invented monogram. Detailed brand artwork and the
 small app icon can have different amounts of detail while sharing a silhouette.
 
 Use image generation for raster exploration when that is requested. For a

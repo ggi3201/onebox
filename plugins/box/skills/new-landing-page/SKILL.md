@@ -1,6 +1,6 @@
 ---
 name: new-landing-page
-description: Scaffold a self-hosted Next.js landing page on your box - Dockerfile, compose file with Traefik labels, and a deploy-on-push workflow - then put it on a hostname through the Cloudflare tunnel. Also moves an existing Next.js site off Vercel onto the box with no downtime. Use when the user asks for a new landing page, marketing site or microsite, says "make a landing page for X", "put X on a domain", "host this site", "self-host this Next.js app", "get off Vercel", or "move this site to my server".
+description: Scaffold a self-hosted Next.js landing page on your box, with the privacy policy and support page App Store Connect asks for - Dockerfile, compose file with Traefik labels, and a deploy-on-push workflow - then put it on a hostname through the Cloudflare tunnel. Also moves an existing Next.js site off Vercel onto the box with no downtime. Use when the user asks for a new landing page, marketing site or microsite, says "make a landing page for X", "put X on a domain", "host this site", "self-host this Next.js app", "get off Vercel", or "move this site to my server".
 ---
 
 # New self-hosted landing page
@@ -58,7 +58,24 @@ New site: `npx create-next-app@latest --ts --tailwind --app --eslint`.
 Existing site: keep it as it is and only add the files below. In
 `next.config.ts` add `output: "standalone"`.
 
-### 3. Add the four files
+### 3. Add the pages Apple asks for
+
+If the site belongs to an iOS app, App Store Connect needs a public privacy
+policy and a support page. A paywall also needs terms. Add them as routes:
+
+- `/privacy`: what the app collects, why, which services get it (hosting,
+  RevenueCat, the AI provider), how to delete the account, and the date.
+- `/support`: the app's name, a contact email, and answers to "how do I restore
+  my purchase" and "how do I delete my account". Link to `/privacy`.
+- `/terms`: only when the app sells subscriptions. Apple's standard EULA is
+  fine if the user has no terms of their own.
+
+The full checklist for each page:
+`https://onebox.lokkesveen.com/guides/privacy-and-support-pages.md`. Read the
+app's code for what it really sends where. Do not copy another app's policy.
+Put the URLs in the footer, so App Review can find them from the home page.
+
+### 4. Add the four files
 
 Copy from `assets/` and replace `myapp-landing`, `myapp_landing`,
 `www.example.com`, `proxy` (your `box.proxyNetwork`) and the `box` runner
@@ -80,7 +97,7 @@ curl -s https://www.example.com/ | grep -oE '/_next/static/chunks/[^"]+\.js' | s
   | grep -ohE 'https?://[a-z0-9.-]+/api[^"]*' | sort -u
 ```
 
-### 4. Build and verify on the box, before any DNS
+### 5. Build and verify on the box, before any DNS
 
 Push to the deploy branch (or run the workflow by hand). Then:
 
@@ -91,14 +108,14 @@ ssh "$BOX" "curl -sk -o /dev/null -w '%{http_code} %{size_download}\n' \
   --resolve www.example.com:443:127.0.0.1 https://www.example.com/"
 ```
 
-### 5. Tunnel ingress and DNS
+### 6. Tunnel ingress and DNS
 
 Use **`box:expose-service`**. Its `expose.py` backs up the tunnel config, adds
 the ingress before the catch-all, validates, restarts the cloudflared replicas
 one by one while it watches every other hostname, and writes the proxied CNAME.
 Use `--ingress-only` first and `--dns-only` later when you move a live site.
 
-### 6. Verify
+### 7. Verify
 
 Never with "did it 200". The tunnel catch-all returns 404, and so does a healthy
 app with no root route. Compare with a baseline taken *before* the change, and
@@ -108,7 +125,7 @@ run expose-service's `audit-exposure.py`. Add an uptime monitor if you run one.
 
 1. `git pull` first. Local checkouts drift.
 2. Record a rollback baseline: DNS record ID, current CNAME target, body size.
-3. Do steps 1 to 4 while Vercel still serves all traffic.
+3. Do steps 1 to 5 while Vercel still serves all traffic.
 4. `expose.py --ingress-only`, test through the tunnel, soak, then `--dns-only`.
    Rollback is pointing the record back at the Vercel target.
 5. Prove parity: strip Vercel's `?dpl=<id>` cache-busting parameter from its HTML,

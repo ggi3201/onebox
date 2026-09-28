@@ -86,7 +86,7 @@ function ascCreds() {
     if (c.key_id && c.issuer_id && c.key_path) return { keyId: c.key_id, issuer: c.issuer_id, key: fs.readFileSync(home(c.key_path)) };
   }
   throw new Error('No App Store Connect API key. Set apple.ascKeyId, apple.ascIssuerId and apple.ascKeyPath (or apple.ascKeyRef) '
-    + 'in ~/.config/onebox/config.json. How to get one: guides/app-store-connect-api-key.md');
+    + 'in ~/.config/onebox/config.json. How to get one: https://onebox.lokkesveen.com/guides/app-store-connect-api-key.md');
 }
 let CREDS;
 function ascToken() {

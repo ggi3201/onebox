@@ -13,7 +13,7 @@ done when you have seen it on a simulator that runs **this checkout's** code.
 Agents skip that step, and then report a fix that was never on screen.
 
 The one-time setup (strict types, ESLint, test runners, a test database, a
-seed, the first flow) is in `guides/agent-test-loop.md`.
+seed, the first flow) is in `https://onebox.lokkesveen.com/guides/agent-test-loop.md`.
 
 ## 0. Find the repo's commands
 
@@ -135,8 +135,8 @@ device: no simulator tool in this session."
   and `pnpm audit` or `npm audit`.
 - The `ship-ios:app-store-ready` skill.
 - A test where user B asks for user A's row and gets 404
-  (`guides/backend.md`, "Keep each user's data apart"), and a rate-limit test
-  for the auth and AI endpoints (`guides/backend.md`, "Protect the API").
+  (`https://onebox.lokkesveen.com/guides/backend.md`, "Keep each user's data apart"), and a rate-limit test
+  for the auth and AI endpoints (`https://onebox.lokkesveen.com/guides/backend.md`, "Protect the API").
 
 ## 7. Make every agent follow it
 

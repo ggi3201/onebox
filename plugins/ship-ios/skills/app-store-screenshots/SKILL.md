@@ -111,7 +111,7 @@ node <skill-dir>/scripts/render.cjs <out>/myapp
 
 Follow asc.md. The script uses the same App Store Connect API key as the
 `appstore-connect` skill (onebox config `apple.*`). If there is no key, point
-the user to `guides/app-store-connect-api-key.md`.
+the user to `https://onebox.lokkesveen.com/guides/app-store-connect-api-key.md`.
 
 1. Run `asc.mjs list`.
 2. Confirm "replace" versus "add", unless the user already said.

@@ -99,7 +99,7 @@ For every staging router, send a `noindex` header:
 - "traefik.http.routers.myapp-api-stg.middlewares=myapp-stg-noindex,secure-headers@file"
 ```
 
-For pages a browser opens, prefer Cloudflare Access (`guides/cloudflare.md`).
+For pages a browser opens, prefer Cloudflare Access (`https://onebox.lokkesveen.com/guides/cloudflare.md`).
 The fallback is Traefik basic auth. Make the hash with `htpasswd -nB qa` and
 store it in the staging secrets as `STG_BASIC_AUTH`, not in the repo:
 

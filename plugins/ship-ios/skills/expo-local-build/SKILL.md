@@ -14,12 +14,12 @@ Always submits to TestFlight unless the user says build only.
 
 The user needs, once:
 
-- An Apple Developer account: `guides/apple-developer.md`.
-- Xcode, CocoaPods, fastlane and a signed-in Apple ID in Xcode: `guides/xcode.md`.
-- The app record in App Store Connect: `guides/app-store-connect-setup.md`.
-- An Expo account and a global `eas-cli`: `guides/expo-eas.md`.
+- An Apple Developer account: `https://onebox.lokkesveen.com/guides/apple-developer.md`.
+- Xcode, CocoaPods, fastlane and a signed-in Apple ID in Xcode: `https://onebox.lokkesveen.com/guides/xcode.md`.
+- The app record in App Store Connect: `https://onebox.lokkesveen.com/guides/app-store-connect-setup.md`.
+- An Expo account and a global `eas-cli`: `https://onebox.lokkesveen.com/guides/expo-eas.md`.
 - Optional but recommended: an App Store Connect API key, so no Apple ID
-  prompt stops a build: `guides/app-store-connect-api-key.md`.
+  prompt stops a build: `https://onebox.lokkesveen.com/guides/app-store-connect-api-key.md`.
 
 Run the `app-store-ready` skill first if the app has never been on TestFlight.
 
@@ -97,6 +97,6 @@ what it really means, and the fix. The most common three:
 ## Rules
 
 - Local first. Cloud builds use the plan's monthly quota (see
-  `guides/expo-eas.md`).
+  `https://onebox.lokkesveen.com/guides/expo-eas.md`).
 - Do not start a build because a PR merged. Ask first.
 - Never run eas with `EXPO_DEBUG=1` in a shared log. It prints the API key.

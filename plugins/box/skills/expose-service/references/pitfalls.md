@@ -102,7 +102,7 @@ same value for every request. The app needs a limit of 2 to reach the address
 Cloudflare wrote, and both hops must be in its trusted-proxy list (the proxy
 network's subnet covers them). In ASP.NET Core that is `ForwardLimit = 2`; other
 frameworks call it "trusted hops" or "proxy count". Code for ASP.NET Core and
-Node: `guides/backend.md`, "Protect the API".
+Node: `https://onebox.lokkesveen.com/guides/backend.md`, "Protect the API".
 
 Why it matters: any rate limiter keyed on the remote IP becomes global. A
 per-IP sign-in limit of 10 per minute becomes 10 per minute for all users. Anyone

@@ -364,7 +364,7 @@ for (let d = path.dirname(DIR), i = 0; i < 3 && d !== path.dirname(d); d = path.
 // ---- Toolchain (checked 2026-09-28 at developer.apple.com/news/upcoming-requirements) ----
 try {
   const xv = execFileSync('xcodebuild', ['-version'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).match(/Xcode (\d+)/)?.[1];
-  if (xv) add('xcode', +xv >= 26 ? 'OK' : 'BLOCKED', `Xcode ${xv} on this Mac`, +xv >= 26 ? undefined : 'Since 2026-04-28 uploads must be built with Xcode 26+ and the iOS 26 SDK. Update Xcode (guides/xcode.md), or build in the EAS cloud with a current image.');
+  if (xv) add('xcode', +xv >= 26 ? 'OK' : 'BLOCKED', `Xcode ${xv} on this Mac`, +xv >= 26 ? undefined : 'Since 2026-04-28 uploads must be built with Xcode 26+ and the iOS 26 SDK. Update Xcode (https://onebox.lokkesveen.com/guides/xcode.md), or build in the EAS cloud with a current image.');
 } catch { add('xcode', 'CHECK', 'No Xcode here. Uploads need Xcode 26+ / iOS 26 SDK (since 2026-04-28).', 'For cloud builds, use a current EAS build image.'); }
 const dt = (expo.plugins || []).map(p => Array.isArray(p) && p[0] === 'expo-build-properties' ? p[1]?.ios?.deploymentTarget : null).find(Boolean);
 if (dt && parseFloat(dt) < 13) add('deployment-target', 'BLOCKED', `iOS deployment target ${dt}; uploads must target iOS 13 or later (since 2026-09-09).`);

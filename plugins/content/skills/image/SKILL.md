@@ -1,12 +1,12 @@
 ---
 name: image
-description: Generate and edit images with kie.ai — text-to-image, image-to-image with reference photos, and an optional camera-move video. Use for App Store screenshot backgrounds, landing page hero images, social post images, app mockup scenes, or any "generate an image", "make a hero image", "edit this photo", "turn this into a background" request. Costs real money per call (a few cents per still). Needs an API key — see guides/kie-ai.md.
+description: Generate and edit images with kie.ai — text-to-image, image-to-image with reference photos, and an optional camera-move video. Use for App Store screenshot backgrounds, landing page hero images, social post images, app mockup scenes, or any "generate an image", "make a hero image", "edit this photo", "turn this into a background" request. Costs real money per call (a few cents per still). Needs an API key — see https://onebox.lokkesveen.com/guides/kie-ai.md.
 ---
 
 # Image (kie.ai)
 
 Runs on: your Mac, calling kie.ai's paid API. Needs an account and an API
-key — follow `guides/kie-ai.md` once, then come back here. Every call spends
+key — follow `https://onebox.lokkesveen.com/guides/kie-ai.md` once, then come back here. Every call spends
 real credits; see **Cost** below before generating a batch.
 
 ## Setup
@@ -14,7 +14,7 @@ real credits; see **Cost** below before generating a batch.
 The key comes from config, never from a value typed into a prompt:
 
 - `secrets.tool` in `~/.config/onebox/config.json` (`env` by default,
-  `doppler` or `1password` also supported — see `CONFIG.md`)
+  `doppler` or `1password` also supported — see https://github.com/ggi3201/onebox/blob/main/CONFIG.md)
 - `images.keyRef` (default `KIE_AI_API_KEY`)
 
 The common case needs no config file: set `KIE_AI_API_KEY` in the
@@ -37,7 +37,7 @@ docs.kie.ai on 2026-09-28:
 `still` can also target another provider with `--provider fal|replicate`
 plus `--model <id>` (that provider's own model id) and `--extra '<json>'`
 for fields specific to that model — this script only knows seedream's shape
-for kie.ai itself. See `guides/media-providers.md` for when fal.ai or
+for kie.ai itself. See `https://onebox.lokkesveen.com/guides/media-providers.md` for when fal.ai or
 Replicate is the better fit, and the `content:video` skill for generating
 clips with the same provider layer.
 
@@ -125,7 +125,7 @@ spend if anything else is using the same key concurrently. Never loop
 
 ## Troubleshooting
 
-- **`ERROR: could not resolve the kie.ai key`** — follow `guides/kie-ai.md`,
+- **`ERROR: could not resolve the kie.ai key`** — follow `https://onebox.lokkesveen.com/guides/kie-ai.md`,
   or check `secrets.tool`/`images.keyRef` in your onebox config.
 - **`createTask` error naming no field** — usually a missing required field
   (`aspect_ratio`, `quality`, `output_format` for a still) or an

@@ -107,7 +107,7 @@ A staging hostname is on the internet like production. Proportionate defaults:
   and the same rate limits and quotas as production. Add a `noindex` header so
   search engines drop it (the asset compose file has the labels).
 - **Anything a browser opens** (a staging site, an admin page, API docs) goes
-  behind Cloudflare Access: `guides/cloudflare.md`, "Put admin tools behind
+  behind Cloudflare Access: `https://onebox.lokkesveen.com/guides/cloudflare.md`, "Put admin tools behind
   Access". The cheaper fallback is Traefik basic auth plus `noindex`
   (`references/gotchas.md`, gotcha 11).
 - **Never a copy of production's personal data** behind a staging hostname,

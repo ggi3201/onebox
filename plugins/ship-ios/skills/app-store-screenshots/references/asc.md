@@ -58,6 +58,6 @@ The script uses the same App Store Connect API key as the `appstore-connect`
 skill. It reads the onebox config (`apple.ascKeyId`, `apple.ascIssuerId`, and
 `apple.ascKeyPath` or `apple.ascKeyRef`), then `ASC_KEY_ID` / `ASC_ISSUER_ID` /
 `ASC_KEY_PATH`, then `~/.appstoreconnect/config.json`. If none exists, point
-the user to `guides/app-store-connect-api-key.md`. Never print the key.
+the user to `https://onebox.lokkesveen.com/guides/app-store-connect-api-key.md`. Never print the key.
 
 The key needs a role that can edit app metadata (App Manager or Admin).

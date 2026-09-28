@@ -10,7 +10,7 @@ calls do nothing and nothing leaves the server. Ask once; do not assume.
 ## Turning it on
 
 1. The user picks where traces go. Langfuse is the default here: a free cloud
-   tier, or self-hosted on the box. See `guides/langfuse.md`.
+   tier, or self-hosted on the box. See `https://onebox.lokkesveen.com/guides/langfuse.md`.
 2. Add the packages: `OpenTelemetry.Extensions.Hosting` and
    `OpenTelemetry.Exporter.OpenTelemetryProtocol`.
 3. `builder.Services.AddAgentTracing(builder.Configuration);`

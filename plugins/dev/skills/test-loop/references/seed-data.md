@@ -93,7 +93,7 @@ Put at least one row for each line in `dev-edge` (or in the user named).
 - [ ] `dev-other` owns rows with the same names as `dev-rich`. Sign in as one
   and search for the other's rows: nothing may show. The API test for the same
   rule is in the backend guide:
-  `guides/backend.md`, section "Keep each user's data apart" (user B asks for
+  `https://onebox.lokkesveen.com/guides/backend.md`, section "Keep each user's data apart" (user B asks for
   user A's row and gets 404).
 
 Pin the test runner's time zone too. Set `TZ` to a zone with DST (for example
