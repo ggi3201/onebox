@@ -92,7 +92,10 @@ What it checks, and why:
   `eas.json`; those apply to builds only. The script builds with
   `eas env:exec <environment>`, so every `EXPO_PUBLIC_*` value must be an EAS
   environment variable. Check with `eas env:list --environment production`.
-- **`--expect-host`.** The production API host must be in the bundle. If it
+- **`--expect-host`.** The production API host must be in the bundle.
+  (To check your own text instead, remember that Hermes stores a string with
+  any non-ASCII character, such as "·" or "é", as UTF-16. Plain `strings`
+  misses it.) If it
   is not, a public value is missing and the update would send users to the
   wrong server, or to nowhere. A local address in the bundle is a warning:
   apps often have a dev-only `localhost` fallback. Read the code before you
@@ -116,16 +119,28 @@ eas update:edit <group id> --rollout-percentage 100
 
 ## 4. Undo a bad update
 
-Publish the last good update again:
+Roll back the bad update by its group id:
 
 ```bash
-eas update:list --branch production              # find the last good group id
-eas update:republish --group <group id>
+eas update:list --branch production              # the bad update's group id
+eas update:rollback <group id> -p ios -m "rollback: <why>"
 ```
+
+It republishes the update before it. If there is none, as after the first
+update ever, it rolls back to the code built into the app. To go back to a
+specific older update instead, use `eas update:republish --group <group id>`.
 
 Phones pick it up on their next launch or the one after. If an update
 crashes at launch, `expo-updates` may detect it and go back to the previous
 update on that phone. Do not count on it: republish.
+
+## Test it once, on a real phone
+
+After the first build with updates is in TestFlight: change one visible word
+on a screen only you open, publish to `production`, close the app fully and
+open it twice, and see the word. Then roll it back (step 4). Only phones on
+builds with the same runtime version can take it, so App Store users on older
+builds see nothing. In a real run this took about five minutes.
 
 ## Why an update did not arrive
 
