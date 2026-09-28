@@ -34,7 +34,7 @@ Skills read these from `~/.config/onebox/config.json`, or `.onebox.json` for thi
 - `apple.teamId` — not set
 - `apple.ascKeyId` — not set
 - `apple.ascIssuerId` — not set
-- `apple.ascKeyRef` — not set
+- `apple.ascKeyRef` or `apple.ascKeyPath` — not set
 - `expo.tokenRef` — not set
 - `expo.buildMode` — not set
 - `revenuecat.apiKeyRef` — not set

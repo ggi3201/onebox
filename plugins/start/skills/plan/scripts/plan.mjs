@@ -30,10 +30,12 @@ const CONFIG_DOC = "https://github.com/ggi3201/onebox/blob/main/CONFIG.md";
 const MARK = "<!-- onebox-plan v1 ";
 
 // Config keys each path needs (CONFIG.md). Key names only, never values.
+// A list inside the list means "any one of these": the skills that read the
+// App Store Connect key take a path to the .p8 file or a secret reference.
 const BOX_KEYS = ["box.type", "box.ssh", "box.domain", "box.appsDir", "box.tunnel", "box.tunnelName", "box.cloudflareTokenRef"];
 const CONFIG_KEYS = [
   { keys: ["secrets.tool"] },
-  { keys: ["apple.teamId", "apple.ascKeyId", "apple.ascIssuerId", "apple.ascKeyRef"] },
+  { keys: ["apple.teamId", "apple.ascKeyId", "apple.ascIssuerId", ["apple.ascKeyRef", "apple.ascKeyPath"]] },
   { keys: ["expo.tokenRef", "expo.buildMode"] },
   { when: { paid: ["subs"] }, keys: ["revenuecat.apiKeyRef"] },
   { when: { backend: ["box"] }, keys: [...BOX_KEYS, "box.runnerLabel"] },
@@ -129,7 +131,14 @@ function selectItems(ans) {
   }
   return out;
 }
-const itemSig = (ans) => selectItems(ans).map(keyOf).join("|");
+// Which items are in the plan, and which of them start ticked as likely done.
+// A question that changes either one changes the plan, so it is asked.
+const itemSig = (ans) => selectItems(ans).map((it) => keyOf(it) + (it.doneWhen && matches(it.doneWhen, ans) ? "+" : "")).join("|");
+
+// A config key entry is a name, or a list of names where any one will do.
+const keyNames = (k) => (Array.isArray(k) ? k : [k]);
+const keyLabel = (k, fmt = (n) => n) => keyNames(k).map(fmt).join(" or ");
+const keyIsSet = (k, set) => keyNames(k).some((n) => set.has(n));
 
 // ---------- questions mode ----------
 
@@ -232,11 +241,11 @@ function render(answers, sources, detect) {
 
   const set = new Set([...(detect.config?.user?.keysSet ?? []), ...(detect.config?.project?.keysSet ?? [])]);
   const keys = [];
-  for (const g of CONFIG_KEYS) if (matches(g.when, answers)) for (const k of g.keys) if (!keys.includes(k)) keys.push(k);
+  for (const g of CONFIG_KEYS) if (matches(g.when, answers)) for (const k of g.keys) if (!keys.some((x) => keyLabel(x) === keyLabel(k))) keys.push(k);
   sec("## Config keys", [
     `Skills read these from \`~/.config/onebox/config.json\`, or \`.onebox.json\` for this app. Never put a secret value there, only a reference. See ${CONFIG_DOC}.`,
     "",
-    ...keys.map((k) => `- \`${k}\` — ${set.has(k) ? "set" : "not set"}`),
+    ...keys.map((k) => `- ${keyLabel(k, (n) => `\`${n}\``)} — ${keyIsSet(k, set) ? "set" : "not set"}`),
   ]);
 
   for (const ph of catalog.phases) {
@@ -246,11 +255,12 @@ function render(answers, sources, detect) {
     for (const it of its) {
       const k = keyOf(it);
       // Detection wins. Otherwise an answer can mark an item as likely done
-      // (an app already on TestFlight has an Apple account and Xcode).
-      const likely = !detect.done?.[k] && it.doneWhen && matches(it.doneWhen, answers)
+      // (an app already on TestFlight has an Apple account and Xcode), unless
+      // detection sees what is still missing ("open").
+      const likely = !detect.done?.[k] && !detect.open?.[k] && it.doneWhen && matches(it.doneWhen, answers)
         ? `you answered "${labelOf(catalog.questions.find((q) => q.id === Object.keys(it.doneWhen)[0]), answers[Object.keys(it.doneWhen)[0]])}"`
         : undefined;
-      s.lines.push({ text: itemText(it), item: { key: k, done: detect.done?.[k], likely, found: detect.seen?.[k] } });
+      s.lines.push({ text: itemText(it), item: { key: k, done: detect.done?.[k], likely, found: detect.open?.[k] ?? detect.seen?.[k], open: !!detect.open?.[k] } });
     }
   }
   sec("## Notes", ["Your own notes. The planner never changes them."]);
@@ -272,7 +282,7 @@ function readOldPlan() {
 const ITEM_RE = /^\s*- \[( |x|X)\] (.*<!-- ((?:guide|skill):\S+) -->)\s*$/;
 const NOTE_RE = /^ {2}- (detected|likely done|found): /;
 const GEN_RE = [
-  /^- `[\w.]+` — (set|not set)$/,
+  /^- `[\w.]+`( or `[\w.]+`)* — (set|not set)$/,
   /^\/plugin install \S+@onebox$/,
   /^- .+ \*\*.*\*\* \((you|detected|default)\)$/,
 ];
@@ -355,12 +365,13 @@ function writeMode() {
     const occ = new Map();
     for (const l of s.lines) {
       if (l.item) {
-        const { key, done, likely, found } = l.item;
+        const { key, done, likely, found, open } = l.item;
         const prev = parsed.items.get(key);
         // Keep the user's tick. Tick what detection found done, unless the user
-        // unticked an item this planner had ticked before.
+        // unticked an item this planner had ticked before. Drop a tick this
+        // planner made when detection now sees what is still missing.
         const auto = !!done || !!likely;
-        const ticked = prev ? prev.ticked || (auto && !prev.autoTicked) : auto;
+        const ticked = prev ? (prev.ticked && !(open && prev.autoTicked)) || (auto && !prev.autoTicked) : auto;
         const fresh = l.text;
         const body = prev && !staticLooksGenerated(prev.body) ? prev.body : fresh;
         out.push(`- [${ticked ? "x" : " "}] ${body}`);
@@ -402,7 +413,8 @@ function writeMode() {
   log(`Answers: ${catalog.questions.map((q) => `${q.id}=${Array.isArray(answers[q.id]) ? answers[q.id].join("+") || "none" : answers[q.id]} (${sources[q.id]})`).join(", ")}`);
   log(`Install:${plugins.length ? "" : " nothing"}`);
   for (const p of plugins) log(`  /plugin install ${p}@onebox`);
-  const missing = keys.filter((k) => !new Set([...(detect.config?.user?.keysSet ?? []), ...(detect.config?.project?.keysSet ?? [])]).has(k));
+  const setKeys = new Set([...(detect.config?.user?.keysSet ?? []), ...(detect.config?.project?.keysSet ?? [])]);
+  const missing = keys.filter((k) => !keyIsSet(k, setKeys)).map((k) => keyLabel(k));
   log(`Config keys not set: ${missing.length ? missing.join(", ") : "none"}`);
   for (const q of catalog.questions) {
     const d = detect.answers?.[q.id];

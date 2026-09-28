@@ -108,9 +108,10 @@ if (expoPick) {
   else if (/bundleIdentifier\s*:/.test(dynText)) bundleId = "dynamic";
 
   const plugins = JSON.stringify(cfg.plugins ?? []) + dynText;
-  const usesAppleSignIn = cfg.ios?.usesAppleSignIn === true || /usesAppleSignIn\s*:\s*true/.test(dynText);
+  // Both forms turn on the capability: usesAppleSignIn, or the entitlement itself.
+  const usesAppleSignIn = cfg.ios?.usesAppleSignIn === true || /usesAppleSignIn\s*:\s*true/.test(dynText)
+    || !!cfg.ios?.entitlements?.["com.apple.developer.applesignin"] || /com\.apple\.developer\.applesignin/.test(dynText);
   const easProjectId = !!cfg.extra?.eas?.projectId || /projectId\s*:/.test(dynText);
-  const appleTeamId = !!cfg.ios?.appleTeamId || /appleTeamId\s*:\s*['"`]/.test(dynText);
 
   const easFile = [path.join(d, "eas.json"), path.join(root, "eas.json")].find(exists);
   const eas = readJson(easFile ?? "") ?? null;
@@ -118,7 +119,18 @@ if (expoPick) {
   const profiles = Object.keys(build).sort();
   const apiUrlIn = profiles.filter((p) => Object.keys(build[p]?.env ?? {}).some((k) => /URL|API/i.test(k)));
   const devClientProfile = profiles.some((p) => build[p]?.developmentClient === true);
-  const ascAppId = Object.values(eas?.submit ?? {}).some((s) => s?.ios?.ascAppId);
+  const submits = Object.values(eas?.submit ?? {});
+  const ascAppId = submits.some((s) => s?.ios?.ascAppId);
+  // The team id can sit in the app config or in eas.json's submit profile.
+  const appleTeamId = cfg.ios?.appleTeamId || /appleTeamId\s*:\s*['"`]/.test(dynText) ? "app config"
+    : submits.some((s) => s?.ios?.appleTeamId) ? "eas.json" : false;
+
+  // EAS Update: the package, the update URL, and a channel per build profile.
+  const updates = {
+    package: !!dp["expo-updates"],
+    url: !!cfg.updates?.url || /updates\s*:\s*\{[^}]*\burl\s*:/.test(dynText),
+    channels: profiles.filter((p) => build[p]?.channel),
+  };
 
   expo = {
     found: true,
@@ -135,6 +147,8 @@ if (expoPick) {
     revenuecat: !!dp["react-native-purchases"],
     revenuecatUi: !!dp["react-native-purchases-ui"],
     secureStore: !!dp["expo-secure-store"],
+    updates,
+    notifications: !!dp["expo-notifications"],
   };
 }
 
@@ -196,12 +210,14 @@ const isTestPath = (p) => rel(p).split(path.sep).some((seg, i, all) =>
   || (i === all.length - 1 && (/[._-](test|spec)s?\.\w+$/i.test(seg) || /Tests?\.cs$/.test(seg))));
 const AI_HOSTS = ["api.anthropic.com", "api.openai.com", "openrouter.ai", "generativelanguage.googleapis.com"];
 let appleServer = null;
+let pushServer = null; // a backend file that sends pushes: Expo's push API, or APNs directly
 for (const f of srcFiles) {
   if (isTestPath(f)) continue;
   const t = readText(f, 256 * 1024);
   if (!t) continue;
   const inBackend = backends.some((b) => f.startsWith(path.join(root, b.dir) + path.sep));
   if (!appleServer && inBackend && /appleid\.apple\.com/.test(t)) appleServer = rel(f);
+  if (!pushServer && inBackend && /exp\.host|api(\.sandbox)?\.push\.apple\.com|expo-server-sdk/.test(t)) pushServer = rel(f);
   for (const h of AI_HOSTS) if (!ai.endpoints[h] && t.includes(h)) ai.endpoints[h] = rel(f);
 }
 
@@ -209,6 +225,29 @@ for (const f of srcFiles) {
 
 const compose = fs.readdirSync(root).filter((f) => /^(docker-)?compose(\.[\w-]+)?\.ya?ml$/.test(f))
   .sort((a, b) => a.split(".").length - b.split(".").length || a.localeCompare(b));
+const isStagingCompose = (f) => /[.-](stg|staging|qa)\./i.test(f);
+// Compose files with a Traefik router that has a Host rule.
+const traefikHosts = compose.filter((f) => /traefik\.http\.routers\.[\w-]+\.rule\s*[=:]\s*["']?Host\(/.test(readText(path.join(root, f)) ?? ""));
+
+// ---------- GitHub workflows, helper scripts ----------
+
+const wfDir = path.join(root, ".github", "workflows");
+const workflows = (() => { try { return fs.readdirSync(wfDir).filter((f) => /\.ya?ml$/.test(f)).sort(); } catch { return []; } })()
+  .map((f) => ({ file: f, text: readText(path.join(wfDir, f)) ?? "" }));
+const deployWorkflows = workflows.filter((w) => /deploy/i.test(w.file) || /docker[ -]compose\b[^\n]*\bup\b/.test(w.text)).map((w) => w.file);
+// A workflow that runs the tests: a test or check script, or a test runner.
+const RUNS_TESTS = /\b(npm|pnpm|yarn|bun|turbo)\b[^\n]*\b(test|check|vitest|jest)\b|\bdotnet\s+test\b|\bvitest\b|\bjest\b/;
+const testWorkflows = workflows.filter((w) => RUNS_TESTS.test(w.text)).map((w) => w.file);
+
+// Secrets injected by a tool at run time, in package scripts, scripts/ or workflows.
+const SECRETS_RUN = /(^|[\s"'`;&|(])(doppler run|op run|op inject)\b/;
+const secretsRunIn = [
+  ...pkgs.filter(({ pkg }) => Object.values(pkg.scripts ?? {}).some((s) => SECRETS_RUN.test(String(s))))
+    .map(({ dir }) => rel(path.join(dir, "package.json"))),
+  ...walk(path.join(root, "scripts"), { depth: 2, test: () => true, limit: 200 })
+    .filter((f) => SECRETS_RUN.test(readText(f, 128 * 1024) ?? "")).map(rel),
+  ...workflows.filter((w) => SECRETS_RUN.test(w.text)).map((w) => `.github/workflows/${w.file}`),
+];
 
 const SITE_NAMES = /^(site|web|www|website|landing|landing-page|marketing|homepage)$/;
 const sites = dirs.filter((d) => d !== root && d !== expoPick?.dir && (
@@ -258,7 +297,8 @@ const answers = {};
 const say = (id, value, confidence, why) => { answers[id] = { value, confidence, why }; };
 
 if (!expo.found) say("stage", "idea", "likely", "no Expo app in this folder");
-else if (expo.eas?.ascAppId) say("stage", "testflight", "likely", "eas.json has an App Store Connect app id");
+else if (expo.eas?.ascAppId) say("stage", "testflight", "likely",
+  "eas.json has an App Store Connect app id. The repo cannot show if the app is on TestFlight only or on the App Store");
 else say("stage", "expo", "high", `Expo app in ${expo.dir}`);
 
 const hostedHit = [...hosted.supabase, ...hosted.firebase, ...hosted.convex];
@@ -268,6 +308,7 @@ else if (hostedHit.length) say("backend", "hosted", "high", hostedHit[0]);
 else if (expo.found) say("backend", "none", "low", "no server code and no Supabase, Convex or Firebase SDK");
 
 if (expo.appleSignIn?.package) say("login", "apple", "high", "expo-apple-authentication is in the app");
+else if (expo.appleSignIn?.usesAppleSignIn) say("login", "apple", "likely", "the app config turns on Sign in with Apple");
 if (expo.revenuecat) say("paid", "subs", "high", "react-native-purchases is in the app");
 if (sites.length) say("site", "yes", "likely", `site folder: ${sites.join(", ")}`);
 const aiHits = [...ai.packages, ...Object.entries(ai.endpoints).map(([h, f]) => `${h} (${f})`)];
@@ -275,13 +316,20 @@ if (aiHits.length) say("ai", [], "low", `AI in the code: ${aiHits.join("; ")}. W
 
 // ---------- what is already done ----------
 // Keyed by "<kind>:<slug>", so every catalog alias of one guide or skill matches.
-// "done" pre-ticks the item. "seen" only adds a note.
+// "done" pre-ticks the item. "seen" only adds a note. "open" says what is
+// still missing: it adds a note too, and it stops a "likely done" tick.
 
 const done = {};
 const seen = {};
+const open = {};
+const list = (a) => (a.length < 2 ? a.join("") : `${a.slice(0, -1).join(", ")} and ${a.at(-1)}`);
 
 if (xcode) done["guide:xcode"] = "Xcode is installed on this Mac";
-if (hasKey("apple.teamId") || expo.appleTeamId) done["guide:apple-developer"] = "an Apple Team ID is set";
+if (hasKey("apple.teamId")) done["guide:apple-developer"] = "an Apple Team ID is set (apple.teamId in the onebox config)";
+else if (expo.appleTeamId) done["guide:apple-developer"] = `an Apple Team ID is set (in ${expo.appleTeamId === "eas.json" ? expo.eas.file : "the app config"})`;
+
+if (hasKey("secrets.tool")) done["guide:secrets"] = "secrets.tool is in the onebox config";
+else if (secretsRunIn.length) done["guide:secrets"] = `secrets come from a tool at run time (doppler run or op run in ${secretsRunIn.join(", ")})`;
 
 if (expo.found) {
   const missing = [];
@@ -290,11 +338,56 @@ if (expo.found) {
   const want = ["development", "preview", "production"];
   const lack = want.filter((p) => !expo.eas?.profiles.includes(p));
   if (lack.length) missing.push(`eas.json profiles: ${lack.join(", ")}`);
+  // Session tokens belong in the Keychain (expo-app.md, step 9). Only an app
+  // with accounts or a server has them.
+  const hasTokens = backends.length || hostedHit.length || expo.appleSignIn.package || expo.appleSignIn.usesAppleSignIn;
+  if (hasTokens && !expo.secureStore) missing.push("expo-secure-store, to keep tokens in the Keychain");
+  if (expo.appleSignIn.package && !expo.appleSignIn.usesAppleSignIn) {
+    missing.push("usesAppleSignIn in the app config (without it, a build can turn Sign in with Apple off on the App ID)");
+  }
   if (!missing.length) done["guide:expo-app"] = `Expo app in ${expo.dir} with a bundle id, a dev client and the three EAS profiles`;
-  else seen["guide:expo-app"] = `Expo app in ${expo.dir}; still missing ${missing.join("; ")}`;
+  else open["guide:expo-app"] = `Expo app in ${expo.dir}; still missing ${missing.join("; ")}`;
   done["skill:start/new-app"] = `Expo app in ${expo.dir}`;
   if (expo.easProjectId && expo.eas) done["guide:expo-eas"] = "the EAS project is linked";
   if (expo.eas?.ascAppId) seen["guide:app-store-connect-setup"] = "eas.json has an ascAppId, so the app record exists";
+
+  const u = expo.updates;
+  if (u.package) {
+    const lackU = [];
+    if (!u.url) lackU.push("updates.url in the app config");
+    if (!u.channels.length) lackU.push("a channel in each eas.json build profile");
+    if (!lackU.length) done["skill:ship-ios/eas-update"] = `expo-updates is in the app, with an update URL and channels (${u.channels.join(", ")})`;
+    else open["skill:ship-ios/eas-update"] = `expo-updates is in the app; still missing ${list(lackU)}`;
+  }
+
+  if (expo.notifications) {
+    if (pushServer) done["guide:push-notifications"] = `expo-notifications is in the app, and the server sends pushes (${pushServer})`;
+    else seen["guide:push-notifications"] = "expo-notifications is in the app; no server code that sends a push found";
+  }
+}
+
+// Backend on the box: a Traefik router with a Host rule means the API has its
+// hostname. With a deploy workflow too, the backend guide is done.
+const prodCompose = compose.filter((f) => !isStagingCompose(f));
+const stagingCompose = compose.filter(isStagingCompose);
+const prodHosts = traefikHosts.filter((f) => !isStagingCompose(f));
+if (prodHosts.length) done["skill:box/expose-service"] = `a Traefik router with a Host rule in ${prodHosts.join(", ")}`;
+if (backends.length) {
+  const where = `${backends.map((b) => b.dir).join(", ")}${compose.length ? ` and ${compose.join(", ")}` : ""}`;
+  const lackB = [];
+  if (!prodCompose.length) lackB.push("a docker-compose.yml");
+  else if (!prodHosts.length) lackB.push("Traefik router labels in the compose file");
+  if (!deployWorkflows.length) lackB.push("a deploy workflow in .github/workflows");
+  // Name the production deploy, not the staging one, when both exist.
+  const prodDeploys = workflows.filter((w) => deployWorkflows.includes(w.file) && !stagingCompose.some((f) => w.text.includes(f))).map((w) => w.file);
+  const by = (prodDeploys.length ? prodDeploys : deployWorkflows).join(", ");
+  if (!lackB.length) done["guide:backend"] = `${backends.map((b) => b.dir).join(", ")}, a Traefik router in ${prodHosts.join(", ")}, deployed by ${by}`;
+  else seen["guide:backend"] = `${where}; still missing ${list(lackB)}`;
+}
+if (stagingCompose.length) {
+  const deploys = workflows.filter((w) => stagingCompose.some((f) => w.text.includes(f))).map((w) => w.file);
+  if (deploys.length) done["skill:box/staging-env"] = `${stagingCompose.join(", ")}, deployed by ${deploys.join(", ")}`;
+  else seen["skill:box/staging-env"] = `${stagingCompose.join(", ")}; no workflow deploys it`;
 }
 
 if (expo.appleSignIn?.package) {
@@ -302,14 +395,28 @@ if (expo.appleSignIn?.package) {
   else seen["guide:sign-in-with-apple"] = "Sign in with Apple is wired in the app; no server-side token check found";
 }
 if (expo.revenuecat) done["guide:revenuecat"] = "react-native-purchases is in the app";
-if (hasKey("apple.ascKeyId") && hasKey("apple.ascIssuerId")) done["guide:app-store-connect-api-key"] = "the App Store Connect key id and issuer id are in the onebox config";
+if (hasKey("apple.ascKeyId") && hasKey("apple.ascIssuerId")) {
+  // The skills take the .p8 key from a path or from a secret reference; the path wins.
+  if (hasKey("apple.ascKeyPath") || hasKey("apple.ascKeyRef")) done["guide:app-store-connect-api-key"] = "the App Store Connect key id, issuer id and key are in the onebox config";
+  else open["guide:app-store-connect-api-key"] = "the key id and issuer id are in the onebox config; still missing apple.ascKeyPath or apple.ascKeyRef";
+}
 if (hasKey("box.domain")) done["guide:domain"] = "box.domain is in the onebox config";
 if (hasKey("box.ssh")) seen["skill:box/box-setup"] = "box.ssh is in the onebox config; run the check phase to confirm";
-if (backends.length) seen["guide:backend"] = `${backends.map((b) => b.dir).join(", ")}${compose.length ? ` and ${compose.join(", ")}` : ""}`;
 if (sites.length) seen["skill:box/new-landing-page"] = `site folder: ${sites.join(", ")}`;
 if (aiHits.length || hasKey("llm.keyRef")) seen["guide:llm-api-key"] = "the code already calls an AI API";
 if (hasKey("tracing.otlpEndpoint")) done["guide:langfuse"] = "tracing.otlpEndpoint is in the onebox config";
-if (testScripts.length) seen["guide:agent-test-loop"] = `scripts: ${testScripts.join(", ")}`;
+
+// The test loop: one command that runs every check, and CI that runs the tests.
+const scriptNames = new Set(testScripts.map((s) => s.split(" ")[0].replace("type-check", "typecheck")));
+const oneCommand = scriptNames.has("check") || ["typecheck", "lint", "test"].every((n) => scriptNames.has(n));
+if (oneCommand && testWorkflows.length) {
+  done["guide:agent-test-loop"] = `scripts: ${testScripts.join(", ")}; ${list(testWorkflows)} ${testWorkflows.length > 1 ? "run" : "runs"} the tests`;
+} else if (testScripts.length || testWorkflows.length) {
+  const lackT = [];
+  if (!oneCommand) lackT.push(`a check script (or typecheck, lint and test; no ${["typecheck", "lint", "test"].filter((n) => !scriptNames.has(n)).join(", ")})`);
+  if (!testWorkflows.length) lackT.push("a workflow in .github/workflows that runs the tests");
+  open["guide:agent-test-loop"] = `${testScripts.length ? `scripts: ${testScripts.join(", ")}` : `${list(testWorkflows)} runs tests`}; still missing ${list(lackT)}`;
+}
 
 const cannotDetect = [
   "whether your Apple Developer membership is active",
@@ -321,7 +428,8 @@ const cannotDetect = [
 
 console.log(JSON.stringify({
   detect: "onebox v1",
-  expo, backends, hosted, ai, appleServer, compose, sites,
-  config, xcode, plan, testScripts,
-  answers, done, seen, notes, cannotDetect,
+  expo, backends, hosted, ai, appleServer, pushServer, compose, traefikHosts, sites,
+  workflows: { files: workflows.map((w) => w.file), deploy: deployWorkflows, tests: testWorkflows },
+  secretsRunIn, config, xcode, plan, testScripts,
+  answers, done, seen, open, notes, cannotDetect,
 }, null, 2));

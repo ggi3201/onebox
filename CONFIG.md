@@ -43,7 +43,8 @@ it to a file other than the one the user asked for, and never put it in a URL.
     "teamId": "",                          // 10-char Apple team ID
     "ascKeyId": "",                        // App Store Connect API key ID
     "ascIssuerId": "",                     // App Store Connect issuer ID
-    "ascKeyRef": "ASC_PRIVATE_KEY"          // secret reference to the .p8 contents, or a path under "ascKeyPath"
+    "ascKeyRef": "ASC_PRIVATE_KEY",         // secret reference to the .p8 contents
+    "ascKeyPath": ""                       // or: a path to the .p8 file. One of the two is enough; the path wins
   },
 
   "expo": {

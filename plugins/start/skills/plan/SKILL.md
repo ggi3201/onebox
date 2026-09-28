@@ -29,7 +29,8 @@ throws on purpose. It looks at the root, each direct subfolder, and `apps/*`
 and `packages/*`. It prints JSON:
 
 - `expo`: the app folder, bundle id, EAS profiles, dev client or Expo Go,
-  Sign in with Apple, RevenueCat, `expo-secure-store`.
+  Sign in with Apple, RevenueCat, `expo-secure-store`, `expo-updates`,
+  `expo-notifications`.
 - `backends`: ASP.NET projects and Node servers (express, fastify, hono and
   others). `hosted`: Supabase, Convex or Firebase SDKs. `compose`, `sites`.
 - `ai`: AI SDKs and AI API hosts named in the code.
@@ -37,8 +38,11 @@ and `packages/*`. It prints JSON:
 - `plan`: whether `PLAN.md` exists and whether this skill made it.
 - `answers`: guesses for the catalog questions, each with `confidence`
   (`high`, `likely`, `low`) and `why`.
-- `done` and `seen`: evidence per plan item. `done` ticks the item. `seen`
-  only adds a note.
+- `workflows`, `traefikHosts`, `secretsRunIn`: GitHub workflows, compose
+  files with a Traefik router, and files that run `doppler run` or `op run`.
+- `done`, `seen` and `open`: evidence per plan item. `done` ticks the item.
+  `seen` only adds a note. `open` names what is still missing: it adds a note
+  and stops a "likely done" tick.
 - `notes` and `cannotDetect`: tell the user about both.
 
 If `expo.found` is false, say so. The user may be in the wrong folder. Ask
@@ -105,7 +109,8 @@ It writes `PLAN.md` with:
    `found:` line and no tick. An answer can also mark an item as likely done
    (an app already on TestFlight has an Apple account and an App Store
    Connect record): it starts ticked with a `likely done:` line, and the user
-   can untick it. Detection wins over "likely done".
+   can untick it. Detection wins over "likely done", both ways: an item
+   detection sees as incomplete gets its `found:` line and no tick.
 5. **Notes**, for the user.
 
 The same answers and the same repo give the same file. Show the user the
@@ -119,6 +124,8 @@ When `PLAN.md` exists and this skill made it, run steps 1 and 3 again. Pass
 - keeps every tick the user made, and every line they added, where they put
   it;
 - ticks items detection now finds done, but not one the user unticked;
+- unticks an item it ticked itself, when detection now sees what is still
+  missing. A tick the user made stays;
 - moves items that no longer fit the answers to "Kept from your old plan",
   if they are ticked or have notes. Nothing the user wrote is deleted;
 - prints the next unticked step.
