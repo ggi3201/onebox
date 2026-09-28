@@ -17,7 +17,8 @@ cat > "$tmp/apps/mobile/eas.json" <<'JSON'
 { "cli": { "appVersionSource": "remote" }, "build": { "development": { "developmentClient": true, "distribution": "internal" }, "preview": { "distribution": "internal" }, "production": { "autoIncrement": true } } }
 JSON
 (cd "$tmp" && git init -q)
-node "$plan/detect.mjs" "$tmp" > "$tmp/detect.json"
+# A fake HOME, so the page never shows the onebox config of the Mac that ran this.
+HOME="$tmp" node "$plan/detect.mjs" "$tmp" > "$tmp/detect.json"
 node "$plan/plan.mjs" write --repo "$tmp" --detect "$tmp/detect.json" --out EXAMPLE.md \
   --answers '{"stage":"expo","backend":"box","login":"apple","paid":"subs","site":"yes","ai":["chat"],"remote":"yes"}' >/dev/null
 # Drop the machine-readable first line; the page does not need it.

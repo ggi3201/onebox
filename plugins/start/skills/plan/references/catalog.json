@@ -212,7 +212,7 @@
       "kind": "skill",
       "plugin": "start",
       "phase": "app",
-      "title": "Make the repo: the Expo app, the API and the checks",
+      "title": "Make the repo in the layout the kit expects, with its checks",
       "when": {
         "stage": [
           "idea"

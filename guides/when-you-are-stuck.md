@@ -88,10 +88,14 @@ after a fresh session.
 - **Expo and EAS:** the [Expo Discord](https://chat.expo.dev/) and the
   [Expo forums](https://github.com/expo/expo/discussions).
 - **RevenueCat:** the [RevenueCat community](https://community.revenuecat.com/).
-- **This kit:** a skill or a guide is wrong or unclear? Write to me at
-  [geir@lokkesveen.com](mailto:geir@lokkesveen.com), with the prompt above.
-  I read everything, but I build this next to a day job, so I cannot promise
-  a fast answer.
+- **This kit:** a skill or a guide is wrong or unclear?
+  [Open an issue](https://github.com/ggi3201/onebox/issues/new?template=dogfood.md)
+  with the prompt above. Your agent can do it with
+  `gh issue create --repo ggi3201/onebox --label dogfood`. Take out your app's
+  name, hosts and secrets first: issues are public. No GitHub account? Write
+  to me at [geir@lokkesveen.com](mailto:geir@lokkesveen.com). I read
+  everything, but I build this next to a day job, so I cannot promise a fast
+  answer.
 
 ## Check it works
 
