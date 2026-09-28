@@ -33,7 +33,8 @@ From the Expo app folder (the one with `app.json` or `app.config.*` and
 <skill-dir>/scripts/build.sh --skip-submit          # build only
 <skill-dir>/scripts/build.sh --interactive          # first run, or a new app target
 <skill-dir>/scripts/build.sh --cloud                # EAS servers instead of this Mac
-<skill-dir>/scripts/build.sh --groups "Internal"    # also add the build to a TestFlight group
+<skill-dir>/scripts/build.sh --groups "Internal"    # also add the build to a TestFlight group (uses eas submit)
+<skill-dir>/scripts/build.sh --upload eas           # upload through eas submit instead of altool
 ```
 
 The script:
@@ -47,8 +48,13 @@ The script:
 5. Local only: stops in an SSH session, warns about an Xcode too old for
    uploads, forces a UTF-8 locale, checks CocoaPods, fastlane and Ruby, and passes the
    team ID and App Store Connect key to eas.
-6. Builds to `build/ios-<profile>-<time>.ipa`, then runs
-   `eas submit --path` on it.
+6. Takes a lock for the app's bundle id, so a second agent cannot build the
+   same app at the same time. Two parallel builds upload two builds whose
+   numbers do not match their upload order.
+7. Builds to `build/ios-<profile>-<time>.ipa`, then uploads it straight to
+   Apple with `xcrun altool` and the App Store Connect key from the config.
+   That takes seconds. Without a key, or with `--groups`, it uses
+   `eas submit`, which can wait in Expo's queue for hours.
 
 ## Who runs the build
 
@@ -64,11 +70,15 @@ Code signing needs the user's unlocked login keychain.
 
 ## After the build
 
-- `✔ Scheduled iOS submission` is the success signal. The `eas submit` exit
+- With altool, `UPLOAD SUCCEEDED` is the success signal. With eas submit,
+  `✔ Scheduled iOS submission` is. The `eas submit` exit
   code is not: the client can die afterwards while it polls. Do not resubmit.
   A second upload of the same build number is rejected as a duplicate.
 - Confirm in App Store Connect, not in EAS output: use the `appstore-connect`
   skill (`asc.mjs builds`, then `asc.mjs wait <buildId>`).
+- **Never upload one build twice.** If an eas submit is still queued, a direct
+  upload of the same file makes the queued one fail later with "You've already
+  submitted this build". That email is harmless.
 - **Stuck in Expo's queue?** `eas submit` hands the upload to Expo's servers,
   and on the free plan it can wait in a queue for a long time. The `.ipa` is
   already on your Mac, so upload it to Apple directly with the same App Store
