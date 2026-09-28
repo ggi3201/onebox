@@ -21,8 +21,8 @@ Install [Homebrew](https://brew.sh) first. Most of the tools below come from it.
 |---|---|---|
 | Xcode | iOS builds, the Simulator, `xcodebuild`, `xcrun` | [xcode.md](xcode.md). The full Xcode, not only the Command Line Tools. |
 | `git` | every repo | comes with Xcode |
-| Node.js (current LTS) | the skills' scripts, Expo, `eas` | `brew install node@22`, or a version manager such as `fnm` |
-| `pnpm` | the package manager in a `/start:new-app` repo | `corepack enable`. Corepack comes with Node. It runs the pnpm version that `package.json` pins in `packageManager`. |
+| Node.js 22 or 24 (LTS) | the skills' scripts, Expo, `eas` | `brew install node@22`, or a version manager such as `fnm` |
+| `pnpm` | the package manager in a `/start:new-app` repo | `corepack enable`, then `corepack install -g pnpm@10`. Corepack comes with Node. In a repo it runs the version that `package.json` pins in `packageManager`. Outside a repo it runs the global one; its default, pnpm 12, does not start through corepack yet. |
 | `jq` | reads the onebox config | `brew install jq` |
 | `eas` | Expo builds and updates, also local builds | `npm install -g eas-cli`. See [expo-eas.md](expo-eas.md). |
 | CocoaPods (`pod`) | local iOS builds | `brew install cocoapods`. See [xcode.md](xcode.md), step 6. |
@@ -97,9 +97,15 @@ On the box, after `box:box-setup`, its `check` phase must end with `0 fail`.
   Tools are selected, not Xcode. Run
   `sudo xcode-select -s /Applications/Xcode.app`.
 - **`pnpm -v` fails with `Cannot find module ... pnpm.cjs`.** Corepack picked a
-  pnpm version it cannot start. Pin a working one in the repo:
-  `corepack use pnpm@10`.
+  pnpm version it cannot start (pnpm 12). Outside a repo:
+  `corepack install -g pnpm@10`. In a repo: `corepack use pnpm@10`.
 - **`npx eas-cli` fails with `Cannot find module 'fdir'`.** Use the global
   `eas` from `npm install -g eas-cli`.
 - **`docker info` says it cannot connect.** The Docker app or Colima is not
   running. Start it, then try again.
+- **`pod install` in an agent crashes with `ASCII-8BIT`, or runs on Ruby
+  2.6, while your Terminal works.** The agent's shell has no UTF-8 locale, and
+  macOS `path_helper` (in `/etc/zprofile`) puts `/usr/bin` back in front of
+  a Ruby you added in `~/.zshenv`. Check `echo $LANG` and `which ruby pod` in
+  the agent's shell. Fix: `export LANG=en_US.UTF-8`, and put Homebrew's or
+  rbenv's bin first in `~/.zprofile`, which runs after `path_helper`.
