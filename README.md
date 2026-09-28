@@ -35,6 +35,15 @@ npx skills add ggi3201/onebox
 Then ask the agent to use the plan skill. I build and test with Claude Code.
 The skills are plain `SKILL.md` files, so other agents can use them too.
 
+To get fixes later, in Claude Code:
+
+```
+/plugin marketplace update onebox
+/plugin update <plugin>@onebox
+```
+
+Then restart Claude Code. A plugin updates only when its version went up.
+
 ## The route
 
 <picture>

@@ -44,6 +44,12 @@ load the skill, so it must carry the trigger phrases.
    lessons (pitfalls, ordering, verification steps). Remove only what is
    personal. Turn a personal story into a neutral example if it teaches
    something.
+10. **Raise the version.** Claude Code updates an installed plugin only when
+    its version goes up. Any change under `plugins/<plugin>/` needs
+    `node scripts/versions.mjs bump <plugin>` in the same PR: patch for a
+    fix, `minor` for a new skill. It changes `plugin.json` and
+    `marketplace.json` together. `check` in the same script runs on every PR.
+    A change in `guides/` needs no bump: skills fetch guides from the site.
 
 ## Guides
 

@@ -1,0 +1,17 @@
+name: Plugin versions
+
+# Claude Code updates an installed plugin only when its version changes.
+# This fails a PR that changes a plugin and leaves its version alone.
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  versions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - run: node scripts/versions.mjs check --base origin/${{ github.base_ref }}
