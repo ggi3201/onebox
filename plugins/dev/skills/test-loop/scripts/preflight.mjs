@@ -178,11 +178,18 @@ for (const m of metros) {
 }
 
 if (mine.length === 0) {
-  fail(`No Metro server serves ${appDir}. The simulator cannot be running this checkout's code. Start one on a free port from the app dir, for example: npx expo start --dev-client --port ${[8081, 8082, 8083, 8084, 8085].find((x) => !ports.has(x)) ?? 8090}`);
+  const portArg = fs.existsSync(path.join(appDir, "scripts", "metro-port.sh")) ? `"$(sh scripts/metro-port.sh)"` : [8082, 8083, 8084, 8085].find((x) => !ports.has(x)) ?? 8090;
+  fail(`No Metro server serves ${appDir}. The simulator cannot be running this checkout's code. Start one on this checkout's port from the app dir, for example: npx expo start --dev-client --port ${portArg}`);
 } else {
   const connected = mine.flatMap(devicesOf);
   if (connected.length) ok(`This checkout's Metro (:${mine.map((m) => m.port).join(", :")}) has the app connected on: ${[...new Set(connected)].join(", ")}`);
   else warn(`This checkout's Metro (:${mine[0].port}) has no app connected${bundleId ? ` for ${bundleId}` : ""}. Open the app from this server (press i in the Metro terminal, or open the dev client and pick port ${mine[0].port}).`);
+}
+// Another app on this checkout's Metro: two apps use one port, and that app
+// now shows this app's code.
+for (const m of mine) {
+  const foreign = [...new Set(m.targets.filter((t) => bundleId && t.appId && t.appId !== bundleId).map((t) => `${t.appId} on ${t.deviceName ?? "?"}`))];
+  if (foreign.length) fail(`${foreign.join(", ")} is connected to this checkout's Metro (:${m.port}), but this app is ${bundleId}. Two apps use one Metro port, so that app shows this app's code. Give each app its own port: scripts/metro-port.sh in references/preflight.md.`);
 }
 for (const m of others) {
   const devs = devicesOf(m);

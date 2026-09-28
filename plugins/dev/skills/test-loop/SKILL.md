@@ -42,7 +42,8 @@ It checks, read-only:
 
 - **Metro:** every running Metro server, its project root and port, and which
   app on which simulator is connected to it. FAIL when the app runs another
-  checkout's bundle, or when no Metro serves this checkout.
+  checkout's bundle, when another app is connected to this checkout's Metro,
+  or when no Metro serves this checkout.
 - **Simulators:** warns when more than one is booted, because `booted` in
   `simctl` then picks either one.
 - **Native build:** whether each native package has code in the installed
@@ -53,7 +54,7 @@ After every native build (`npx expo run:ios`), run it once with
 `--mark-built`. Later runs then compare against that build.
 
 Fix every FAIL before you look at the bug. Read `references/preflight.md` for
-the fixes, the reload-or-rebuild table, one Metro port per worktree, and the
+the fixes, the reload-or-rebuild table, one Metro port per app and per worktree, and the
 traps from real sessions. To prove the bundle is yours, change a visible
 string, watch it appear, then revert it.
 

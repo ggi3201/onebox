@@ -9,6 +9,7 @@ change does not show up on the simulator.
 |---|---|
 | No Metro serves this checkout | Start one from the Expo app folder on this worktree's port: `npx expo start --dev-client --port <port>`. Open the app from it. |
 | The app runs another checkout's bundle | Do not stop the other Metro. Another session may own it. Open the dev client's server list and pick this checkout's port, or rebuild here with `npx expo run:ios --port <port> --device "<simulator>"`. |
+| Another app is connected to this checkout's Metro | Two apps use one port, so the other app shows this app's code. Give each app its own port with `scripts/metro-port.sh` (below), start this Metro on its port, and rebuild this app with `npx expo run:ios --port <port>`. |
 | This Metro has no app connected | Open the app from this server: press `i` in the Metro terminal, or open the dev client and pick the port. |
 | Two or more simulators booted | Choose one and pass its UDID to every command, or shut the others down: `xcrun simctl shutdown <udid>`. |
 | Native package has no code in the binary | Rebuild: `npx expo run:ios --port <port>`. Then run the preflight with `--mark-built`. |
@@ -34,16 +35,23 @@ like a styling bug. Style changes cannot fix it. One agent shipped a styling
 
 When unsure, rebuild. It costs minutes. A wrong guess can cost hours.
 
-## One Metro port per worktree
+## One Metro port per app and per worktree
 
-Every worktree runs its own Metro, so each needs its own port. Derive the port
-from the worktree path, so it is the same every time and needs no registry:
+Every worktree runs its own Metro, so each needs its own port. So does every
+app. If two apps both use 8081, the dev client of one app can reconnect to the
+other app's Metro and show that app's code. Derive the port, so it is the same
+every time and needs no registry:
+
+- The main checkout gets 8200-8299, from the repo's folder name.
+- A worktree gets 8100-8199, from the worktree path.
 
 ```bash
-# scripts/metro-port.sh — the main checkout keeps 8081, worktrees get 8100-8199
+# scripts/metro-port.sh: one Metro port per app and per worktree.
+# Main checkout: 8200-8299, from the repo's folder name, so two apps' main
+# checkouts do not share 8081. Worktrees: 8100-8199, from the worktree path.
 root=$(git rev-parse --show-toplevel)
 if [ "$(git rev-parse --path-format=absolute --git-dir)" = "$(git rev-parse --path-format=absolute --git-common-dir)" ]; then
-  echo 8081
+  basename "$root" | cksum | awk '{print 8200 + ($1 % 100)}'
 else
   printf '%s' "$root" | cksum | awk '{print 8100 + ($1 % 100)}'
 fi
@@ -61,8 +69,9 @@ Metro address. A binary built in one worktree keeps looking for that
 worktree's port. Put both commands in `package.json` scripts so no one types
 the port by hand.
 
-Two ports can still collide (100 slots). The preflight shows it: the root of
-the Metro on your port is not your checkout.
+Two ports can still collide (100 slots in each range). The preflight shows
+it: the root of the Metro on your port is not your checkout, or an app with
+another bundle id is connected to your Metro.
 
 ## Several agent sessions at once
 
