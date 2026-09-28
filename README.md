@@ -21,7 +21,9 @@ In Claude Code:
 Then open Claude Code in your app's folder and run `/start:plan`. It looks at
 what the app already has, asks a few questions, and writes `PLAN.md`: the
 steps in order, and the install line for each plugin you need. Run it again
-later to tick what is done and see the next step.
+later to tick what is done and see the next step. No app yet? Run
+`/start:new-app` first. It makes the repo in the layout the other skills
+expect.
 [See an example plan](https://onebox.lokkesveen.com/example-plan/).
 
 Other agents (Codex, Cursor, Gemini CLI and more):
@@ -48,7 +50,7 @@ policy, support and terms pages that App Store Connect and your paywall link to.
 
 | Plugin | Runs on | Skills |
 |---|---|---|
-| `start` | your Mac | plan |
+| `start` | your Mac | plan, new-app |
 | `ship-ios` | your Mac | app-store-ready, expo-local-build, eas-update, appstore-connect, ios-preview-build, app-store-screenshots, store-listing, draw-app-icon, draw-icon-set |
 | `box` | your server | box-setup, expose-service, new-landing-page, staging-env |
 | `content` | your Mac | image, video |

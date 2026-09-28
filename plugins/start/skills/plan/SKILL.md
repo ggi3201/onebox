@@ -42,7 +42,8 @@ and `packages/*`. It prints JSON:
 - `notes` and `cannotDetect`: tell the user about both.
 
 If `expo.found` is false, say so. The user may be in the wrong folder. Ask
-before you go on.
+before you go on. If they have no app yet, offer `/start:new-app`: it makes the
+repo, then they run this skill again.
 
 ## 2. Ask second
 

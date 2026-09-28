@@ -106,7 +106,7 @@ const questions = catalog.questions as Q[];
       return true;
     });
 
-    const plugins = [...new Set(items.filter((i) => i.kind === "skill").map((i) => i.plugin))];
+    const plugins = [...new Set(items.filter((i) => i.kind === "skill" && i.plugin !== "start").map((i) => i.plugin))];
     out.install.textContent = [
       `/plugin marketplace add ${repo}`,
       "/plugin install start@onebox",

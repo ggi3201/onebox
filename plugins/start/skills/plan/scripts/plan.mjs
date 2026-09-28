@@ -218,7 +218,8 @@ function render(answers, sources, detect) {
 
   const items = selectItems(answers);
   const plugins = [];
-  for (const it of items) if (it.kind === "skill" && !plugins.includes(it.plugin)) plugins.push(it.plugin);
+  // start is already installed: it is what runs this script.
+  for (const it of items) if (it.kind === "skill" && it.plugin !== "start" && !plugins.includes(it.plugin)) plugins.push(it.plugin);
   sec("## Install", [
     "Only the plugins this plan uses. In Claude Code:",
     "",
