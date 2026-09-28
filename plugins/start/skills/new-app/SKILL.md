@@ -98,8 +98,9 @@ no tripwire, no workspace file, no API steps. Skip the steps marked **API**.
    terminal if `eas whoami` fails. Then run `eas init` from the Expo app's
    folder (`apps/mobile` when there is an API; never the repo root then).
 5. **App checks.** Follow `agent-test-loop.md` steps 1, 2, 4 and 7: strict
-   TypeScript, ESLint, one test runner, one Metro port per worktree. The
-   Metro script goes in the Expo app's `scripts/` (`apps/mobile/scripts/`).
+   TypeScript, ESLint, one test runner, one Metro port per app and per
+   worktree. The Metro script goes in the Expo app's `scripts/`
+   (`apps/mobile/scripts/`).
    Make it after `reset-project`, which deletes `scripts/`. The
    first test is the one `expo-app.md` step 4 asks for: every `eas.json`
    profile that leaves the Mac has an `https` API URL (`references/files.md`,
