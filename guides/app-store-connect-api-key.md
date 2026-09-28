@@ -1,17 +1,20 @@
 # App Store Connect API key
 
-## What it is and what it costs
+Runs on: your browser (App Store Connect). The key file then lives on your
+Mac.
 
 An App Store Connect API key lets tools talk to App Store Connect without your
 Apple Account password or a two-factor prompt. It is a private key file
 (`AuthKey_XXXXXXXXXX.p8`) plus two IDs. Tools sign a short-lived token with it
-for each request.
+for each request. You make it once, and the skills use it from then on.
 
-onebox uses it for: uploads and signing in `expo-local-build` (through EAS),
-build status and testers in `appstore-connect`, and screenshot uploads in
-`app-store-screenshots`.
+onebox uses it for: uploads and signing in `ship-ios:expo-local-build`
+(through EAS), build status and testers in `ship-ios:appstore-connect`, and
+screenshot uploads in `ship-ios:app-store-screenshots`.
 
-Free, part of the Apple Developer Program (`apple-developer.md`).
+## What it costs
+
+Free, part of the Apple Developer Program ([apple-developer.md](apple-developer.md)).
 
 ## Steps
 
@@ -45,7 +48,7 @@ make a new one.
 Individual keys (one per user, under your own profile) also exist. For onebox,
 a team key is simpler.
 
-## Where the value goes
+## Where the values go
 
 In `~/.config/onebox/config.json` (never in a repo):
 
@@ -71,7 +74,8 @@ If you keep secrets in a secrets manager instead of on disk, store the
 ```
 
 `secrets.tool` can be `env` (the reference is an environment variable name),
-`doppler` or `1password`. See `CONFIG.md`.
+`doppler` or `1password`. See
+[CONFIG.md](https://github.com/ggi3201/onebox/blob/main/CONFIG.md).
 
 The key ID and issuer ID are not secrets on their own, but together with the
 key they are. Keep all three out of public repos.
@@ -81,13 +85,13 @@ key they are. Keep all three out of public repos.
 EAS can store an App Store Connect key on Expo's servers (`eas credentials`).
 That copy is separate. If you rotate your key, update or remove the EAS copy
 too, or builds and submits fail with "Apple 401 detected". The
-`expo-local-build` skill passes your local key to eas on every build, so the
-local key is the one that counts.
+`ship-ios:expo-local-build` skill passes your local key to EAS on every build,
+so the local key is the one that counts.
 
 If you set the key in `eas.json` for `eas submit`, set all three of
 `ascApiKeyPath`, `ascApiKeyId` and `ascApiKeyIssuerId`, or none.
 
-## How to check it works
+## Check it works
 
 ```bash
 node <ship-ios>/skills/appstore-connect/scripts/asc.mjs apps
@@ -104,7 +108,7 @@ It should print your apps with their bundle IDs. It never prints the key.
   Make a new key with a higher role.
 - **403 on `POST /v1/apps`.** Expected. Apple does not allow creating apps
   through the API. Create the app record in the web UI
-  (`app-store-connect-setup.md`).
+  ([app-store-connect-setup.md](app-store-connect-setup.md)).
 - **"Apple 401 detected" in eas build or submit.** EAS used its own stale
   copy of the key. See "EAS keeps its own copy" above.
 - **The download link is gone.** You can download a key only once. Revoke it

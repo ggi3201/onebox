@@ -14,8 +14,9 @@ Application Services) is Expo's build and submit service. The Expo account is
 free. Local builds on your Mac are free. Cloud builds on EAS have a free tier
 and paid plans; you do not need them for this setup. See [expo-eas.md](expo-eas.md).
 
-Before you start you need Xcode ([xcode.md](xcode.md)) and an Apple Developer account
-([apple-developer.md](apple-developer.md)).
+Before you start you need Xcode ([xcode.md](xcode.md)), an Apple Developer account
+([apple-developer.md](apple-developer.md)) and a free Expo account
+([expo-eas.md](expo-eas.md), steps 1 to 3).
 
 ## Recommended layout
 
@@ -74,12 +75,13 @@ Existing project: move it into `apps/mobile` (or keep it at the root if there
 is no backend in the same repo; then skip the tripwire).
 
 Link it to an Expo project once. This writes `extra.eas.projectId` into the
-app config:
+app config. It needs the global `eas` CLI
+([expo-eas.md](expo-eas.md), steps 2 and 3):
 
 ```bash
 cd apps/mobile
-npx eas-cli@latest login
-npx eas-cli@latest init
+eas login
+eas init
 ```
 
 ### 2. Choose the bundle identifier
@@ -92,7 +94,7 @@ bundle identifier means a new app with no reviews, no ratings and no users.
 Decide it now, write it down, and use the same value for:
 
 - `ios.bundleIdentifier` in the app config,
-- the App ID in your developer account ([apple-developer.md](apple-developer.md)),
+- the App ID in your developer account ([app-store-connect-setup.md](app-store-connect-setup.md), step 1),
 - the app record in App Store Connect ([app-store-connect-setup.md](app-store-connect-setup.md)),
 - the audience check in your backend ([sign-in-with-apple.md](sign-in-with-apple.md)).
 
@@ -234,7 +236,7 @@ Rebuild only when you add or change a native module or a config plugin. The
   `EXPO_PUBLIC_API_URL=http://192.168.1.20:8080`.
 - **preview**: a release build for registered devices ("ad hoc"), pointed at
   a real server. For testing on your phone without TestFlight. Register each
-  phone once with `npx eas-cli device:create`. Skill:
+  phone once with `eas device:create`. Skill:
   `ship-ios:ios-preview-build`.
 - **production**: the build you upload to App Store Connect for TestFlight
   and the store.
@@ -374,7 +376,7 @@ log must show the request.
 - **Sign in with Apple stopped working after a build.** An EAS command ran
   from the wrong directory and synced a config without the capability. Look
   for a line about synced capabilities in the build log. Turn the capability
-  back on for the App ID ([apple-developer.md](apple-developer.md)) and add the root tripwire.
+  back on for the App ID ([app-store-connect-setup.md](app-store-connect-setup.md), step 1) and add the root tripwire.
 - **The app works on your Mac and does nothing on the phone.** The API URL is
   empty, `localhost` or `http://`. Check the `env` block of the profile you
   built.

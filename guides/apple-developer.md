@@ -1,10 +1,13 @@
 # Apple Developer Program
 
-## What it is and what it costs
+Runs on: your browser, or the Apple Developer app on an iPhone, iPad or Mac.
 
 The Apple Developer Program is the paid membership you need to put an app on
 TestFlight or the App Store. It also gives you App Store Connect, where you
-manage apps, builds, testers and sales.
+manage apps, builds, testers and sales. Join it first: approval can take from
+minutes to a few days.
+
+## What it costs
 
 - **99 USD per membership year.** Apple shows the price in your local
   currency during enrollment. Nonprofits, accredited schools and government
@@ -66,7 +69,7 @@ yourself to their team. Reasons:
 5. Pay the fee. Apple reviews the enrollment and emails you when it is active.
    Organizations take longer because Apple verifies the entity.
 
-## Where the value goes
+## Where the values go
 
 After enrollment you have a **Team ID**: a 10-character code. Find it on the
 Membership details part of your account page at
@@ -81,12 +84,12 @@ Put it in the onebox config:
 in `~/.config/onebox/config.json`. The Team ID is not a secret, but it is
 personal, so do not commit it to a public repo.
 
-## How to check it works
+## Check it works
 
 - https://developer.apple.com/account shows your membership as active, with
   an expiry date a year out.
 - https://appstoreconnect.apple.com opens and shows **Apps**.
-- `eas build` (see `expo-eas.md`) can sign in and list your team.
+- `eas build` (see [expo-eas.md](expo-eas.md)) can sign in and list your team.
 
 ## Common errors
 
@@ -100,10 +103,13 @@ personal, so do not commit it to a public repo.
 
 ## Next
 
-1. Install Xcode: `xcode.md`.
-2. Create the app record and do the one-time App Store Connect setup:
-   `app-store-connect-setup.md`.
-3. Make an API key so tools can work without your password:
-   `app-store-connect-api-key.md`.
-4. Set up Expo builds: `expo-eas.md`.
-5. If you sell subscriptions: `revenuecat.md`.
+1. Install Xcode: [xcode.md](xcode.md).
+2. Make the Expo project fit this setup: [expo-app.md](expo-app.md).
+3. Create the app record and do the one-time App Store Connect setup:
+   [app-store-connect-setup.md](app-store-connect-setup.md).
+4. Make an API key so tools can work without your password:
+   [app-store-connect-api-key.md](app-store-connect-api-key.md).
+5. Set up Expo builds: [expo-eas.md](expo-eas.md).
+6. If you sell subscriptions: [revenuecat.md](revenuecat.md).
+
+[start-here.md](start-here.md) has the full order.

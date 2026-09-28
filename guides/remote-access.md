@@ -4,9 +4,11 @@ Runs on: your box, your Mac and your phone.
 
 This guide puts your box, your Mac and your phone on one private network. You
 can then reach the box from anywhere without opening a port to the internet,
-and ask Claude to do the devops work while you are away from the desk.
+and ask your coding agent to do the devops work while you are away from the
+desk.
 
-If you already know Tailscale, skip to [Claude as your devops person](#claude-as-your-devops-person).
+If you already know Tailscale, skip to
+[Your coding agent as your devops person](#your-coding-agent-as-your-devops-person).
 
 ## What it is and what it costs
 
@@ -58,7 +60,7 @@ In the Tailscale admin console:
    box is then reachable as `<machine-name>.<your-tailnet>.ts.net`. Rename the
    machine to something short, such as `box`.
 2. **Machines → the box → Disable key expiry.** Device keys expire after 180
-   days by default. On a phone that means a login prompt. On a server that
+   days by default. On a phone that means a login prompt. On the box, which
    nobody logs into, it means the box silently drops off the tailnet.
 
 ### 3. One SSH alias on the Mac
@@ -73,7 +75,7 @@ Host *
 
 Host box
   HostName box.your-tailnet.ts.net
-  User deploy
+  User alice
 ```
 
 Then run this once, and enter your key's passphrase:
@@ -90,8 +92,9 @@ Why this matters:
   or `git push` in a non-interactive shell cannot answer a passphrase prompt.
   Without the Keychain entry, the command just hangs.
 - **Skills use the alias.** Set `"box": { "ssh": "box" }` in
-  `~/.config/onebox/config.json` (see [CONFIG.md](../CONFIG.md)). Every box skill
-  then reaches the server the same way you do.
+  `~/.config/onebox/config.json` (see
+  [CONFIG.md](https://github.com/ggi3201/onebox/blob/main/CONFIG.md)). Every
+  box skill then reaches the box the same way you do.
 
 ### 4. Close SSH to the internet (VPS only)
 
@@ -117,7 +120,7 @@ Use any SSH app. Termius is a common choice on iOS.
 1. In the app, create a new SSH key and copy its public key.
 2. On the Mac, add it to the box: `ssh box 'cat >> ~/.ssh/authorized_keys'`,
    paste the key, then press Ctrl-D.
-3. Add a host in the app: address `box.your-tailnet.ts.net`, user `deploy`,
+3. Add a host in the app: address `box.your-tailnet.ts.net`, user `alice`,
    the key from step 1.
 4. Turn Wi-Fi off and connect over mobile data to prove it works away from
    home.
@@ -127,10 +130,12 @@ your tailnet login instead of SSH keys, so there are no keys to copy to the
 phone. It is fine for a personal tailnet. With plain keys you have one less
 moving part.
 
-## Claude as your devops person
+## Your coding agent as your devops person
 
 Once the three devices can reach each other, you can hand the terminal work to
-Claude from your phone. There are two ways, and you can use both.
+your coding agent from your phone. There are two ways, and you can use both.
+Way A uses Claude Code's Remote Control. Way B works with any agent that runs
+in a terminal.
 
 ### A. Drive Claude Code on your Mac from the phone
 
@@ -160,10 +165,11 @@ claude
 ```
 
 Log in to Claude Code once on the box. Next time, `tmux attach -t ops` puts you
-back where you left off. The box skills work here too, with `box.ssh` set to
+back where you left off. Another terminal agent works the same way: start it
+inside `tmux` instead of `claude`. The box skills work here too, with `box.ssh` set to
 `localhost` in the box's own config.
 
-### What Claude should not do from the phone
+### What the agent should not do from the phone
 
 - **Sign iOS builds over SSH.** See the next section.
 - **Anything destructive without asking you first:** deleting volumes,
@@ -172,8 +178,8 @@ back where you left off. The box skills work here too, with `box.ssh` set to
 
 ## iOS signing over SSH: the keychain wall
 
-If Claude (or you) starts a local signed iOS build on the Mac over SSH, it can
-fail with:
+If an agent (or you) starts a local signed iOS build on the Mac over SSH, it
+can fail with:
 
 ```
 errSecInternalComponent

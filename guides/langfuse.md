@@ -1,14 +1,18 @@
 # Langfuse (optional)
 
-Used by: `app-features:agent-harness`, only if you turn tracing on.
+Runs on: your browser (the Langfuse project). The API on your box sends the
+traces.
 
-## What it is and what it costs
+Used by: `app-features:agent-harness`, only if you turn tracing on.
 
 Langfuse stores traces of your AI runs: which tools ran, in what order, how
 long each took, the tokens, and the cost. The onebox harness sends it
-OpenTelemetry spans that carry ids and counts, never your users' text.
+OpenTelemetry spans that carry ids and counts, never your users' text. You
+need it only when you want to see what your AI feature does in production.
 
 Tracing is **opt-in**. Without the settings below, nothing is sent anywhere.
+
+## What it costs
 
 Checked on 2026-09-28 at https://langfuse.com/pricing:
 
@@ -37,7 +41,7 @@ changes one URL.
    Do this in a terminal, not in a chat, and do not save the output in a file
    that git tracks.
 
-## Where the value goes
+## Where the values go
 
 In the API's secrets, next to the other app secrets:
 
@@ -68,7 +72,7 @@ Optional onebox config, so a skill can find the project:
 
 - **Nothing arrives, no error:** the endpoint variable is missing inside the
   container, so tracing never turned on (that is the opt-in working). Check
-  `docker compose exec api printenv | grep OTEL`.
+  `docker compose exec myapp-api printenv | grep OTEL`.
 - **401 in the API log:** the header is quoted in the `.env` file, or the
   base64 has a newline in it. Use `printf`, not `echo`, and no quotes.
 - **Wrong or zero cost:** Langfuse prices from its own model table. A new model

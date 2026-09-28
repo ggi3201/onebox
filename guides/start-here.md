@@ -1,8 +1,12 @@
 # Start here: from an idea to the App Store, the cheap way
 
-You built an app idea with an AI coding agent: Claude Code, Codex or Cursor. It runs on your phone or in the
-simulator. Now you want it in the App Store, with a real backend, real
-sign-in and maybe a subscription. This page is the map for that.
+Runs on: your browser. This page is the map. Each guide says where its own
+steps run.
+
+You built an app idea with an AI coding agent, such as Claude Code, Codex or
+Cursor. It runs on your phone or in the simulator. Now you want it in the App
+Store, with a real backend, real sign-in and maybe a subscription. This page
+is the map for that.
 
 This is the setup I use for my own apps:
 
@@ -21,8 +25,8 @@ parts you do not need on day one.
 | Item | Cost | Notes |
 |---|---|---|
 | Apple Developer Program | $99 a year | Required to ship on the App Store. See [apple-developer.md](apple-developer.md). |
-| The box | about €5 a month, or €0 | A small VPS ([vps.md](vps.md)), or a mini PC you already own. |
-| A domain | about €10 a year | `.com` or `.app` at cost on Cloudflare Registrar ([domain.md](domain.md)). The DNS moves to Cloudflare. |
+| The box | about €6 a month, or €0 | A small VPS ([vps.md](vps.md)), or a mini PC you already own. |
+| A domain | about €10–15 a year | `.com` or `.app` at cost on Cloudflare Registrar ([domain.md](domain.md)). The DNS moves to Cloudflare. |
 | Cloudflare | free | DNS, the tunnel and the edge certificate are on the free plan. See [cloudflare.md](cloudflare.md). |
 | iOS builds | free | Local builds on your Mac with Xcode. Cloud builds on EAS are optional. See [expo-eas.md](expo-eas.md). |
 | Expo account | free | Needed for `eas` commands, also for local builds. |
@@ -79,7 +83,7 @@ Then ask the agent to use the plan skill. I build and test with Claude Code.
 The skills are plain `SKILL.md` files, so other agents can use them too.
 
 The skills read one config file, `~/.config/onebox/config.json`, plus an
-optional `.onebox.json` in each project. See [CONFIG.md](../CONFIG.md) in the repo root. A
+optional `.onebox.json` in each project. See [CONFIG.md](https://github.com/ggi3201/onebox/blob/main/CONFIG.md) in the repo. A
 skill asks you for a missing value once and offers to save it.
 
 ## The phases
@@ -92,8 +96,10 @@ next phase before that line is true.
 1. Join the Apple Developer Program. Approval can take from minutes to a few
    days, so start this first.
    Guide: [apple-developer.md](apple-developer.md).
-2. Install Xcode on your Mac and sign in with your Apple account. Guide:
+2. Install Xcode on your Mac and sign in with your Apple Account. Guide:
    [xcode.md](xcode.md).
+3. Pick one place for your secrets, for your app and for your agent, before
+   the first API key arrives. Guide: [secrets.md](secrets.md).
 
 Done when: you can see your Team ID in your Apple Developer account, and
 Xcode builds and runs any app on your own iPhone.
@@ -117,14 +123,14 @@ runs the test loop without you.
 
 ### Phase 2: the box
 
-Get one Linux machine and bring it to a known baseline: SSH keys only,
+Get one Linux box and bring it to a known baseline: SSH keys only,
 firewall, Docker, Traefik, a Cloudflare Tunnel, nightly backups.
 
 1. Register a domain that stays cheap at renewal. Guide: [domain.md](domain.md).
 2. Put your domain on Cloudflare and make an API token. Guide: [cloudflare.md](cloudflare.md).
 3. Rent a small VPS ([vps.md](vps.md)), or install Ubuntu Server on a mini PC you own.
 4. Put the box, your Mac and your phone on one private network, so you (or
-   Claude) can fix things from anywhere. Guide: [remote-access.md](remote-access.md).
+   your coding agent) can fix things from anywhere. Guide: [remote-access.md](remote-access.md).
 5. Run the setup. Skill: `box:box-setup`.
 
 Done when: `box:box-setup`'s `check` phase ends with `0 fail`, and the backup
@@ -159,6 +165,12 @@ revokes the Apple token.
 ### Phase 5: payments (optional)
 
 Skip this phase if the app is free.
+
+The products live on the app record, so create the app record first
+([app-store-connect-setup.md](app-store-connect-setup.md), step 2).
+RevenueCat also needs the Issuer ID of an App Store Connect API key
+([app-store-connect-api-key.md](app-store-connect-api-key.md)). Both are Phase 6 steps. If
+you sell anything, do those two first.
 
 1. Sign the Paid Apps agreement and add tax and bank details. Nothing can be
    sold before that. Guide: [app-store-connect-setup.md](app-store-connect-setup.md) (the agreements part).

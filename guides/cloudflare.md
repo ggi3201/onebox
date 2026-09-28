@@ -1,14 +1,20 @@
 # Cloudflare
 
-Used by: `box:box-setup`, `box:expose-service`, `box:new-landing-page`, `box:staging-env`, and the "Protect the API" part of `guides/backend.md`.
+Runs on: your browser (the Cloudflare dashboard). `box:box-setup` does the
+tunnel part on the box.
 
-## What it is and what it costs
+Used by: `box:box-setup`, `box:expose-service`, `box:new-landing-page`,
+`box:staging-env`, and the "Protect the API" part of [backend.md](backend.md).
 
-Cloudflare runs DNS for your domain and sits in front of your box. The tunnel
-(`cloudflared`) dials out from the box to Cloudflare, so no port on the box or
-your router has to be open. The Free plan covers all of this: DNS, proxying,
-the edge certificate and Cloudflare Tunnel. You pay only for the domain, at
-whatever registrar you use.
+Cloudflare runs DNS for your domain and sits in front of your box. The
+Cloudflare Tunnel (`cloudflared`) dials out from the box to Cloudflare, so no
+port on the box or your router has to be open. Set it up in Phase 2, after you
+have a domain ([domain.md](domain.md)) and before `box:box-setup`.
+
+## What it costs
+
+The Free plan covers all of this: DNS, proxying, the edge certificate and
+Cloudflare Tunnel. You pay only for the domain, at whatever registrar you use.
 
 Free-plan limits that matter here: request bodies up to 100 MB, 100 seconds to
 the first byte. The free edge certificate covers `example.com` and
@@ -46,8 +52,8 @@ certificates, through one scoped token.
 3. Permissions: keep DNS Edit. Add Zone Read for the same zone, so skills can
    look up the zone ID by name.
 4. Zone resources: include **only** your domain, not all zones.
-5. Optional, only if your tunnel is managed in the dashboard (box-setup does not
-   make one): add the Account permission for Cloudflare Tunnel with Edit.
+5. Optional, only if your tunnel is managed in the dashboard (`box:box-setup`
+   does not make one): add the Account permission for Cloudflare Tunnel with Edit.
 6. Review and create. Copy the token once. Cloudflare will not show it again.
 
 This token cannot list accounts. That is expected. Skills read the account ID
@@ -57,7 +63,7 @@ from the zone instead.
 
 You do not create the tunnel by hand. `box:box-setup` runs
 `cloudflared tunnel login` on the box. That prints a URL. Open it on your Mac,
-choose your domain and approve. Then box-setup creates a tunnel named
+choose your domain and approve. Then `box:box-setup` creates a tunnel named
 `box.tunnelName` and keeps its ingress in `/etc/cloudflared/config.yml` on the
 box.
 
@@ -93,7 +99,7 @@ hostnames that look like admin tools.
 
 ### 6. Free-plan protection for the API (optional)
 
-The API limits itself (`guides/backend.md`, "Protect the API"). Cloudflare can
+The API limits itself ([backend.md](backend.md), "Protect the API"). Cloudflare can
 drop the worst traffic before it reaches the box. What the Free plan gives you
 (checked 2026-09-28):
 
@@ -124,13 +130,14 @@ returns `403` and nothing shows in the API log.
 | Tunnel name | `box.tunnelName` (default `onebox`) |
 | The token | your secrets tool, under the name in `box.cloudflareTokenRef` (default `CLOUDFLARE_API_TOKEN`) |
 
-Store the token by `secrets.tool` (see `CONFIG.md`):
+Store the token by `secrets.tool` (see
+[CONFIG.md](https://github.com/ggi3201/onebox/blob/main/CONFIG.md)):
 
 - `env`: add `CLOUDFLARE_API_TOKEN=...` to a `.env` that is git-ignored.
 - `doppler`: `doppler secrets set CLOUDFLARE_API_TOKEN -p <project> -c <config>`, then paste it when asked.
 - `1password`: save it as an item, and set `box.cloudflareTokenRef` to its `op://vault/item/field` reference.
 
-The config holds the reference, never the token. box-setup also copies the
+The config holds the reference, never the token. `box:box-setup` also copies the
 token to the box once, into `<box.appsDir>/traefik/.env` (root only), because
 Traefik needs it to renew certificates.
 

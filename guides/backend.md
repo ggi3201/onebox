@@ -180,7 +180,8 @@ Why it looks like this:
 
 Secrets never go in the compose file, the repo or the app. The compose file
 only names them: `${JWT_SECRET_KEY}`. Where the values come from depends on
-`secrets.tool` in your onebox config (see [CONFIG.md](../CONFIG.md)):
+`secrets.tool` in your onebox config (see
+[CONFIG.md](https://github.com/ggi3201/onebox/blob/main/CONFIG.md)):
 
 | `secrets.tool` | On the box | Deploy command |
 |---|---|---|
@@ -640,7 +641,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
 
-app.MapPost("/auth/apple", SignIn).RequireRateLimiting("auth");
+app.MapPost("/api/auth/apple", SignIn).RequireRateLimiting("auth");
 app.MapPost("/auth/refresh", Refresh).RequireRateLimiting("auth");
 var ai = app.MapGroup("/ai").RequireAuthorization().RequireRateLimiting("ai");
 app.MapPost("/recipes/import", Import).RequireAuthorization().RequireRateLimiting("import");
@@ -663,8 +664,8 @@ app.MapGet("/health", () => Results.Ok(new { ok = true })).DisableRateLimiting()
 Check it (this uses up your own IP's sign-in budget for a minute):
 
 ```bash
-for i in $(seq 1 12); do curl -s -o /dev/null -w '%{http_code} ' -X POST https://api.example.com/auth/apple; done; echo
-curl -si -X POST https://api.example.com/auth/apple | grep -i retry-after
+for i in $(seq 1 12); do curl -s -o /dev/null -w '%{http_code} ' -X POST https://api.example.com/api/auth/apple; done; echo
+curl -si -X POST https://api.example.com/api/auth/apple | grep -i retry-after
 ```
 
 Expect ten 400s, then 429s, and a `Retry-After` header.
@@ -686,7 +687,8 @@ Three caps. Each is cheap.
 3. **A budget for the whole app.** Record what each call cost. When today's
    total passes your budget, AI features answer "unavailable, try later" and
    the rest of the app keeps working. Also set a spend limit or a spend alert
-   in the AI provider's console, if it has one. That is the last line.
+   in the AI provider's console, if it has one. It still works when your own
+   code fails.
 
 The table and the check-and-count:
 
@@ -757,7 +759,7 @@ Check it:
 
 ```bash
 head -c 2000000 /dev/zero | curl -s -o /dev/null -w '%{http_code}\n' \
-  -X POST -H 'Content-Type: application/json' --data-binary @- https://api.example.com/auth/apple
+  -X POST -H 'Content-Type: application/json' --data-binary @- https://api.example.com/api/auth/apple
 ```
 
 Expect `413`. Run it a minute after the rate-limit check, or the sign-in limit

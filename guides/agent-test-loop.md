@@ -9,15 +9,16 @@ against a real database, a dev database full of edge cases, and click-through
 scripts it follows in the iOS Simulator. Then one short block in `AGENTS.md`
 makes every agent use them.
 
-## What it is and what it costs
+## What it costs
 
 - **Free.** Everything runs on your Mac: TypeScript, ESLint, Vitest or Jest,
   `dotnet test`, Docker, and the iOS Simulator that comes with Xcode.
 - **Time:** about an hour for an existing app. Most of it goes into the first
   seed and fixing what the stricter compiler finds.
-- **You need:** Xcode (`xcode.md`), Docker Desktop or another Docker engine,
-  and an Expo app with a development build (`expo-app.md`, step 5). For the
-  backend shape, see `backend.md`.
+- **You need:** Xcode ([xcode.md](xcode.md)), Docker Desktop or another
+  Docker engine, and an Expo app with a development build
+  ([expo-app.md](expo-app.md), step 5). For the backend shape, see
+  [backend.md](backend.md).
 
 ## Steps
 
@@ -150,7 +151,7 @@ services:
     tmpfs: /var/lib/postgresql/data
 ```
 
-Write the two tests from `backend.md`, "Keep each user's data apart": one that
+Write the two tests from [backend.md](backend.md), "Keep each user's data apart": one that
 fails when a table has no filter, and one where user B asks for user A's row
 and gets 404.
 

@@ -176,6 +176,12 @@
       }
     },
     {
+      "id": "secrets",
+      "kind": "guide",
+      "phase": "accounts",
+      "title": "Pick one place for your secrets"
+    },
+    {
       "id": "domain",
       "kind": "guide",
       "phase": "accounts",

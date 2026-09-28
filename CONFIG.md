@@ -24,6 +24,9 @@ The config never holds a secret value. It holds a **reference**:
 | `doppler` | `"KIE_AI_API_KEY"` | `doppler secrets get KIE_AI_API_KEY --plain -p <secrets.doppler.project> -c <secrets.doppler.config>` |
 | `1password` | `"op://vault/item/field"` | `op read "op://vault/item/field"` |
 
+Which tool to pick, and how to give an agent its own 1Password vault:
+https://onebox.lokkesveen.com/guides/secrets/
+
 Skills put a secret in a variable or pipe it. They never print it, never write
 it to a file other than the one the user asked for, and never put it in a URL.
 

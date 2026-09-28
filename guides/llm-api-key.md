@@ -1,13 +1,19 @@
 # An LLM API key
 
+Runs on: your browser (the provider's console). The key then goes to your box
+and, for smoke tests, to your Mac.
+
 Used by: `app-features:agent-harness`, `app-features:share-import`, and every
 AI feature in your API (`plugins/app-features`).
 
-## What it is and what it costs
+Your API calls a model provider with a secret key. You need one only if the
+app has an AI feature. The key lives on the server, never in the app.
 
-Your API calls a model provider with a secret key. The provider bills you per
-token: text in (input), text out (output), and a cheaper rate for input it has
-seen before (cached input). Photos count as input by size.
+## What it costs
+
+The provider bills you per token: text in (input), text out (output), and a
+cheaper rate for input it has seen before (cached input). Photos count as
+input by size.
 
 The onebox templates speak the OpenAI **Chat Completions** format, which many
 providers offer. Pick one:
@@ -26,8 +32,8 @@ as a ballpark** and check the provider's pricing page.
 `app-features:ai-usage-limits` has a script that prints current prices.
 
 All of them bill a card or prepaid credit. Set a monthly spending limit in
-the provider's billing settings before you ship; it is your last line of
-defence if your own budget code has a bug.
+the provider's billing settings before you ship. It still protects you when
+your own budget code has a bug.
 
 ## Steps
 
@@ -44,12 +50,12 @@ defence if your own budget code has a bug.
    zero data retention. Your consent text (`app-features:ai-consent`) must match
    what you choose here.
 
-## Where the value goes
+## Where the values go
 
 Two places.
 
-**The running API** reads environment variables (the backend guide shows how
-the box gets them from your secrets tool):
+**The running API** reads environment variables. [backend.md](backend.md)
+("Secrets") shows how the box gets them from your secrets tool:
 
 ```
 Llm__BaseUrl=https://openrouter.ai/api/v1
@@ -60,7 +66,7 @@ Llm__Model=anthropic/claude-sonnet-5
 For a Node API: `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`.
 
 **The onebox skills** (smoke tests, evals) read the key by reference, like every
-secret (see `CONFIG.md`):
+secret (see [CONFIG.md](https://github.com/ggi3201/onebox/blob/main/CONFIG.md)):
 
 ```jsonc
 {

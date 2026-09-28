@@ -1,17 +1,27 @@
 # RevenueCat
 
-## What it is and what it costs
+Runs on: your browser (RevenueCat and App Store Connect), then your app and
+your server.
 
 RevenueCat sits between your app and Apple's in-app purchase system. The app
 asks RevenueCat what to show and who has paid. RevenueCat validates
 purchases with Apple, tracks renewals and cancellations, and can tell your
-server with webhooks. You do not need to parse Apple receipts.
+server with webhooks. You do not need to parse Apple receipts. You need it
+only if the app sells subscriptions or other in-app purchases.
 
-- Free up to 2,500 USD of monthly tracked revenue. Above that, 1% of tracked
-  revenue. Checked 2026-09-28 at https://www.revenuecat.com/pricing/.
-- You still need the Paid Apps Agreement in App Store Connect
-  (`app-store-connect-setup.md`, step 3). RevenueCat cannot sell anything
-  without it.
+Before you start you need, in App Store Connect
+([app-store-connect-setup.md](app-store-connect-setup.md)):
+
+- the app record (step 2),
+- the Paid Apps Agreement (step 3). RevenueCat cannot sell anything without
+  it,
+- the Issuer ID of your App Store Connect API key
+  ([app-store-connect-api-key.md](app-store-connect-api-key.md)).
+
+## What it costs
+
+Free up to 2,500 USD of monthly tracked revenue. Above that, 1% of tracked
+revenue. Checked 2026-09-28 at https://www.revenuecat.com/pricing/.
 
 ## Use RevenueCat's own Claude Code plugin
 
@@ -28,6 +38,9 @@ It signs in with OAuth in your browser, so it needs no API key.
 Source: https://github.com/RevenueCat/ai-toolkit. MCP docs:
 https://www.revenuecat.com/docs/tools/mcp
 
+The plugin is for Claude Code. In another coding agent, you can connect the
+MCP server directly. See the MCP docs above.
+
 onebox does not repeat that work. This guide covers the account and the
 Apple side.
 
@@ -36,8 +49,9 @@ Apple side.
 1. **Make an account** at https://app.revenuecat.com and create a
    **project** for your app.
 2. **Create the subscription products in App Store Connect first**, with the
-   `appstore-connect` skill (`subs-create`) or in the web UI. Pick product IDs
-   you will keep forever, for example `com.yourname.myapp.pro.yearly`.
+   `ship-ios:appstore-connect` skill (`subs-create`) or in the web UI. Pick
+   product IDs you will keep forever, for example
+   `com.example.myapp.pro.yearly`.
 3. **Make an In-App Purchase key** in App Store Connect: **Users and Access**,
    **Integrations**, then **In-App Purchase**. Generate a key and download the
    `.p8` file (once only). RevenueCat needs it to record StoreKit 2
@@ -57,7 +71,7 @@ Apple side.
    Sandbox), and test a purchase, a restore and a cancellation on a real
    device before you submit.
 
-## Where the value goes
+## Where the values go
 
 - Public SDK key (`appl_...`): in the app, via `eas.json` `env`. Never the
   secret key.
@@ -76,7 +90,7 @@ Apple side.
   server checks it in the Authorization header. Store it with your secrets
   tool too.
 
-## How to check it works
+## Check it works
 
 - In the app, `Purchases.getOfferings()` returns your offering with prices.
   Empty offerings mean: wrong or missing SDK key, product IDs that do not
@@ -84,12 +98,12 @@ Apple side.
 - A sandbox purchase shows up in the RevenueCat dashboard under the customer
   with **your** user ID. That needs `Purchases.logIn(<your user id>)` after
   sign-in.
-- The `app-store-ready` skill's Payments section has no BLOCKED items.
+- The `ship-ios:app-store-ready` skill's Payments section has no BLOCKED items.
 
 ## Common errors
 
 - **The paywall shows no prices and no buy button, and nothing errors.**
-  Offerings came back empty. See "How to check it works".
+  Offerings came back empty. See "Check it works".
 - **Purchases do not reach your server.** The app never called
   `Purchases.logIn`, so purchases sit on an anonymous RevenueCat ID your server
   cannot match. Or the webhook checks a header RevenueCat does not send.

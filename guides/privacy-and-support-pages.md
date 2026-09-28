@@ -16,7 +16,7 @@ in about half an hour.
 | Support page | App Store Connect → your app → the version page | Always |
 | Terms of use (EULA) | The App Store description, or the custom EULA field | You sell subscriptions ([revenuecat.md](revenuecat.md)) |
 
-Rules that trip people up:
+Rules that people often miss:
 
 - The URLs must be **public** and load without a login.
 - The privacy policy must **match your App Privacy answers** in App Store
@@ -53,7 +53,7 @@ any stable public URL is accepted.
 
 ## What the privacy policy says
 
-Plain words beat legal-sounding ones. Cover each point in one or two
+Use plain words, not legal-sounding ones. Cover each point in one or two
 sentences:
 
 - [ ] **Who you are** and how to contact you (name or company, email).
@@ -89,7 +89,7 @@ delete their data. This checklist is a starting point, not legal advice.
 | Value | Where |
 |---|---|
 | Privacy policy URL | App Store Connect → App Privacy; also in the app's settings screen and the paywall |
-| Support URL | App Store Connect → the version's App Information |
+| Support URL | App Store Connect → your app → the version page |
 | Terms of use URL | App Store description, or the custom EULA field; also on the paywall |
 
 ## Check it works

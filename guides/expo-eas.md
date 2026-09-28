@@ -1,10 +1,14 @@
 # Expo and EAS
 
-## What it is and what it costs
+Runs on: your Mac. Cloud builds run on Expo's servers.
 
 **Expo** is the framework and tooling around your React Native app. **EAS**
 (Expo Application Services) is Expo's hosted service for builds, submissions
-and updates. The `eas` command-line tool talks to it.
+and updates. The `eas` command-line tool talks to it. This guide sets up the
+Expo account, the `eas` CLI and the token. You need them before the first
+build in [expo-app.md](expo-app.md), and again for the TestFlight build.
+
+## What it costs
 
 You need a free Expo account even for local builds: EAS stores your project
 ID, build numbers and (if you let it) your signing credentials.
@@ -15,7 +19,7 @@ Two ways to build:
 |---|---|---|
 | Runs on | your Mac, with Xcode | Expo's Mac servers |
 | Cost | free, unlimited | Free plan: 15 iOS builds a month, low-priority queue, 45-minute timeout. Paid plans from 19 USD a month plus usage. |
-| Needs | Xcode, CocoaPods, fastlane (`xcode.md`) | nothing on your machine |
+| Needs | Xcode, CocoaPods, fastlane ([xcode.md](xcode.md)) | nothing on your machine |
 | Speed | no queue | queue can be long on the Free plan |
 
 Prices checked 2026-09-28 at https://expo.dev/pricing.
@@ -44,19 +48,16 @@ uses the cloud only when there is no Mac or you ask for it.
    eas init              # adds the EAS projectId to your app config
    eas build:configure   # creates eas.json with development, preview and production profiles
    ```
-5. **Let EAS own the build number.** In `eas.json`:
-   ```json
-   {
-     "cli": { "appVersionSource": "remote" },
-     "build": { "production": { "autoIncrement": true } }
-   }
-   ```
+5. **Let EAS own the build number.** In `eas.json`, set
+   `"appVersionSource": "remote"` under `cli` and `"autoIncrement": true` on
+   the production profile. [expo-app.md](expo-app.md) (steps 6 and 7) has the
+   full `eas.json` and explains the two numbers.
 6. **Only for scripts, CI or a remote machine: make an access token.** On
    expo.dev, open your account settings and find **Access tokens**. Create a
    token and copy it once. For CI, Expo recommends a **robot user** with its
    own token and a limited role, instead of a token for your personal account.
 
-## Where the value goes
+## Where the values go
 
 The token is a secret. Store it with your secrets tool and put only the
 reference in `~/.config/onebox/config.json`:
@@ -74,16 +75,17 @@ On your own Mac, `eas login` is enough. You only need the token where you
 cannot log in interactively.
 
 App settings that are not secret (the API URL of each build profile) go in
-`eas.json` `env` or in EAS environment variables. See the
-`ios-preview-build` skill. EAS variables with **secret** visibility are not
+`eas.json` `env` or in EAS environment variables. See
+[expo-app.md](expo-app.md), step 6, and the `ship-ios:ios-preview-build`
+skill. EAS variables with **secret** visibility are not
 available to local builds.
 
-## How to check it works
+## Check it works
 
 ```bash
 eas whoami                                   # your account name
 eas project:info                             # run in the app folder: shows the project
-eas build --platform ios --profile production --local --non-interactive   # or use the expo-local-build skill
+eas build --platform ios --profile production --local --non-interactive   # or use ship-ios:expo-local-build
 ```
 
 ## Common errors
@@ -102,4 +104,4 @@ eas build --platform ios --profile production --local --non-interactive   # or u
   a first ad hoc (preview) build and for each new app target.
 - **You rotated your App Store Connect key and now see "Apple 401
   detected".** EAS still holds the old key. See
-  `app-store-connect-api-key.md`.
+  [app-store-connect-api-key.md](app-store-connect-api-key.md).

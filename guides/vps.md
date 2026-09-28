@@ -1,12 +1,15 @@
 # A small VPS
 
+Runs on: your Mac (the `hcloud` CLI). The VPS you rent becomes your box.
+
 Used by: `box:box-setup` when `box.type` is `vps`.
 
-## What it is and what it costs
+A VPS is a small rented server with a public IP. As your box, it runs the same
+stack as a mini PC at home: Docker, Traefik, a Cloudflare Tunnel. Pick one
+when you have no spare machine at home, or your home connection is not
+reliable enough.
 
-A VPS is a small rented server with a public IP. It runs the same stack as a
-mini PC at home: Docker, Traefik, a Cloudflare tunnel. Pick one when you have no
-spare machine at home, or your home connection is not reliable enough.
+## What it costs
 
 What to get: **x86_64, 2 vCPU, 4 GB RAM, 40 GB disk or more, Ubuntu LTS.** That
 runs a few APIs, their Postgres databases and some sites. Do not buy more "to be
@@ -78,9 +81,9 @@ Closing SSH too (Tailscale only) is possible. Then the Hetzner console is your
 only way in when Tailscale breaks. [remote-access.md](remote-access.md) sets up
 Tailscale on the box, your Mac and your phone.
 
-### 5. Run box-setup
+### 5. Run `box:box-setup`
 
-Ask Claude to run `box:box-setup` with `box.type: vps`. It starts as `root`,
+Ask your coding agent to run `box:box-setup` with `box.type: vps`. It starts as `root`,
 creates your admin user, and turns off root login at the end.
 
 ## Where the values go
@@ -91,7 +94,7 @@ creates your admin user, and turns off root login at the end.
 { "box": { "type": "vps", "ssh": "alice@203.0.113.10", "tunnel": "cloudflare" } }
 ```
 
-Use `root@<ip>` only until box-setup has created your user.
+Use `root@<ip>` only until `box:box-setup` has created your user.
 
 ## Check it works
 
@@ -100,7 +103,7 @@ hcloud server list
 ssh root@<ip> 'uname -m; . /etc/os-release; echo $PRETTY_NAME'    # x86_64, Ubuntu
 ```
 
-After box-setup: `ssh alice@<ip> 'sudo bash /root/box-setup.sh check'` (or
+After `box:box-setup`: `ssh alice@<ip> 'sudo bash /root/box-setup.sh check'` (or
 wherever you copied the script) ends with `0 fail`. That covers the security
 baseline too: password and root login off, ufw on, automatic security
 updates, no container port on the public IP, and the Docker socket only in
@@ -113,5 +116,5 @@ Traefik.
 | `REMOTE HOST IDENTIFICATION HAS CHANGED` | You rebuilt a server on the same IP. `ssh-keygen -R <ip>`, then connect again. |
 | `Permission denied (publickey)` as root | The key was not added at creation. Rebuild with `--ssh-key`, or use the console. |
 | Locked out after a firewall or SSH change | Use the web console in the Hetzner Cloud Console, or boot the rescue system. |
-| Image build killed, exit code 137 | Out of memory. box-setup adds 2 GB of swap on a VPS; check `free -m`. |
+| Image build killed, exit code 137 | Out of memory. `box:box-setup` adds 2 GB of swap on a VPS; check `free -m`. |
 | `server type not available` | Stock is out for that type or location. Try another location or `cpx22`. |

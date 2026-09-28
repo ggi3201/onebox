@@ -1,10 +1,13 @@
 # Xcode
 
-## What it is and what it costs
+Runs on: your Mac.
 
 Xcode is Apple's free developer tool. It contains the iOS SDK, the compiler,
 code signing, and the iOS Simulator. You need it on your Mac to build an iOS
-app locally, including `eas build --local` and `npx expo run:ios`.
+app locally, including `eas build --local` and `npx expo run:ios`. Install it
+in Phase 0, right after you join the Apple Developer Program.
+
+## What it costs
 
 - Free. It runs only on macOS.
 - **App Store Connect only accepts builds from a current Xcode.** Since
@@ -16,7 +19,7 @@ app locally, including `eas build --local` and `npx expo run:ios`.
   Simulator runtime adds several GB more. Keep at least 40 GB free for the
   install and your first builds.
 
-No Mac? You can still build in the EAS cloud (see `expo-eas.md`), but you
+No Mac? You can still build in the EAS cloud (see [expo-eas.md](expo-eas.md)), but you
 cannot run the simulator or do local builds.
 
 ## Steps
@@ -46,7 +49,7 @@ cannot run the simulator or do local builds.
    Components**. Under Platform Support, find iOS and click **Get**.
 5. **Sign in with your Apple Account.** Open **Xcode > Settings… > Accounts**,
    click the add button (+), and sign in with the Apple Account that is in
-   your Apple Developer team (see `apple-developer.md`). Xcode then shows the
+   your Apple Developer team (see [apple-developer.md](apple-developer.md)). Xcode then shows the
    team and can manage signing certificates.
 6. **Install the build helpers for local EAS builds** with Homebrew
    (https://brew.sh):
@@ -58,12 +61,12 @@ cannot run the simulator or do local builds.
    Common errors). Watchman is only needed for projects on Expo SDK 55 or
    older: `brew install watchman`.
 
-## Where the value goes
+## Where the values go
 
 Nothing to store. The onebox config key `expo.buildMode` decides whether
 builds run here (`"local"`, the default) or on EAS servers (`"cloud"`).
 
-## How to check it works
+## Check it works
 
 ```bash
 xcodebuild -version        # Xcode 26.x or later

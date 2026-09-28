@@ -1,13 +1,17 @@
 # App Store Connect setup (the manual parts)
 
-## What it is and what it costs
+Runs on: your browser (App Store Connect and your Apple Developer account).
 
 App Store Connect (https://appstoreconnect.apple.com) is where your app's
-store listing, builds, testers and sales live. It comes with the Apple
-Developer Program (see `apple-developer.md`); there is no extra cost.
+store listing, builds, testers and sales live. Some setup can only be done in
+the web UI. This guide lists all of it, in the order you need it, and says
+which onebox skill takes over afterwards. You need it before the first
+TestFlight build, and before you create subscription products.
 
-Some setup can only be done in the web UI. This guide lists all of it, in the
-order you need it, and says which onebox skill takes over afterwards.
+## What it costs
+
+Nothing extra. It comes with the Apple Developer Program (see
+[apple-developer.md](apple-developer.md)).
 
 Where this guide says "the page for X", it names the section; Apple moves
 buttons around, so look for that section rather than a specific button.
@@ -16,7 +20,7 @@ buttons around, so look for that section rather than a specific button.
 
 ### 1. Register the bundle ID
 
-The bundle ID (for example `com.yourname.myapp`) is permanent. Pick it now and
+The bundle ID (for example `com.example.myapp`) is permanent. Pick it now and
 put the same value in `ios.bundleIdentifier` in your app config.
 
 - **Automatic:** the first `eas build` registers it for you, with the
@@ -28,7 +32,7 @@ put the same value in `ios.bundleIdentifier` in your app config.
   Notifications ...), then **Continue** and **Register**.
 
 Some capabilities cannot be set by EAS and must be ticked here by hand (see
-`expo-local-build` pitfalls).
+the pitfalls in `ship-ios:expo-local-build`).
 
 ### 2. Create the app record
 
@@ -68,9 +72,9 @@ paywall shows no prices and no buy button, with no error.
 - Invite teammates, and internal testers who are not on your team yet, in
   **Users and Access**.
 - The **App Store Connect API key** is created here too (Integrations tab):
-  follow `app-store-connect-api-key.md`.
+  follow [app-store-connect-api-key.md](app-store-connect-api-key.md).
 - The **In-App Purchase key** for RevenueCat is created on the same
-  Integrations page: see `revenuecat.md`.
+  Integrations page: see [revenuecat.md](revenuecat.md).
 
 ### 5. TestFlight: internal group and testers
 
@@ -86,9 +90,11 @@ first build of each version needs Beta App Review.
 ### 6. Export compliance
 
 Each build asks whether the app uses non-exempt encryption. Answer it once for
-all builds by setting `ios.config.usesNonExemptEncryption` in the app config
-(the `app-store-ready` skill explains the answer). Otherwise each build waits
-as "Missing Compliance" until you answer on its page.
+all builds in the app config: `ITSAppUsesNonExemptEncryption: false` under
+`ios.infoPlist` ([expo-app.md](expo-app.md), step 3). The
+`ios.config.usesNonExemptEncryption` key does the same. The
+`ship-ios:app-store-ready` skill explains the answer. Without it, each build
+waits as "Missing Compliance" until you answer on its page.
 
 ### 7. Subscriptions and in-app purchases (if paid)
 
@@ -124,31 +130,31 @@ Watch for messages in App Review (on your app's pages) and your email.
 
 | Task | Manual or skill |
 |---|---|
-| Bundle ID registration | `expo-local-build` (EAS does it on first build) |
+| Bundle ID registration | `ship-ios:expo-local-build` (EAS does it on first build) |
 | App record | **manual**, once |
 | Paid Apps Agreement, tax, banking | **manual**, once (Account Holder) |
 | API key, In-App Purchase key | **manual**, once |
-| Build upload | `expo-local-build` |
-| Export compliance | app config (once), or `appstore-connect` per build |
-| TestFlight groups, testers, adding builds | `appstore-connect` (after you create the first group, or via `add-tester`) |
-| Build status and processing | `appstore-connect` |
-| Subscription group and products | `appstore-connect` (`subs-create`); trial offers and the review screenshot stay **manual** |
-| Screenshots | `app-store-screenshots` |
-| Checking you did not miss anything | `app-store-ready` |
+| Build upload | `ship-ios:expo-local-build` |
+| Export compliance | app config (once), or `ship-ios:appstore-connect` per build |
+| TestFlight groups, testers, adding builds | `ship-ios:appstore-connect` (after you create the first group, or via `add-tester`) |
+| Build status and processing | `ship-ios:appstore-connect` |
+| Subscription group and products | `ship-ios:appstore-connect` (`subs-create`); trial offers and the review screenshot stay **manual** |
+| Screenshots | `ship-ios:app-store-screenshots` |
+| Checking you did not miss anything | `ship-ios:app-store-ready` |
 | App Privacy, age rating, pricing, review info, EU trader status, Submit | **manual** |
 
-## Where the value goes
+## Where the values go
 
 - The app's numeric Apple ID: `eas.json` → `submit.production.ios.ascAppId`.
 - Nothing here is a secret. The API keys you make in step 4 are; see their
   guides.
 
-## How to check it works
+## Check it works
 
 - The app shows in **Apps** with status Prepare for Submission.
-- `node <appstore-connect>/scripts/asc.mjs apps` lists it (once you have an
-  API key).
-- The `app-store-ready` skill's report has no BLOCKED items.
+- `node <ship-ios>/skills/appstore-connect/scripts/asc.mjs apps` lists it
+  (once you have an API key).
+- The `ship-ios:app-store-ready` skill's report has no BLOCKED items.
 
 ## Common errors
 

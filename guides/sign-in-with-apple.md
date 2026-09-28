@@ -7,6 +7,10 @@ This guide adds Sign in with Apple to the Expo app, verifies Apple's token on
 your own server, and adds account deletion with token revocation. It follows
 the flow I use in my own apps.
 
+Before you start you need a development build on your phone
+([expo-app.md](expo-app.md), step 5) and the API on the box
+([backend.md](backend.md)).
+
 ## What it is and what it costs
 
 Sign in with Apple lets a user create an account with the Apple Account that
@@ -56,7 +60,8 @@ signature decides who the user is.
 ### 1. Turn on the capability
 
 The App ID for your bundle identifier needs the Sign in with Apple
-capability. [apple-developer.md](apple-developer.md) shows where App IDs live.
+capability. [app-store-connect-setup.md](app-store-connect-setup.md), step 1,
+shows where App IDs live.
 
 In the app config ([expo-app.md](expo-app.md)):
 
