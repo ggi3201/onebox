@@ -101,21 +101,35 @@ for (const s of slns.sort()) {
   console.log(`  build        dotnet build ${rel(s)} -warnaserror`);
   console.log(`  test         dotnet test ${rel(s)}`);
 }
+// MSBuild walks up from each project's folder and imports the first
+// Directory.Build.props it finds. Stop at the repo root.
+const propsFor = (csproj) => {
+  for (let d = path.dirname(csproj); ; d = path.dirname(d)) {
+    const f = path.join(d, "Directory.Build.props");
+    if (fs.existsSync(f)) return f;
+    if (d === root || path.dirname(d) === d) return null;
+  }
+};
+// The last value wins, and the project file comes after Directory.Build.props.
+const prop = (xml, name) => [...xml.matchAll(new RegExp(`<${name}(?:\\s[^>]*)?>\\s*([^<\\s]+)\\s*</${name}>`, "gi"))].pop()?.[1];
+const usedProps = new Set();
 for (const c of csprojs.sort()) {
   const x = fs.readFileSync(c, "utf8");
+  const propsFile = propsFor(c);
+  if (propsFile) usedProps.add(propsFile);
+  const px = propsFile ? fs.readFileSync(propsFile, "utf8") : "";
   const isTest = /Microsoft\.NET\.Test\.Sdk|IsTestProject>true/i.test(x);
-  const nullable = /<Nullable>enable<\/Nullable>/i.test(x);
-  const warnErr = /<TreatWarningsAsErrors>true/i.test(x);
+  const nullable = prop(x, "Nullable") ?? prop(px, "Nullable") ?? "-";
+  const warnErr = prop(x, "TreatWarningsAsErrors") ?? prop(px, "TreatWarningsAsErrors") ?? "-";
   if (isTest) {
     const pk = (n) => new RegExp(`Include="${n}`, "i").test(x);
     const db = pk("Testcontainers") ? "Testcontainers" : pk("Microsoft.EntityFrameworkCore.InMemory") ? "EF InMemory (not a real database)" : pk("Npgsql") ? "Npgsql (needs a database)" : "no database package";
     console.log(`  test project ${rel(c)}: ${pk("xunit") ? "xUnit" : pk("NUnit") ? "NUnit" : pk("MSTest") ? "MSTest" : "?"}, ${db}, ${pk("coverlet.collector") ? "coverlet" : "no coverlet"}`);
   } else {
-    console.log(`  project      ${rel(c)}: Nullable=${nullable ? "enable" : "-"} TreatWarningsAsErrors=${warnErr ? "true" : "-"}`);
+    console.log(`  project      ${rel(c)}: Nullable=${nullable} TreatWarningsAsErrors=${warnErr}${propsFile ? ` (with ${rel(propsFile)})` : ""}`);
   }
 }
-const props = path.join(root, "Directory.Build.props");
-if (slns.length) console.log(`  Directory.Build.props: ${fs.existsSync(props) ? "yes" : "none"}`);
+if (slns.length) console.log(`  Directory.Build.props: ${usedProps.size ? [...usedProps].map(rel).join(", ") : "none"}`);
 
 console.log(`\nFlows: ${flows.length ? flows.map(rel).join(", ") : "none yet"}`);
 const maestro = pkgs.map(path.dirname).filter((d) => fs.existsSync(path.join(d, ".maestro")));
