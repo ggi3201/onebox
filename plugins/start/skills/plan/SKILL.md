@@ -151,7 +151,10 @@ End with the next step from the summary, and offer to start it:
 - A skill: check it is installed. If not, give the one install line from the
   plan. Then ask, for example: "Run `/dev:test-loop` next?"
 - A guide: offer to go through it together. Fetch the raw `.md` link from the
-  plan and follow its steps with the user.
+  plan and follow its steps with the user. If it does not load, try
+  `https://raw.githubusercontent.com/ggi3201/onebox/main/guides/<name>.md`,
+  then `guides/<name>.md` in a local checkout of the onebox repo. If none
+  loads, say so and stop. Never go through a guide from memory.
 
 Say what detection cannot see (the `cannotDetect` list), in one line, so the
 user knows why some items stay unticked.
