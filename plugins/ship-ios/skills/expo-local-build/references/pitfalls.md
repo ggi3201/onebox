@@ -79,7 +79,8 @@ ignored and the feature silently degrades.
 The shell has no UTF-8 locale. This happens in cron, CI and agent shells, not
 in a normal Terminal. `expo run:ios` keeps going after the crash, and
 xcodebuild then fails with "The sandbox is not in sync with the
-Podfile.lock", which sends you the wrong way.
+Podfile.lock", which sends you the wrong way. `scripts/build.sh` sets
+`LANG=en_US.UTF-8` itself; `expo run:ios` and a bare `pod install` do not.
 
 **The build succeeds, the app installs, and dyld kills it at launch on a
 missing `ReactNativeDependencies`. Or: a native feature (say a barcode
@@ -100,7 +101,7 @@ front. So `/usr/bin/ruby` and an old `/usr/local/bin/pod` still win.
 Fix: put the Ruby path in `~/.zprofile`, not `~/.zshenv` — `~/.zprofile` runs
 after `path_helper`. And set `export LANG="${LANG:-en_US.UTF-8}"` in
 `~/.zshenv` so every shell has a UTF-8 locale. See "Common errors" in
-[guides/tools.md](../../../../../guides/tools.md) for the exact lines.
+`https://onebox.lokkesveen.com/guides/tools.md` for the exact lines.
 
 Check the agent's own shell with:
 ```bash
