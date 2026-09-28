@@ -242,6 +242,23 @@ Done when: the app is approved and released.
   `box:new-landing-page`.
 - **Images and video** for the store page, the landing page and social posts.
   Skills: `content:image`, `content:video`.
+- **Keep the box healthy.** About 15 minutes a month, and an agent can do it
+  with `box:box-setup`:
+  - Security updates install themselves. Reboot when the box says a reboot
+    is pending.
+  - Once a month, and after any change, run the box check. It must end with
+    `0 fail`.
+  - Update Traefik, Postgres and your images a few times a year. Read the
+    release notes first.
+  - Make sure last night's backup ran (`onebox-backup --list`). Restore one
+    once, so you know it works.
+  - Watch the disk (`df -h`). Docker images and logs grow.
+- **Know when to go further.** One box is one point of failure. If it dies,
+  the app is down until you restore it. At home, a power cut or an internet
+  outage takes it down too. Move on when downtime costs you money or trust: a
+  second server, a managed database with point-in-time recovery, and
+  monitoring that wakes you up. For a big app, sensitive data (health,
+  children) or a team, plan a larger setup from the start, and get advice.
 
 ## Checklist
 

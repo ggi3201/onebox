@@ -22,6 +22,7 @@ export const GET: APIRoute = ({ site }) => {
     "- The box (a mini PC at home or a small VPS) runs Docker: Traefik, the API, Postgres, a staging API and database, nightly backups, and the landing page.",
     "- The landing page holds pricing, privacy policy, support and terms. App Store Connect and the paywall link to it.",
     "- Your Mac sets up the box over SSH; a git push deploys. RevenueCat (optional) sends webhooks to the API.",
+    "- The box needs about 15 minutes of care a month (updates, the box check, backups), which an agent can do. It is one point of failure: bigger apps, sensitive data or a team need a larger setup.",
     "",
     "## Guides",
     "",

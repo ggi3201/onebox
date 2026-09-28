@@ -216,6 +216,36 @@ const bill = [
       </div>
     </section>
 
+    <!-- ============ CARE ============ -->
+    <section id="care" class="care">
+      <div class="wrap">
+        <header class="section-head">
+          <h2 class="display h2">One box needs a little care.</h2>
+          <p class="muted">About 15 minutes a month. An agent does the work over SSH with the box skills. You read what it found and say yes.</p>
+        </header>
+        <div class="care-grid">
+          <div>
+            <p class="label">What it asks of you</p>
+            <ul class="care-list">
+              <li>Security updates install themselves. Reboot when the box says a reboot is pending.</li>
+              <li>Once a month, and after any change, ask your agent to “check the box”. The check must end with 0 fail.</li>
+              <li>Update Traefik, Postgres and your images a few times a year. Read the release notes first.</li>
+              <li>Make sure last night’s backup ran. Restore one once, so you know it works.</li>
+              <li>Watch the disk. Docker images and logs grow.</li>
+            </ul>
+          </div>
+          <div>
+            <p class="label">When to go further</p>
+            <ul class="care-list">
+              <li>One box is one point of failure. If it dies, the app is down until you restore it. At home, a power cut or an internet outage takes it down too.</li>
+              <li>Move on when downtime costs you money or trust: a second server, a managed database with point-in-time recovery, and monitoring that wakes you up.</li>
+              <li>A big app, sensitive data such as health or children’s data, or a team: plan a larger setup from the start, and get advice.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ============ PROOF ============ -->
     <section class="proof">
       <div class="wrap">
@@ -434,6 +464,13 @@ const bill = [
   .total { display: flex; justify-content: space-between; margin: 12px 0 0; padding-top: 12px; border-top: 2px solid var(--ink); font-weight: 500; font-size: 1rem; }
   .receipt-foot { margin: 14px 0 6px; text-align: center; text-transform: none; letter-spacing: 0.02em; }
 
+  /* care */
+  .care-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px clamp(32px, 6vw, 80px); }
+  .care-grid .label { margin: 0 0 8px; }
+  .care-list { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--ink); }
+  .care-list li { padding: 12px 0 12px 22px; border-bottom: 1px dashed var(--rule); position: relative; font-size: 1.05rem; color: var(--ink-2); }
+  .care-list li::before { content: ""; position: absolute; left: 2px; top: 20px; width: 8px; height: 8px; border: 1.5px solid var(--signal); }
+
   /* proof */
   .apps { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--ink); }
   .apps li { display: grid; grid-template-columns: minmax(120px, 220px) 1fr auto; gap: 8px 24px; align-items: baseline; padding: 18px 0; border-bottom: 1px solid var(--rule); }
@@ -465,7 +502,7 @@ const bill = [
 
   /* phone */
   @media (max-width: 860px) {
-    .hero-grid, .bill-grid, .help-grid, .steps, .about { grid-template-columns: 1fr; }
+    .hero-grid, .bill-grid, .help-grid, .steps, .about, .care-grid { grid-template-columns: 1fr; }
     .label-card { box-shadow: 6px 6px 0 var(--paper-3); }
     .receipt { transform: none; }
   }
