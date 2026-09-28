@@ -91,6 +91,14 @@ install` exits 0, and pods are silently left out. Only release builds may be
 affected. Fix: use Homebrew's CocoaPods (it brings its own Ruby) or a Ruby
 2.7+ from a version manager. Check `Podfile.lock` for the pods you expect.
 
+The build log shows it as `Failed to read spm.config.json ... undefined method
+'filter_map'`. **It often hits only the agent.** Your Terminal loads rbenv or
+asdf from `~/.zshrc`, but the shell an agent starts may not read that file.
+Then `/usr/bin/ruby` and an old `/usr/local/bin/pod` come first on the PATH.
+Check with `which ruby pod` in the agent's shell. Fix it for every agent run
+by putting the shims on the PATH in `~/.zshenv`, for example
+`export PATH="$HOME/.rbenv/shims:$PATH"`.
+
 ## eas-cli itself
 
 **`Cannot find module 'fdir'` from `npx eas-cli`.**
