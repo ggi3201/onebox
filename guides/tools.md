@@ -104,8 +104,15 @@ On the box, after `box:box-setup`, its `check` phase must end with `0 fail`.
 - **`docker info` says it cannot connect.** The Docker app or Colima is not
   running. Start it, then try again.
 - **`pod install` in an agent crashes with `ASCII-8BIT`, or runs on Ruby
-  2.6, while your Terminal works.** The agent's shell has no UTF-8 locale, and
-  macOS `path_helper` (in `/etc/zprofile`) puts `/usr/bin` back in front of
-  a Ruby you added in `~/.zshenv`. Check `echo $LANG` and `which ruby pod` in
-  the agent's shell. Fix: `export LANG=en_US.UTF-8`, and put Homebrew's or
-  rbenv's bin first in `~/.zprofile`, which runs after `path_helper`.
+  2.6, while your Terminal works.** The agent's shell has no UTF-8 locale.
+  Also, macOS runs `path_helper` from `/etc/zprofile`, after `~/.zshenv`, in
+  every login shell, and it puts the system folders (`/usr/bin`) back in
+  front of a Ruby you added in `~/.zshenv`. Putting the Ruby path in
+  `~/.zshenv` is not enough by itself. Fix: put Homebrew's or rbenv's bin
+  first in `~/.zprofile` (it runs after `path_helper`), and set
+  `export LANG="${LANG:-en_US.UTF-8}"` in `~/.zshenv` so every shell has a
+  UTF-8 locale. Check the agent's own shell with `echo $LANG` and
+  `which ruby pod`. Reproduce a clean login shell with
+  `env -i HOME=$HOME PATH=/usr/bin:/bin TERM=dumb zsh -lc 'which ruby; echo $LANG'`.
+  After a failed `pod install`, delete the generated `ios/` folder before you
+  retry.

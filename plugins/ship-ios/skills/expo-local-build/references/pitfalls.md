@@ -79,8 +79,7 @@ ignored and the feature silently degrades.
 The shell has no UTF-8 locale. This happens in cron, CI and agent shells, not
 in a normal Terminal. `expo run:ios` keeps going after the crash, and
 xcodebuild then fails with "The sandbox is not in sync with the
-Podfile.lock", which sends you the wrong way. Fix: `export LANG=en_US.UTF-8`
-(the script does this).
+Podfile.lock", which sends you the wrong way.
 
 **The build succeeds, the app installs, and dyld kills it at launch on a
 missing `ReactNativeDependencies`. Or: a native feature (say a barcode
@@ -88,16 +87,36 @@ scanner) shows a perfect camera preview and never reads anything.**
 `pod` ran on the macOS system Ruby 2.6. Expo's precompiled-module configs
 need Ruby 2.7 or later. Under 2.6 they fail to parse as a WARNING, `pod
 install` exits 0, and pods are silently left out. Only release builds may be
-affected. Fix: use Homebrew's CocoaPods (it brings its own Ruby) or a Ruby
-2.7+ from a version manager. Check `Podfile.lock` for the pods you expect.
+affected. Check `Podfile.lock` for the pods you expect.
 
-The build log shows it as `Failed to read spm.config.json ... undefined method
-'filter_map'`. **It often hits only the agent.** Your Terminal loads rbenv or
-asdf from `~/.zshrc`, but the shell an agent starts may not read that file.
-Then `/usr/bin/ruby` and an old `/usr/local/bin/pod` come first on the PATH.
-Check with `which ruby pod` in the agent's shell. Fix it for every agent run
-by putting the shims on the PATH in `~/.zshenv`, for example
-`export PATH="$HOME/.rbenv/shims:$PATH"`.
+The build log can also show `Failed to read spm.config.json ... undefined
+method 'filter_map'`. **This often hits only the agent.** Your Terminal loads
+rbenv or asdf from `~/.zshrc`, but the shell an agent starts may not read
+that file. Putting the rbenv shims on the PATH in `~/.zshenv` is not enough
+by itself: macOS runs `path_helper` from `/etc/zprofile`, after `~/.zshenv`,
+in every login shell, and it puts the system folders (`/usr/bin`) back in
+front. So `/usr/bin/ruby` and an old `/usr/local/bin/pod` still win.
+
+Fix: put the Ruby path in `~/.zprofile`, not `~/.zshenv` — `~/.zprofile` runs
+after `path_helper`. And set `export LANG="${LANG:-en_US.UTF-8}"` in
+`~/.zshenv` so every shell has a UTF-8 locale. See "Common errors" in
+[guides/tools.md](../../../../../guides/tools.md) for the exact lines.
+
+Check the agent's own shell with:
+```bash
+echo $LANG
+which ruby pod
+```
+Reproduce a clean login shell (what an agent actually gets) with:
+```bash
+env -i HOME=$HOME PATH=/usr/bin:/bin TERM=dumb zsh -lc 'which ruby; echo $LANG'
+```
+It should print an rbenv (or Homebrew) Ruby and `en_US.UTF-8`, not
+`/usr/bin/ruby` or an empty `LANG`.
+
+After a failed `pod install`, delete the generated `ios/` folder before you
+retry. A half-written `ios/` from the broken run can hide the real error on
+the next one.
 
 ## npm
 
