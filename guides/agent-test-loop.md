@@ -171,13 +171,15 @@ The full checklist, and how to grow it from real bugs, is in the skill:
 
 Add `db:seed` and `db:reset` scripts.
 
-### 7. One Metro port per worktree
+### 7. One Metro port per app and per worktree
 
-If you or your agents work in several git worktrees, each needs its own Metro
-port. Otherwise the simulator quietly runs another worktree's code. Add the
-small `scripts/metro-port.sh` from
-`plugins/dev/skills/test-loop/references/preflight.md`, and use it in both
-scripts:
+Each app, and each git worktree of it, needs its own Metro port. Otherwise the
+simulator quietly runs another worktree's code, or even another app's code.
+Do not leave an app on the default 8081: a second app on the same Mac uses it
+too. Add the small `scripts/metro-port.sh` from
+`plugins/dev/skills/test-loop/references/preflight.md`. It gives the main
+checkout a port in 8200-8299 from the repo's folder name, and each worktree a
+port in 8100-8199 from its path. Use it in both scripts:
 
 ```json
 "start": "expo start --dev-client --port $(sh scripts/metro-port.sh)",
