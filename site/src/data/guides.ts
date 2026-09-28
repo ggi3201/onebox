@@ -5,6 +5,7 @@ const ORDER = [
   "start-here",
   "apple-developer",
   "xcode",
+  "tools",
   "expo-app",
   "agent-test-loop",
   "secrets",
