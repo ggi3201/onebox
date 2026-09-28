@@ -9,6 +9,7 @@
 //   node asc.mjs groups  --app <bundleId|appId>
 //   node asc.mjs testers --group <groupId>
 //   node asc.mjs subs    --app <bundleId|appId>         subscription groups and products
+//   node asc.mjs listing --app <bundleId|appId> [--locale en-US]   store page text, with length checks
 //   node asc.mjs get     <path>                         any GET, e.g. '/v1/apps?limit=5'
 //
 // Write commands (all take --dry-run, which prints the request and changes nothing):
@@ -17,6 +18,7 @@
 //   node asc.mjs add-build   --group <groupId> --build <buildId>
 //   node asc.mjs add-tester  --group <groupId> --email <email> [--first A --last B]
 //   node asc.mjs subs-create <plan.json> [--equalize]  subscription group + products, see api.md
+//   node asc.mjs listing-set <listing.json> --app <bundleId|appId>  store page text, see api.md
 //   node asc.mjs call        <METHOD> <path> [body.json]
 //
 // Output is plain text. Add --json to any read command for the raw API answer.
@@ -139,6 +141,51 @@ async function appOf(ref) {
 }
 const need = (v, what) => { if (!v) throw new Error(`missing ${what}`); return v; };
 
+// ---- store page text ------------------------------------------------------
+// Name, subtitle and privacy URL live on the app info. The rest lives on one
+// App Store version. Only a version or app info that is not yet in review or
+// live can change, except promotional text, which can change on a live version.
+const LIMITS = { name: 30, subtitle: 30, promotionalText: 170, description: 4000, whatsNew: 4000, keywords: 100 };
+const INFO_FIELDS = ['name', 'subtitle', 'privacyPolicyUrl'];
+const VERSION_FIELDS = ['description', 'keywords', 'promotionalText', 'whatsNew', 'supportUrl', 'marketingUrl'];
+const EDITABLE = ['PREPARE_FOR_SUBMISSION', 'DEVELOPER_REJECTED', 'REJECTED', 'METADATA_REJECTED', 'INVALID_BINARY', 'READY_FOR_REVIEW'];
+const LIVE = ['READY_FOR_SALE', 'READY_FOR_DISTRIBUTION'];
+const stateOf = a => a.appVersionState || a.appStoreState || a.state;
+const size = (k, v) => k === 'keywords' ? Buffer.byteLength(v || '', 'utf8') : [...(v || '')].length;
+async function listingParts(app, locale) {
+  const versions = await all(`/v1/apps/${app.id}/appStoreVersions` + q({ 'filter[platform]': 'IOS', limit: 20 }));
+  const edit = versions.find(v => EDITABLE.includes(stateOf(v.attributes)));
+  const live = versions.find(v => LIVE.includes(stateOf(v.attributes)));
+  const infos = await all(`/v1/apps/${app.id}/appInfos` + q({ limit: 10 }));
+  const info = infos.find(i => EDITABLE.includes(stateOf(i.attributes))) || infos.find(i => !LIVE.includes(stateOf(i.attributes))) || null;
+  const locOf = async (base, id, kind) => {
+    if (!id) return null;
+    const ls = await all(`/v1/${base}/${id}/${kind}` + q({ limit: 50 }));
+    return ls.find(x => x.attributes.locale === locale) || { missing: ls.map(x => x.attributes.locale) };
+  };
+  return {
+    edit, live, info,
+    infoLoc: await locOf('appInfos', info?.id || infos[0]?.id, 'appInfoLocalizations'),
+    editLoc: await locOf('appStoreVersions', edit?.id, 'appStoreVersionLocalizations'),
+    liveLoc: await locOf('appStoreVersions', live?.id, 'appStoreVersionLocalizations'),
+  };
+}
+function keywordNotes(kw, name, subtitle) {
+  const notes = [];
+  if (!kw) return notes;
+  if (/,\s/.test(kw)) notes.push('spaces after commas waste bytes: use "a,b,c"');
+  const words = kw.split(',').map(w => w.trim().toLowerCase()).filter(Boolean);
+  const title = new Set(`${name || ''} ${subtitle || ''}`.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean));
+  const dup = words.filter(w => title.has(w));
+  if (dup.length) notes.push(`already in the name or subtitle, so they add nothing here: ${dup.join(', ')}`);
+  const seen = new Set(), twice = words.filter(w => seen.has(w) || !seen.add(w));
+  if (twice.length) notes.push(`listed twice: ${[...new Set(twice)].join(', ')}`);
+  const all = new Set([...words, ...title]);
+  const plural = words.filter(w => w.length > 3 && w.endsWith('s') && all.has(w.slice(0, -1)));
+  if (plural.length) notes.push(`Apple counts plurals as duplicates: ${plural.join(', ')}`);
+  return notes;
+}
+
 const commands = {
   async apps() {
     const apps = await all('/v1/apps' + q({ limit: 200, 'fields[apps]': 'name,bundleId,sku' }));
@@ -239,6 +286,58 @@ const commands = {
         console.log(`  ${a.productId}  ${a.subscriptionPeriod}  level ${a.groupLevel}  ${a.state}  id=${s.id}`);
       }
     }
+  },
+
+  async listing() {
+    const app = await appOf(args.app), locale = args.locale || 'en-US';
+    const p = await listingParts(app, locale);
+    if (JSON_OUT) return console.log(JSON.stringify(p, null, 2));
+    const show = (k, v) => {
+      const n = size(k, v), max = LIMITS[k];
+      const count = max ? `  ${n}/${max}${k === 'keywords' ? ' bytes' : ''}${n > max ? '  TOO LONG' : ''}` : '';
+      console.log(`  ${k}${count}\n    ${v ? String(v).replace(/\n/g, '\n    ') : '(empty)'}`);
+    };
+    const miss = l => l?.missing ? `  no ${locale} localization; has: ${l.missing.join(', ') || 'none'}` : null;
+    console.log(`${app.attributes.name}  ${app.attributes.bundleId}  locale ${locale}`);
+    console.log(`\napp info (${p.info ? stateOf(p.info.attributes) + ', editable' : 'not editable now: make a new version first'})`);
+    if (miss(p.infoLoc)) console.log(miss(p.infoLoc)); else for (const k of INFO_FIELDS) show(k, p.infoLoc?.attributes?.[k]);
+    if (p.edit) {
+      console.log(`\nversion ${p.edit.attributes.versionString} (${stateOf(p.edit.attributes)}, editable)`);
+      if (miss(p.editLoc)) console.log(miss(p.editLoc)); else for (const k of VERSION_FIELDS) show(k, p.editLoc?.attributes?.[k]);
+      for (const n of keywordNotes(p.editLoc?.attributes?.keywords, p.infoLoc?.attributes?.name, p.infoLoc?.attributes?.subtitle)) console.log(`  note: ${n}`);
+    } else console.log('\nno editable version. Create one in App Store Connect to change anything but promotional text.');
+    if (p.live && p.liveLoc?.attributes) {
+      console.log(`\nlive version ${p.live.attributes.versionString}: promotional text can change without review`);
+      show('promotionalText', p.liveLoc.attributes.promotionalText);
+    }
+  },
+
+  async 'listing-set'() {
+    const want = JSON.parse(fs.readFileSync(need(pos[0], '<listing.json>'), 'utf8'));
+    const locale = want.locale || args.locale || 'en-US';
+    const app = await appOf(want.app || args.app);
+    const unknown = Object.keys(want).filter(k => !['app', 'locale', ...INFO_FIELDS, ...VERSION_FIELDS].includes(k));
+    if (unknown.length) throw new Error(`unknown fields: ${unknown.join(', ')}. Allowed: ${[...INFO_FIELDS, ...VERSION_FIELDS].join(', ')}`);
+    const over = Object.keys(LIMITS).filter(k => want[k] != null && size(k, want[k]) > LIMITS[k]);
+    if (over.length) throw new Error('too long: ' + over.map(k => `${k} ${size(k, want[k])}/${LIMITS[k]}`).join(', ') + '. Nothing sent.');
+    const pick = ks => Object.fromEntries(ks.filter(k => want[k] != null).map(k => [k, want[k]]));
+    const info = pick(INFO_FIELDS), version = pick(VERSION_FIELDS);
+    const p = await listingParts(app, locale);
+    if (Object.keys(info).length) {
+      if (!p.info) throw new Error('the app info is not editable now (in review or live). Create a new version in App Store Connect, then run this again. Nothing sent.');
+      if (p.infoLoc?.missing) throw new Error(`no ${locale} app info localization. Add the language in App Store Connect first. Nothing sent.`);
+      await write('PATCH', `/v1/appInfoLocalizations/${p.infoLoc.id}`, { data: { type: 'appInfoLocalizations', id: p.infoLoc.id, attributes: info } });
+      if (!DRY) console.log(`app info ${locale}: set ${Object.keys(info).join(', ')}`);
+    }
+    if (Object.keys(version).length) {
+      const onlyPromo = Object.keys(version).every(k => k === 'promotionalText');
+      const target = p.edit ? { v: p.edit, l: p.editLoc } : onlyPromo && p.live ? { v: p.live, l: p.liveLoc } : null;
+      if (!target) throw new Error('no editable version. Create one in App Store Connect first; only promotional text can change on a live version. Nothing sent.');
+      if (target.l?.missing) throw new Error(`no ${locale} localization on version ${target.v.attributes.versionString}. Nothing sent.`);
+      await write('PATCH', `/v1/appStoreVersionLocalizations/${target.l.id}`, { data: { type: 'appStoreVersionLocalizations', id: target.l.id, attributes: version } });
+      if (!DRY) console.log(`version ${target.v.attributes.versionString} ${locale}: set ${Object.keys(version).join(', ')}`);
+    }
+    if (DRY) console.log('dry run, nothing changed');
   },
 
   async 'subs-create'() {

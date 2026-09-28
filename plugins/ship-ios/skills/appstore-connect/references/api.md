@@ -143,3 +143,35 @@ point shows what you get.
 
 Your first subscription must be submitted for review together with a new app
 version. Select it on the version page before you submit.
+
+## Store page text (`listing`, `listing-set`)
+
+The name, subtitle and privacy policy URL live on the **app info**
+(`/v1/appInfos/{id}/appInfoLocalizations`). The description, keywords,
+promotional text, What's New, support URL and marketing URL live on one **App
+Store version** (`/v1/appStoreVersions/{id}/appStoreVersionLocalizations`).
+Both can change only while they are not in review or live. The one exception
+is promotional text, which can change on a live version at any time.
+
+`listing-set` takes a file with any of these fields, for one locale:
+
+```json
+{
+  "locale": "en-US",
+  "name": "Myapp",
+  "subtitle": "Plan meals in one minute",
+  "description": "…",
+  "keywords": "meal plan,recipes,grocery list",
+  "promotionalText": "…",
+  "whatsNew": "…",
+  "supportUrl": "https://example.com/support",
+  "marketingUrl": "https://example.com",
+  "privacyPolicyUrl": "https://example.com/privacy"
+}
+```
+
+It checks the limits before it sends anything: name and subtitle 30
+characters, promotional text 170, description and What's New 4000, keywords
+100 bytes. A new language must be added in the web UI first. What's New
+cannot be set on an app's first version.
+

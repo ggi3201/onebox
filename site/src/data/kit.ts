@@ -52,6 +52,7 @@ const TAGLINES: Record<string, string> = {
   "appstore-connect": "TestFlight builds, testers, groups and subscriptions from the terminal.",
   "ios-preview-build": "A build for your real phone that talks to staging, not production.",
   "app-store-screenshots": "Store images from your real screens, in your app’s own fonts.",
+  "store-listing": "Name, subtitle, keywords and description that search finds, within Apple\u2019s limits.",
   "draw-app-icon": "A vector icon that still reads at home-screen size.",
   "draw-icon-set": "A set of outline icons that look like one family.",
   "box-setup": "Takes a fresh VPS to a safe, working baseline in one go.",

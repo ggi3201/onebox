@@ -100,6 +100,7 @@ Skills read these from `~/.config/onebox/config.json`, or `.onebox.json` for thi
 - [ ] An App Store Connect API key — guide: https://onebox.lokkesveen.com/guides/app-store-connect-api-key/ (raw: https://onebox.lokkesveen.com/guides/app-store-connect-api-key.md) <!-- guide:app-store-connect-api-key -->
 - [ ] Expo account, and local vs cloud builds — guide: https://onebox.lokkesveen.com/guides/expo-eas/ (raw: https://onebox.lokkesveen.com/guides/expo-eas.md) <!-- guide:expo-eas -->
 - [ ] Build on your Mac and send to TestFlight — skill: /ship-ios:expo-local-build <!-- skill:ship-ios/expo-local-build -->
+- [ ] Ship JavaScript fixes without a new build — skill: /ship-ios:eas-update <!-- skill:ship-ios/eas-update -->
 - [ ] TestFlight builds, testers and subscriptions — skill: /ship-ios:appstore-connect <!-- skill:ship-ios/appstore-connect -->
 
 ## Store page and submit
@@ -107,6 +108,7 @@ Skills read these from `~/.config/onebox/config.json`, or `.onebox.json` for thi
 - [ ] The landing page with privacy, support and terms — skill: /box:new-landing-page <!-- skill:box/new-landing-page -->
 - [ ] The app icon — skill: /ship-ios:draw-app-icon <!-- skill:ship-ios/draw-app-icon -->
 - [ ] Store screenshots from real screens — skill: /ship-ios:app-store-screenshots <!-- skill:ship-ios/app-store-screenshots -->
+- [ ] Store page text that search finds — skill: /ship-ios:store-listing <!-- skill:ship-ios/store-listing -->
 - [ ] Find what Apple will reject, before Apple does — skill: /ship-ios:app-store-ready <!-- skill:ship-ios/app-store-ready -->
 
 ## Notes

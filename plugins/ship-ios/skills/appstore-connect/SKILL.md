@@ -37,6 +37,7 @@ node $A builds --app com.example.myapp         # newest builds and their states
 node $A wait <buildId>                         # poll until testers can install it
 node $A groups --app com.example.myapp
 node $A testers --group <groupId>
+node $A listing --app com.example.myapp        # store page text, with length checks
 ```
 
 Writes change live state. Run each with `--dry-run` first, show the user the
@@ -48,7 +49,11 @@ node $A compliance <buildId> --no-encryption   # answer "Missing Compliance" for
 node $A add-build --group <groupId> --build <buildId>
 node $A add-tester --group <groupId> --email tester@example.com
 node $A subs-create plan.json --dry-run        # subscription group + products
+node $A listing-set listing.json --app com.example.myapp --dry-run   # store page text
 ```
+
+Writing the store page text well is the `store-listing` skill's job. This
+skill only reads and writes it.
 
 ## Build states, in short
 

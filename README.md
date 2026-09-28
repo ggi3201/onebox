@@ -49,7 +49,7 @@ policy, support and terms pages that App Store Connect and your paywall link to.
 | Plugin | Runs on | Skills |
 |---|---|---|
 | `start` | your Mac | plan |
-| `ship-ios` | your Mac | app-store-ready, expo-local-build, eas-update, appstore-connect, ios-preview-build, app-store-screenshots, draw-app-icon, draw-icon-set |
+| `ship-ios` | your Mac | app-store-ready, expo-local-build, eas-update, appstore-connect, ios-preview-build, app-store-screenshots, store-listing, draw-app-icon, draw-icon-set |
 | `box` | your server | box-setup, expose-service, new-landing-page, staging-env |
 | `content` | your Mac | image, video |
 | `dev` | your Mac | test-loop, trim-tests |
