@@ -29,7 +29,7 @@ const atMac = SKILLS.filter((s) => s.plugin !== "box" && s.plugin !== "start" &&
 const STOPS: Stop[] = [
   {
     id: "mac", x: 20, y: 60, w: 290, h: 290, tag: "01 · The workbench",
-    title: "Your Mac", sub: "Claude Code runs every skill here.",
+    title: "Your Mac", sub: "Your coding agent runs every skill here.",
     lines: [{ t: "Your Expo app’s code" }, { t: "Xcode, for free local builds" }],
     skills: atMac.map((s) => s.name),
   },
@@ -149,7 +149,7 @@ const routeById = Object.fromEntries(ROUTES.map((r) => [r.id, r]));
   <svg class="map" viewBox={`0 0 1200 ${830 + DY}`} role="img" aria-labelledby="routemap-title routemap-desc">
     <title id="routemap-title">How the onebox kit fits together</title>
     <desc id="routemap-desc">
-      Your Mac runs Claude Code and every skill. It builds the app and submits it to Apple, which delivers it to phones.
+      Your Mac runs your coding agent and every skill. It builds the app and submits it to Apple, which delivers it to phones.
       Phones call your API through a Cloudflare tunnel into one box that runs the API, Postgres, staging, backups,
       Traefik and the landing page with pricing, privacy policy, support and terms. App Store Connect links to that
       landing page. Outside services are RevenueCat and media APIs.

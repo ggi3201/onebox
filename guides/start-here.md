@@ -1,6 +1,6 @@
 # Start here: from an idea to the App Store, the cheap way
 
-You built an app idea with Claude Code. It runs on your phone or in the
+You built an app idea with an AI coding agent: Claude Code, Codex or Cursor. It runs on your phone or in the
 simulator. Now you want it in the App Store, with a real backend, real
 sign-in and maybe a subscription. This page is the map for that.
 
@@ -66,15 +66,17 @@ plus the exact `/plugin install` lines for the rest. You can answer the same
 questions on the home page first.
 
 The plugins: `ship-ios` is the app and App Store side. `box` is the server
-side. `dev` is the agent's test loop. `content` makes images, video and
-transcripts. `app-features` adds features to your app and API: an AI chat and
+side. `dev` is the agent's test loop. `content` makes images and video. `app-features` adds features to your app and API: an AI chat and
 agent, cost limits, AI consent, background jobs, import from a shared link.
 
-For other agent tools (Codex, Cursor and others):
+For other agents (Codex, Cursor, Gemini CLI and others):
 
 ```bash
 npx skills add ggi3201/onebox
 ```
+
+Then ask the agent to use the plan skill. I build and test with Claude Code.
+The skills are plain `SKILL.md` files, so other agents can use them too.
 
 The skills read one config file, `~/.config/onebox/config.json`, plus an
 optional `.onebox.json` in each project. See [CONFIG.md](../CONFIG.md) in the repo root. A

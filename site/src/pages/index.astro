@@ -27,17 +27,17 @@ const bill = [
 
 <Base
   title="onebox — get your app on the App Store"
-  description="Free Claude Code skills and plain guides for getting an Expo app onto the App Store. Need a backend? Run it on one cheap box."
+  description="Free agent skills and plain guides for getting an Expo app onto the App Store. Need a backend? Run it on one cheap box."
 >
   <main>
     <!-- ============ HERO: the label ============ -->
     <section class="hero">
       <div class="wrap hero-grid">
         <div class="hero-copy">
-          <p class="kicker">Claude Code skills · Expo · iOS</p>
+          <p class="kicker">Agent skills · Expo · iOS</p>
           <h1 class="display hero-title"><span>Your app,</span> <span>on the</span> <span>App Store.</span></h1>
           <p class="lede">
-            You built something with Claude Code. It works on your phone. Then come certificates,
+            You built something with Claude Code, Codex or Cursor. It works on your phone. Then come certificates,
             App Review, payments and a backend that is still on <code>localhost</code>.
             These skills and guides take you the rest of the way, the way I ship my own apps.
             Need a server? Run it on one cheap box.
@@ -54,7 +54,7 @@ const bill = [
             <span class="label">Nº 001</span>
           </div>
           <dl class="label-rows">
-            <div><dt class="label">From</dt><dd>Your Mac and Claude Code</dd></div>
+            <div><dt class="label">From</dt><dd>Your Mac and your coding agent</dd></div>
             <div><dt class="label">To</dt><dd class="big">The App Store</dd></div>
             <div><dt class="label">Contents</dt><dd>{n(count, "skill")} · {n(PLUGINS.length, "plugin")} · {n(GUIDES.length, "guide")}</dd></div>
             <div><dt class="label">Postage</dt><dd>$99 a year to Apple. A backend from €5 a month, if you need one.</dd></div>
@@ -81,15 +81,15 @@ const bill = [
           <li>
             <span class="step-n" aria-hidden="true">1</span>
             <div>
-              <h3>Add the box to Claude Code</h3>
-              <p>Paste the lines from your cart below. Codex, Cursor and others: <code>npx skills add {REPO_SLUG}</code>.</p>
+              <h3>Add the skills to your agent</h3>
+              <p>Claude Code: paste the lines from your cart below. Codex, Cursor, Gemini CLI and others: <code>npx skills add {REPO_SLUG}</code>.</p>
             </div>
           </li>
           <li>
             <span class="step-n" aria-hidden="true">2</span>
             <div>
               <h3>Run <code>/start:plan</code> in your app’s folder</h3>
-              <p>It checks what your app already has, asks what is missing, and writes <code>PLAN.md</code>.</p>
+              <p>It checks what your app already has, asks what is missing, and writes <code>PLAN.md</code>. In other agents, ask for the plan skill.</p>
             </div>
           </li>
           <li>
@@ -121,7 +121,7 @@ const bill = [
         <header class="section-head">
           <h2 class="display h2">What’s in the box</h2>
           <p class="muted">
-            Every skill, grouped by plugin. A skill is a command Claude Code runs for you, like
+            Every skill, grouped by plugin. A skill is a set of instructions your agent follows, like
             <code>/ship-ios:app-store-ready</code>. You install a plugin, not a skill.
             <a href="#start">The planner</a> tells you which plugins your app needs.
           </p>
@@ -256,7 +256,9 @@ const bill = [
         <div class="about">
           <p>
             I’m <strong>Geir-Stian Løkkesveen</strong>, in Norway. I have a day job and a family, and I ship
-            iOS apps at night with Claude Code. My first app went out in 2019. Three of the apps below
+            iOS apps at night with Claude Code, and I test the skills there. They are plain
+            <code>SKILL.md</code> files, so Codex, Cursor, Gemini CLI and other agents can use them too.
+            My first app went out in 2019. Three of the apps below
             are on the App Store today. Download one and see for yourself.
           </p>
           <p class="about-links">

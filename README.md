@@ -2,7 +2,7 @@
 
 Get your app on the App Store.
 
-Claude Code skills and plain guides for getting an Expo / React Native app onto
+Agent skills and plain guides for getting an Expo / React Native app onto
 the App Store. If the app needs a backend, it runs on one cheap server: a mini
 PC at home or a small VPS. No AWS, no Kubernetes.
 
@@ -22,20 +22,23 @@ what the app already has, asks a few questions, and writes `PLAN.md`: the
 steps in order, and the install line for each plugin you need. Run it again
 later to tick what is done and see the next step.
 
-Other tools (Codex, Cursor and more):
+Other agents (Codex, Cursor, Gemini CLI and more):
 
 ```
 npx skills add ggi3201/onebox
 ```
 
+Then ask the agent to use the plan skill. I build and test with Claude Code.
+The skills are plain `SKILL.md` files, so other agents can use them too.
+
 ## The route
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/route-dark.png">
-  <img alt="How onebox fits together: your Mac runs Claude Code and every skill, builds the app and submits it to Apple, which delivers it to phones. Phones call your API through a Cloudflare tunnel into one box that runs the API, Postgres, staging, backups, Traefik and the landing page with pricing, privacy policy, support and terms. App Store Connect links to that landing page." src="docs/route-light.png">
+  <img alt="How onebox fits together: your Mac runs your coding agent and every skill, builds the app and submits it to Apple, which delivers it to phones. Phones call your API through a Cloudflare tunnel into one box that runs the API, Postgres, staging, backups, Traefik and the landing page with pricing, privacy policy, support and terms. App Store Connect links to that landing page." src="docs/route-light.png">
 </picture>
 
-Every skill runs in Claude Code on your Mac. The `box` skills reach your
+Every skill runs in your coding agent on your Mac. The `box` skills reach your
 server over SSH, and the landing page on the box holds the pricing, privacy
 policy, support and terms pages that App Store Connect and your paywall link to.
 

@@ -54,7 +54,7 @@ The script:
 
 Code signing needs the user's unlocked login keychain.
 
-- Run it in a Terminal on the Mac, or from Claude Code running on that Mac in
+- Run it in a Terminal on the Mac, or from your coding agent running on that Mac in
   the user's own session.
 - Never over SSH. It fails with `errSecInternalComponent`, or with a keychain
   password prompt that nobody can answer. The script refuses.

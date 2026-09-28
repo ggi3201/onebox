@@ -220,11 +220,13 @@ function render(answers, sources, detect) {
   const plugins = [];
   for (const it of items) if (it.kind === "skill" && !plugins.includes(it.plugin)) plugins.push(it.plugin);
   sec("## Install", [
-    "Only the plugins this plan uses. Run them in Claude Code:",
+    "Only the plugins this plan uses. In Claude Code:",
     "",
     "```",
     ...plugins.map((p) => `/plugin install ${p}@onebox`),
     "```",
+    "",
+    "Other agents (Codex, Cursor, Gemini CLI): `npx skills add ggi3201/onebox` installs every skill.",
   ]);
 
   const set = new Set([...(detect.config?.user?.keysSet ?? []), ...(detect.config?.project?.keysSet ?? [])]);
