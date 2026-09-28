@@ -35,8 +35,8 @@ npx expo install expo-updates      # pnpm workspace: pnpm --filter <app> exec ex
 
 **Add the config by hand. Do not keep what `eas update:configure` writes to
 `app.json`.** It writes resolved plugin values back into the static file. In
-three real apps it added Android permissions (twice, even with `-p ios`), and
-in one it doubled the associated domain and the Sign in with Apple
+two real apps it added Android permissions (twice, even with `-p ios`), and
+in one it also doubled the associated domain and the Sign in with Apple
 entitlement. A doubled entitlement is the kind of change that breaks signing.
 It also picks the weaker `appVersion` policy.
 

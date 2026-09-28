@@ -2,9 +2,14 @@
 # Build an Expo iOS app and send it to TestFlight.
 #
 #   build.sh [--profile production] [--skip-submit] [--interactive] [--cloud]
-#            [--dir <mobile-dir>] [--groups <TestFlight group>]
+#            [--dir <mobile-dir>] [--groups <TestFlight group>] [--upload altool|eas]
 #
-# Local (default, free): `eas build --local` on this Mac, then `eas submit --path`.
+# Local (default, free): `eas build --local` on this Mac, then upload the .ipa.
+# The upload goes straight to Apple with `xcrun altool` when an App Store Connect
+# key is in the config: it takes seconds, while `eas submit` can wait in Expo's
+# queue for hours and then fail as a duplicate. `--upload eas` (or --groups, which
+# only eas submit can do) uses eas submit instead.
+# Only one build per app runs at a time: a second one stops at the lock.
 # Cloud: `eas build --auto-submit` on Expo's servers. Used when --cloud is passed,
 # when expo.buildMode is "cloud" in the onebox config, or when this is not a Mac.
 #
@@ -14,7 +19,7 @@
 # Never prints a secret. Do not run it with EXPO_DEBUG=1: that dumps the API key.
 set -euo pipefail
 
-PROFILE=production; SUBMIT=true; INTERACTIVE=false; FORCE_CLOUD=false; DIR=""; TF_GROUP=""
+PROFILE=production; SUBMIT=true; INTERACTIVE=false; FORCE_CLOUD=false; DIR=""; TF_GROUP=""; UPLOAD=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --profile) PROFILE="$2"; shift 2 ;;
@@ -23,6 +28,7 @@ while [ $# -gt 0 ]; do
     --cloud) FORCE_CLOUD=true; shift ;;
     --dir) DIR="$2"; shift 2 ;;
     --groups) TF_GROUP="$2"; shift 2 ;;
+    --upload) UPLOAD="$2"; shift 2 ;;
     --) shift ;;   # pnpm/npm pass a literal -- through
     -h|--help) sed -n '2,15p' "$0"; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
@@ -33,6 +39,7 @@ say()  { printf '\033[0;34m[build]\033[0m %s\n' "$*"; }
 ok()   { printf '\033[0;32m[build]\033[0m %s\n' "$*"; }
 warn() { printf '\033[0;33m[build]\033[0m %s\n' "$*" >&2; }
 die()  { printf '\033[0;31m[build]\033[0m %s\n' "$*" >&2; exit "${2:-1}"; }
+CLEANUP=(); cleanup() { local x; for x in "${CLEANUP[@]:-}"; do [ -n "$x" ] && rm -rf "$x"; done; }; trap cleanup EXIT
 
 command -v jq >/dev/null || die "jq is required (brew install jq)."
 cfg() { jq -s '.[0] * .[1]' ~/.config/onebox/config.json .onebox.json 2>/dev/null \
@@ -182,14 +189,30 @@ if [ -n "$KID" ] && [ -n "$ISS" ]; then
   elif [ -n "$KREF" ]; then
     # eas needs a file path. Write the key to a private temp file for this run
     # only, and delete it on exit.
-    KDIR="$(mktemp -d)"; KPATH="$KDIR/AuthKey_$KID.p8"; trap 'rm -rf "$KDIR"' EXIT
+    KDIR="$(mktemp -d)"; KPATH="$KDIR/AuthKey_$KID.p8"; CLEANUP+=("$KDIR")
     ( umask 077; secret "$KREF" > "$KPATH" )
     grep -q "PRIVATE KEY" "$KPATH" || die "apple.ascKeyRef did not resolve to a .p8 key."
   fi
   if [ -n "$KPATH" ]; then export EXPO_ASC_API_KEY_PATH="$KPATH" EXPO_ASC_KEY_ID="$KID" EXPO_ASC_ISSUER_ID="$ISS"; fi
 fi
 
-# ---- 7. Build ------------------------------------------------------------------
+# ---- 7. One build per app at a time -------------------------------------------
+# Two agents building the same app upload two builds, with build numbers that
+# do not match their upload order. Key the lock on the bundle id, not the folder,
+# so two worktrees of one app share it.
+APP_KEY="$(jq -r '.expo.ios.bundleIdentifier // empty' app.json 2>/dev/null)"
+APP_KEY="${APP_KEY:-$(basename "$APP_DIR")}"
+LOCK="${TMPDIR:-/tmp}/onebox-build-$APP_KEY.lock"
+if ! mkdir "$LOCK" 2>/dev/null; then
+  other="$(cat "$LOCK/pid" 2>/dev/null)"
+  if [ -n "$other" ] && kill -0 "$other" 2>/dev/null; then
+    die "Another build of $APP_KEY is running (pid $other, $(cat "$LOCK/dir" 2>/dev/null)). Wait for it, or stop it first."
+  fi
+  warn "Removing a stale lock from pid ${other:-?}."; rm -rf "$LOCK"; mkdir "$LOCK"
+fi
+echo $$ > "$LOCK/pid"; echo "$APP_DIR" > "$LOCK/dir"; CLEANUP+=("$LOCK")
+
+# ---- 8. Build ------------------------------------------------------------------
 mkdir -p build
 OUT="build/ios-$PROFILE-$(date +%Y%m%d-%H%M%S).ipa"
 say "Building locally, profile $PROFILE. This takes 10-20 minutes."
@@ -202,9 +225,25 @@ if ! eas build "${flags[@]}"; then
 fi
 ok "Built $OUT"
 
-# ---- 8. Submit ------------------------------------------------------------------
-[ "$SUBMIT" = true ] || { ok "Skipping submit. Send it later: eas submit --platform ios --path $OUT"; exit 0; }
-say "Submitting to App Store Connect..."
+# ---- 9. Upload ------------------------------------------------------------------
+[ "$SUBMIT" = true ] || { ok "Skipping upload. Send it later: xcrun altool --upload-app -f $OUT -t ios --apiKey <key id> --apiIssuer <issuer id>"; exit 0; }
+if [ -z "$UPLOAD" ]; then
+  if [ -z "$TF_GROUP" ] && [ -n "$KID" ] && [ -n "$ISS" ] && [ -n "${KPATH:-}" ] && xcrun --find altool >/dev/null 2>&1; then UPLOAD=altool; else UPLOAD=eas; fi
+fi
+if [ "$UPLOAD" = altool ]; then
+  [ -n "$KID" ] && [ -n "$ISS" ] && [ -n "${KPATH:-}" ] || die "--upload altool needs apple.ascKeyId, apple.ascIssuerId and a key file in the onebox config."
+  # altool looks for AuthKey_<key id>.p8 in API_PRIVATE_KEYS_DIR.
+  ADIR="$(mktemp -d)"; CLEANUP+=("$ADIR"); ( umask 077; cp "$KPATH" "$ADIR/AuthKey_$KID.p8" )
+  say "Uploading to App Store Connect with altool..."
+  LOG="build/upload-$(date +%Y%m%d-%H%M%S).log"
+  set +e; API_PRIVATE_KEYS_DIR="$ADIR" xcrun altool --upload-app -f "$OUT" -t ios --apiKey "$KID" --apiIssuer "$ISS" 2>&1 | tee "$LOG"; rc=${PIPESTATUS[0]}; set -e
+  if [ "$rc" -eq 0 ] && grep -q "UPLOAD SUCCEEDED" "$LOG"; then
+    ok "Uploaded. Apple processes it in 5 to 30 minutes: node <appstore-connect>/scripts/asc.mjs builds --app $APP_KEY"
+    exit 0
+  fi
+  die "Upload failed (log: $LOG). Fix the cause and upload the same file again; do not rebuild."
+fi
+say "Submitting to App Store Connect with eas submit..."
 LOG="build/submit-$(date +%Y%m%d-%H%M%S).log"
 sflags=(--platform ios --path "$OUT")
 jq -e --arg p "$PROFILE" '.submit[$p]' eas.json >/dev/null 2>&1 && sflags+=(--profile "$PROFILE")
