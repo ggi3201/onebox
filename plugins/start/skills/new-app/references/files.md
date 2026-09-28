@@ -5,14 +5,19 @@ other part of the skeleton comes from a guide; the skill says which.
 
 ## Root files (API in the repo)
 
-`package.json`. Set `packageManager` to the output of `pnpm -v`. Root scripts
-only delegate, so every command runs in the right folder.
+`package.json`. Root scripts only delegate, so every command runs in the
+right folder. Write it without `packageManager`. Then run
+`corepack use pnpm@10` at the root: it adds `packageManager` with the exact
+version and its hash.
+
+Keep pnpm on major 10. pnpm 12 does not start through corepack yet (it has
+no `bin/pnpm.cjs`), so do not "upgrade" it until `corepack pnpm@<new> -v`
+works on this Node.
 
 ```json
 {
   "name": "myapp",
   "private": true,
-  "packageManager": "pnpm@<version>",
   "scripts": {
     "start": "pnpm --filter mobile start",
     "ios": "pnpm --filter mobile ios",
@@ -32,6 +37,13 @@ A Node API: use its own `test`, `build` and `dev` scripts through
 `pnpm --filter api` instead of the `dotnet` ones. No API: the Expo app is the
 root, and its own `package.json` needs a `check` script that runs
 `typecheck`, `lint` and `test`.
+
+`.node-version`: the Node major this app uses, for your version manager and
+for CI. Use an LTS (an even major).
+
+```bash
+node -p 'process.versions.node.split(".")[0]' > .node-version   # for example 24
+```
 
 `pnpm-workspace.yaml`:
 
@@ -70,31 +82,98 @@ obj/
 .worktrees/
 ```
 
+## The Expo app
+
+`create-expo-app` writes more than the app. Per file:
+
+| File in `apps/mobile` | What to do |
+|---|---|
+| `AGENTS.md` | Keep. It is Expo's guide for agents: read the docs for this SDK, not your memory. Link it from the root `AGENTS.md`. |
+| `CLAUDE.md` | Keep. It only says `@AGENTS.md`. |
+| `.claude/settings.json` | Keep. It turns on Expo's own Claude Code plugin. |
+| `LICENSE` | Delete. It is Expo's licence for the template, not the app's. |
+
+`reset-project` deletes `scripts/` and `src/`, and writes a new `src/app/`.
+Delete its `reset-project` entry from `package.json` after it runs. The
+script it points to is gone.
+
+The first test, in `src/config/eas-profiles.test.ts`. It reads `eas.json`
+with Node's `fs`, so it needs `"node"` in the tsconfig `types`
+(`agent-test-loop.md`, step 1):
+
+```ts
+// expo-app.md, step 4: a build that leaves the Mac must have an https API URL.
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
+type Profile = { developmentClient?: boolean; env?: Record<string, string> };
+
+const eas = JSON.parse(readFileSync(join(__dirname, "../../eas.json"), "utf8")) as {
+  build: Record<string, Profile>;
+};
+
+const shipped = Object.entries(eas.build).filter(([, p]) => !p.developmentClient);
+
+test("eas.json has a preview and a production profile", () => {
+  expect(shipped.map(([name]) => name)).toEqual(expect.arrayContaining(["preview", "production"]));
+});
+
+test.each(shipped)("profile %s has an https API URL", (_name, profile) => {
+  expect(profile.env?.EXPO_PUBLIC_API_URL).toMatch(/^https:\/\//);
+});
+```
+
 ## The API
 
 For .NET, from the repo root:
 
 ```bash
-dotnet new sln -n MyApp -o apps/api
+dotnet new sln -n MyApp -o apps/api --format sln
 dotnet new web -n MyApp.Api -o apps/api/MyApp.Api
 dotnet new xunit -n MyApp.Api.Tests -o apps/api/MyApp.Api.Tests
+rm apps/api/MyApp.Api.Tests/UnitTest1.cs
 dotnet sln apps/api/MyApp.sln add apps/api/MyApp.Api apps/api/MyApp.Api.Tests
 dotnet add apps/api/MyApp.Api.Tests reference apps/api/MyApp.Api
-(cd apps/api && dotnet new tool-manifest && dotnet tool install dotnet-ef)
 ```
 
 Add the test project to the solution. A test project outside the solution
 builds on your Mac and never runs in CI.
 
-Packages: `Npgsql.EntityFrameworkCore.PostgreSQL` and
-`Microsoft.EntityFrameworkCore.Design` in the API. In the tests, the ones
-`agent-test-loop.md` step 5 names. Add `Directory.Build.props` in `apps/api`
-from `agent-test-loop.md` step 3.
+Packages. Npgsql comes first, because it decides the EF Core version.
+`Microsoft.EntityFrameworkCore.Design` and `dotnet-ef` must use that same
+version. The newest `Design` pulls in a newer EF Core than Npgsql's. The test
+project then gets two versions, and the build fails with CS1705 (MSB3277
+under `-warnaserror`).
+
+```bash
+dotnet add apps/api/MyApp.Api package Npgsql.EntityFrameworkCore.PostgreSQL
+dotnet list apps/api/MyApp.Api package --include-transitive | grep EntityFrameworkCore
+V=$(dotnet list apps/api/MyApp.Api package --include-transitive \
+  | awk '$2 == "Microsoft.EntityFrameworkCore" { print $3 }')   # for example 10.0.4
+dotnet add apps/api/MyApp.Api package Microsoft.EntityFrameworkCore.Design --version "$V"
+(cd apps/api && dotnet new tool-manifest && dotnet tool install dotnet-ef --version "$V")
+dotnet add apps/api/MyApp.Api.Tests package Testcontainers.PostgreSql
+dotnet add apps/api/MyApp.Api.Tests package Microsoft.AspNetCore.Mvc.Testing
+```
+
+The xunit template already has `coverlet.collector`. Add
+`Directory.Build.props` in `apps/api` from `agent-test-loop.md` step 3. With
+it, every analyzer warning is an error. Two rules touch the files below:
+
+- CA1050: every type has a namespace. `Program` stays global.
+- CA1707: the test names are sentences with underscores. Turn it off in the
+  test project only, in its `<PropertyGroup>`:
+
+  ```xml
+  <!-- Test names are sentences with underscores. CA1707 is for public library APIs. -->
+  <NoWarn>$(NoWarn);CA1707</NoWarn>
+  ```
 
 `Program.cs`:
 
 ```csharp
 using Microsoft.EntityFrameworkCore;
+using MyApp.Api.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -126,6 +205,8 @@ public partial class Program;   // lets the tests start the app
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
+namespace MyApp.Api.Data;
+
 public sealed class AppDb(DbContextOptions<AppDb> options) : DbContext(options);
 
 public sealed class DesignTimeDbFactory : IDesignTimeDbContextFactory<AppDb>
@@ -137,6 +218,15 @@ public sealed class DesignTimeDbFactory : IDesignTimeDbContextFactory<AppDb>
 }
 ```
 
+`Data/IOwned.cs`, the marker from `backend.md`, "Keep each user's data
+apart", step 1:
+
+```csharp
+namespace MyApp.Api.Data;
+
+public interface IOwned { string OwnerId { get; set; } }
+```
+
 Use the dev database port you picked, here and below.
 `appsettings.Development.json` gets the same dev connection string under
 `DATABASE_URL`. It is a dev value, not a secret. In `launchSettings.json`,
@@ -144,14 +234,109 @@ set the port the API listens on locally, and write it in `AGENTS.md`.
 
 Then the first migration: `(cd apps/api && dotnet ef migrations add Initial --project MyApp.Api)`.
 
-Tests, from `agent-test-loop.md` step 5 (one Postgres container per run, the
-app through `WebApplicationFactory<Program>`):
+Tests, from `agent-test-loop.md` step 5. `MyApp.Api.Tests/ApiFactory.cs`
+starts one Postgres container for the run and one database per test class,
+then runs the real app on it:
+
+```csharp
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Npgsql;
+using Testcontainers.PostgreSql;
+
+namespace MyApp.Api.Tests;
+
+// One Postgres server for the whole test run. Testcontainers removes it when the run ends.
+static class TestDatabase
+{
+    static readonly PostgreSqlContainer Server = new PostgreSqlBuilder("postgres:17-alpine").Build();
+    static readonly Lazy<Task> Started = new(() => Server.StartAsync());
+
+    // A new, empty database on that server. Returns its connection string.
+    public static async Task<string> CreateAsync()
+    {
+        await Started.Value;
+        var name = $"test_{Guid.NewGuid():N}";
+        await using (var conn = new NpgsqlConnection(Server.GetConnectionString()))
+        {
+            await conn.OpenAsync();
+            await using var cmd = new NpgsqlCommand($"CREATE DATABASE \"{name}\"", conn);
+            await cmd.ExecuteNonQueryAsync();
+        }
+        // A small pool: many fixtures with the default pool exhaust Postgres' 100 connections.
+        return new NpgsqlConnectionStringBuilder(Server.GetConnectionString())
+        {
+            Database = name,
+            MaxPoolSize = 5,
+        }.ConnectionString;
+    }
+}
+
+// The real app, on its own database. One per test class (IClassFixture<ApiFactory>).
+public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
+{
+    string connectionString = "";
+
+    public async Task InitializeAsync() => connectionString = await TestDatabase.CreateAsync();
+
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        // "Testing", so appsettings.Development.json and its dev database stay out.
+        builder.UseEnvironment("Testing");
+        // UseSetting, not ConfigureAppConfiguration: Program reads DATABASE_URL before Build().
+        builder.UseSetting("DATABASE_URL", connectionString);
+    }
+
+    Task IAsyncLifetime.DisposeAsync() => DisposeAsync().AsTask();
+}
+```
+
+`MyApp.Api.Tests/SkeletonTests.cs`, the two first tests:
 
 - `GET /health` returns 200 against a real Postgres. This proves the start,
   the settings and the migration.
 - The query-filter test from `backend.md`, "Keep each user's data apart",
-  step 5, with the `IOwned` interface from step 1. It passes with no tables.
-  It fails on the first owned table that has no filter.
+  step 5. It passes with no tables. It fails on the first owned table that
+  has no filter.
+
+```csharp
+using System.Net;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using MyApp.Api.Data;
+
+namespace MyApp.Api.Tests;
+
+public sealed class SkeletonTests(ApiFactory factory) : IClassFixture<ApiFactory>
+{
+    [Fact]
+    public async Task health_returns_200()
+    {
+        using var client = factory.CreateClient();
+        using var res = await client.GetAsync(new Uri("/health", UriKind.Relative));
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+    }
+
+    [Fact]
+    public void every_owned_entity_has_a_query_filter()
+    {
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDb>();
+
+        var unguarded = db.Model.GetEntityTypes()
+            .Where(e => typeof(IOwned).IsAssignableFrom(e.ClrType))
+            .Where(e => e.GetDeclaredQueryFilters().Count == 0)
+            .Select(e => e.ClrType.Name)
+            .ToList();
+
+        Assert.True(unguarded.Count == 0,
+            $"Owned entities with no query filter, so their rows leak across users: {string.Join(", ", unguarded)}");
+    }
+}
+```
+
+The fixture uses the xunit v2 `IAsyncLifetime`, which the `dotnet new xunit`
+template installs. In xunit v3 its methods return `ValueTask`.
 
 For Node, follow `backend.md` "The language" and "On Node", with
 `@testcontainers/postgresql` for the same two tests.
@@ -208,7 +393,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4       # before setup-node, or its pnpm cache fails
       - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: pnpm }
+        with: { node-version-file: .node-version, cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - run: pnpm lint
@@ -232,6 +417,8 @@ Start with this block. Put the test-loop block under it.
 # MyApp
 
 - `apps/mobile`: the Expo app. `apps/api`: the API.
+- Before you change the app, read `apps/mobile/AGENTS.md`. It is Expo's
+  guide for this SDK.
 - Run Expo and EAS commands only from `apps/mobile`. The root `app.config.js`
   throws on purpose.
 - `apps/mobile/ios/` is generated. Change `app.json` or a config plugin, then

@@ -34,10 +34,19 @@ In the app's `tsconfig.json`:
     "noUncheckedIndexedAccess": true,   // arr[i] may be undefined
     "noImplicitOverride": true,
     "noFallthroughCasesInSwitch": true,
-    "noImplicitReturns": true
+    "noImplicitReturns": true,
+    "types": ["jest", "node"]           // the test runner's globals, and Node's
   }
 }
 ```
+
+TypeScript 6 no longer loads every `@types/*` package on its own. List the
+ones your code uses in `types`: `"jest"` for Jest's `test` and `expect`,
+`"node"` for `fs`, `path` and `__dirname` in tests and config. With Vitest,
+import `test` and `expect` from `vitest` and list only `"node"`. Without the
+list, the first test fails with `Cannot find name 'test'`. Add each package
+as a direct dev dependency (step 4). One that is there only through another
+package can go away on the next install.
 
 `noUncheckedIndexedAccess` finds the most real bugs, and it also finds the
 most code to change. Turn it on first, fix what it reports, then add the rest.
@@ -59,7 +68,9 @@ npx expo lint
 ```
 
 The first run installs `eslint` and `eslint-config-expo`, writes
-`eslint.config.js` and adds a `lint` script to `package.json`. Then:
+`eslint.config.js` and adds a `lint` script to `package.json`. It can then
+crash with `Cannot find module 'eslint'` (from `lintAsync.js`). Run
+`npx expo lint` a second time. The second run works. Then:
 
 - Add `"ios/*"`, `"android/*"` and `"dist/*"` to `ignores`. With Continuous
   Native Generation those folders are generated. Lint errors there come back
@@ -91,7 +102,13 @@ If warnings as errors slow you down locally, remove that line and run
 Pick one runner:
 
 - **Jest with `jest-expo`** is Expo's default. It mocks the native modules for
-  you. Start here if you have no tests yet.
+  you. Start here if you have no tests yet. From the Expo app folder:
+
+  ```bash
+  npx expo install jest-expo jest @types/jest @types/node -- --save-dev
+  ```
+
+  Then add `"jest": { "preset": "jest-expo" }` to `package.json`.
 - **Vitest** is faster. It needs an alias for each React Native package that
   cannot load in Node, which is more setup. One working split: `*.test.ts` for
   pure logic in the `node` environment, and `*.test.tsx` for components in
@@ -104,7 +121,8 @@ Either way:
   or `"America/New_York"`). Date code that only ever runs in UTC is untested.
 - Add a coverage provider now (`@vitest/coverage-v8` for Vitest; Jest has one
   built in). The `dev:trim-tests` skill needs it later.
-- Add the script: `"test": "vitest run"` or `"test": "jest"`.
+- Add the script: `"test": "vitest run"` or `"test": "jest"`. For Jest, the
+  script can pin the time zone too: `"test": "TZ=Europe/Berlin jest"`.
 
 ### 5. Tests against a real database
 
@@ -179,7 +197,12 @@ Do not leave an app on the default 8081: a second app on the same Mac uses it
 too. Add the small `scripts/metro-port.sh` from
 `plugins/dev/skills/test-loop/references/preflight.md`. It gives the main
 checkout a port in 8200-8299 from the repo's folder name, and each worktree a
-port in 8100-8199 from its path. Use it in both scripts:
+port in 8100-8199 from its path.
+
+The script goes in the Expo app folder, next to its `package.json`
+(`apps/mobile/scripts/` in a monorepo), because `package.json` scripts run
+in that folder. In a new app, add it after `reset-project`, which deletes
+`scripts/`. Use it in both scripts:
 
 ```json
 "start": "expo start --dev-client --port $(sh scripts/metro-port.sh)",
