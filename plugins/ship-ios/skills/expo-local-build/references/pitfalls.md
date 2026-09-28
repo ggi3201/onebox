@@ -99,6 +99,15 @@ Check with `which ruby pod` in the agent's shell. Fix it for every agent run
 by putting the shims on the PATH in `~/.zshenv`, for example
 `export PATH="$HOME/.rbenv/shims:$PATH"`.
 
+## npm
+
+**`E403 Forbidden` for `eas-cli-local-build-plugin` from a private registry
+(Artifactory, Nexus).** `eas build --local` downloads its build plugin with
+npx, and npx uses your global npm registry. A work mirror that does not carry
+the package refuses it. It can work one day and fail the next, depending on
+what is in the npx cache. Point the build at the public registry for that one
+run: `npm_config_registry=https://registry.npmjs.org/ eas build ... --local`.
+
 ## Upload
 
 **`eas submit` says "Waiting for submission to complete" for a long time.**

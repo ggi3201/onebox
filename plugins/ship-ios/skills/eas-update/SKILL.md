@@ -88,6 +88,11 @@ module.exports = {
 
 Then check again: A equals B, and an edit in `widgets/` changes both.
 
+Measure after your last change to the setup, and compare with the build log's
+`Resolved runtime version`. The app folder's `.gitignore` is one of the
+fingerprint's inputs, so even adding `dist-update/` to it changes the runtime
+version, and a later build gets the new one.
+
 Then commit, and make a normal build (`ship-ios:expo-local-build`). Tell the
 user plainly: **no phone gets an update until it runs a build made from this
 commit.**
