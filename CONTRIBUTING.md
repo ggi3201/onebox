@@ -40,6 +40,10 @@ load the skill, so it must carry the trigger phrases.
    Exact technical terms. No filler.
 8. **Link a guide** in `guides/` when a skill needs an account or an API key.
    The skill tells the user which guide to follow; it does not repeat the guide.
+   Link it by its site URL (`https://onebox.lokkesveen.com/guides/<name>.md`),
+   not a relative path: an installed plugin has no `guides/` folder. A skill
+   that fetches a guide falls back to the raw GitHub URL, then a local
+   checkout, and otherwise stops. It never goes on from memory.
 9. **Keep what was learned.** When adapting a personal skill, keep the hard-won
    lessons (pitfalls, ordering, verification steps). Remove only what is
    personal. Turn a personal story into a neutral example if it teaches

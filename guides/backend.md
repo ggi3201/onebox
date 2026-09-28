@@ -96,6 +96,16 @@ step 3). The restore needs it: the NuGet audit settings from step 10 of
 "Protect the API" run at restore. Without it, the restore in the container
 uses other settings than your Mac.
 
+Add a `.dockerignore` next to the Dockerfile. Without it, `COPY . .` also
+copies your Mac's `bin/` and `obj/` folders and the test project into the
+build:
+
+```
+**/bin/
+**/obj/
+MyApp.Api.Tests/
+```
+
 ### 2. `docker-compose.yml`
 
 At the repo root. A minimal version:

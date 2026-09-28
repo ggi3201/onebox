@@ -15,7 +15,10 @@ the Simulator, the API answers `/health`, and every check passes. Then
 files no guide has (`references/files.md`). When a step says "follow
 `expo-app.md`, step 3", fetch
 `https://onebox.lokkesveen.com/guides/expo-app.md` and do that step. Do not
-work from memory, from another app, or from older Expo docs. Versions come
+work from memory, from another app, or from older Expo docs. If that URL does
+not load, try `https://raw.githubusercontent.com/ggi3201/onebox/main/guides/expo-app.md`,
+then `guides/expo-app.md` in a local checkout of the onebox repo. If none of
+them loads, stop and tell the user which guide you could not read. Versions come
 from `create-expo-app@latest` and `dotnet new`, never from memory. One
 exception: pnpm is pinned to major 10 (step 0).
 
