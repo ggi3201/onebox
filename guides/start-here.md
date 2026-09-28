@@ -13,7 +13,7 @@ is the map for that. New words on the way? They are all in
 The kit is for iOS only. Expo apps can also run on Android, but no guide or
 skill here covers the Play Store yet.
 
-This is the setup I use for my own apps:
+This is the whole setup:
 
 - an **Expo / React Native** iOS app,
 - a **backend API and Postgres** in Docker on **one cheap box** (a mini PC at
