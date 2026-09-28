@@ -74,6 +74,7 @@ Skills read these from `~/.config/onebox/config.json`, or `.onebox.json` for thi
 - [ ] Put the domain on Cloudflare, with a tunnel — guide: https://onebox.lokkesveen.com/guides/cloudflare/ (raw: https://onebox.lokkesveen.com/guides/cloudflare.md) <!-- guide:cloudflare -->
 - [ ] Bring the box to a safe baseline — skill: /box:box-setup <!-- skill:box/box-setup -->
 - [ ] Reach the box from your phone — guide: https://onebox.lokkesveen.com/guides/remote-access/ (raw: https://onebox.lokkesveen.com/guides/remote-access.md) <!-- guide:remote-access -->
+- [ ] Get an alert when the box or the API is down — guide: https://onebox.lokkesveen.com/guides/uptime-alerts/ (raw: https://onebox.lokkesveen.com/guides/uptime-alerts.md) <!-- guide:uptime-alerts -->
 
 ## The backend
 
@@ -86,6 +87,7 @@ Skills read these from `~/.config/onebox/config.json`, or `.onebox.json` for thi
 
 - [ ] Sign in with Apple, verified on the server — guide: https://onebox.lokkesveen.com/guides/sign-in-with-apple/ (raw: https://onebox.lokkesveen.com/guides/sign-in-with-apple.md) <!-- guide:sign-in-with-apple -->
 - [ ] Subscriptions with RevenueCat — guide: https://onebox.lokkesveen.com/guides/revenuecat/ (raw: https://onebox.lokkesveen.com/guides/revenuecat.md) <!-- guide:revenuecat -->
+- [ ] Send push notifications from your API — guide: https://onebox.lokkesveen.com/guides/push-notifications/ (raw: https://onebox.lokkesveen.com/guides/push-notifications.md) <!-- guide:push-notifications -->
 - [ ] Get an LLM API key — guide: https://onebox.lokkesveen.com/guides/llm-api-key/ (raw: https://onebox.lokkesveen.com/guides/llm-api-key.md) <!-- guide:llm-api-key -->
 - [ ] An agent in your API that calls your tools — skill: /app-features:agent-harness <!-- skill:app-features/agent-harness -->
 - [ ] A streamed chat screen — skill: /app-features:chat-feature <!-- skill:app-features/chat-feature -->
@@ -110,6 +112,7 @@ Skills read these from `~/.config/onebox/config.json`, or `.onebox.json` for thi
 - [ ] Store screenshots from real screens — skill: /ship-ios:app-store-screenshots <!-- skill:ship-ios/app-store-screenshots -->
 - [ ] Store page text that search finds — skill: /ship-ios:store-listing <!-- skill:ship-ios/store-listing -->
 - [ ] Find what Apple will reject, before Apple does — skill: /ship-ios:app-store-ready <!-- skill:ship-ios/app-store-ready -->
+- [ ] See crashes and errors after launch — guide: https://onebox.lokkesveen.com/guides/crash-reports/ (raw: https://onebox.lokkesveen.com/guides/crash-reports.md) <!-- guide:crash-reports -->
 
 ## Notes
 

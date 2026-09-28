@@ -276,6 +276,11 @@ Done when: the app is approved and released.
   - Make sure last night's backup ran (`onebox-backup --list`). Restore one
     once, so you know it works.
   - Watch the disk (`df -h`). Docker images and logs grow.
+- **See crashes, and know when the box is down.** Guides:
+  [crash-reports.md](crash-reports.md) and [uptime-alerts.md](uptime-alerts.md).
+- **Push notifications,** when the app needs them. Guide:
+  [push-notifications.md](push-notifications.md).
+- **Ship JavaScript fixes without a new build.** Skill: `ship-ios:eas-update`.
 - **Know when to go further.** One box is one point of failure. If it dies,
   the app is down until you restore it. At home, a power cut or an internet
   outage takes it down too. Move on when downtime costs you money or trust: a

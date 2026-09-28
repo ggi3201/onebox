@@ -335,6 +335,17 @@
       }
     },
     {
+      "id": "uptime-alerts",
+      "kind": "guide",
+      "phase": "box",
+      "title": "Get an alert when the box or the API is down",
+      "when": {
+        "backend": [
+          "box"
+        ]
+      }
+    },
+    {
       "id": "backend",
       "kind": "guide",
       "phase": "backend",
@@ -412,6 +423,17 @@
       "when": {
         "paid": [
           "subs"
+        ]
+      }
+    },
+    {
+      "id": "push-notifications",
+      "kind": "guide",
+      "phase": "features",
+      "title": "Send push notifications from your API",
+      "when": {
+        "backend": [
+          "box"
         ]
       }
     },
@@ -673,6 +695,12 @@
       "plugin": "ship-ios",
       "phase": "launch",
       "title": "Find what Apple will reject, before Apple does"
+    },
+    {
+      "id": "crash-reports",
+      "kind": "guide",
+      "phase": "launch",
+      "title": "See crashes and errors after launch"
     }
   ]
 }
