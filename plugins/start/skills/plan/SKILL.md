@@ -65,6 +65,16 @@ It prints `state`, `ask` and `skipped`:
 - **`skipped`**: questions no answer would change, given what is known. Do
   not ask them.
 
+**Answers from the website.** The picker on the onebox site gives the user a
+prompt that ends with `My answers from the onebox site: {...}`. That JSON
+holds option ids from the catalog, the same shape `--answers` takes. Treat
+them as the user's own answers: pass the JSON to `questions` and to `write`
+with `--answers`, and do not ask those questions again. Detection still runs.
+If detection says something different with `high` confidence (for example,
+the site says "no server" but the repo has an ASP.NET API), say both and ask
+which is right. Drop keys the catalog does not know before you pass them; the
+script rejects them.
+
 If the user answers only some questions, run `questions` again with
 `--answers` holding what you have. Questions can drop out (for example,
 remote access only matters with your own box). If the user asks what a

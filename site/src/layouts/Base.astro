@@ -66,13 +66,14 @@ const { title, description, section = "home" } = Astro.props;
 
     <script>
       document.querySelectorAll<HTMLButtonElement>("[data-copy]").forEach((btn) => {
+        const label = btn.textContent;
         btn.addEventListener("click", async () => {
           try {
             await navigator.clipboard.writeText(btn.dataset.copy ?? "");
             btn.dataset.done = "";
             btn.textContent = "Copied";
-            setTimeout(() => { delete btn.dataset.done; btn.textContent = "Copy"; }, 1400);
           } catch { btn.textContent = "Select it"; }
+          setTimeout(() => { delete btn.dataset.done; btn.textContent = label; }, 1400);
         });
       });
     </script>

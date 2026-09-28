@@ -46,9 +46,16 @@ const questions = catalog.questions as Q[];
     </div>
 
     <div class="cart-block">
-      <p class="label">2 · In your app’s folder</p>
-      <div class="cmd"><code>/start:plan</code><button data-copy="/start:plan">Copy</button></div>
-      <p class="small">It asks these questions again, checks what your app already has, and writes the list below as <code>PLAN.md</code>. In other agents, ask for the plan skill.</p>
+      <p class="label">2 · Paste this in your app’s folder</p>
+      <div class="cmdbox">
+        <pre class="prompt" data-prompt></pre>
+        <button type="button" data-copy data-prompt-copy>Copy</button>
+      </div>
+      <p class="small">
+        It carries your answers, so the plan skill does not ask them again. It checks what your app already
+        has, asks only what is left, and writes the list below as <code>PLAN.md</code>.
+        Codex, Cursor or another agent? <button type="button" class="linkbtn" data-copy data-prompt-other>Copy the version for other agents</button>.
+      </p>
     </div>
 
     <div class="cart-block">
@@ -66,6 +73,9 @@ const questions = catalog.questions as Q[];
   const out = {
     install: root.querySelector("[data-install]"),
     plan: root.querySelector("[data-plan]"),
+    prompt: root.querySelector("[data-prompt]"),
+    promptCopy: root.querySelector("[data-prompt-copy]"),
+    promptOther: root.querySelector("[data-prompt-other]"),
     count: root.querySelector("[data-count]"),
   };
 
@@ -102,6 +112,11 @@ const questions = catalog.questions as Q[];
       "/plugin install start@onebox",
       ...plugins.map((p) => `/plugin install ${p}@onebox`),
     ].join("\n");
+
+    const said = `My answers from the onebox site: ${JSON.stringify(a)}`;
+    out.prompt.textContent = `/start:plan ${said}`;
+    out.promptCopy.dataset.copy = `/start:plan ${said}`;
+    out.promptOther.dataset.copy = `Use the onebox plan skill. ${said}`;
 
     const todo = items.filter((i) => !(i.doneWhen && matches(i.doneWhen, a)));
     const guides = todo.filter((i) => i.kind === "guide").length;
@@ -218,6 +233,14 @@ const questions = catalog.questions as Q[];
     padding: 0 12px; cursor: pointer;
   }
   .cmdbox button:hover { background: var(--ink); color: var(--paper); }
+  .cmdbox button[data-done] { background: var(--signal); color: var(--signal-ink); }
+  .cmdbox pre.prompt { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .linkbtn {
+    border: 0; padding: 0; background: none; color: inherit; font: inherit; cursor: pointer;
+    text-decoration: underline; text-decoration-color: color-mix(in oklab, var(--signal) 60%, transparent); text-underline-offset: 0.18em;
+  }
+  .linkbtn:hover { color: var(--signal); }
+  .linkbtn[data-done] { color: var(--signal); text-decoration: none; }
 
   .plan { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; max-height: 520px; overflow: auto; }
   .plan :global(.phase) {
