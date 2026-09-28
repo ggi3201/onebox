@@ -54,8 +54,8 @@ The share gives you a link and, at best, a caption. Options, cheapest first:
 2. **The platform's API** where there is one (YouTube Data API for the
    description).
 3. **The transcript.** Download the audio (yt-dlp) and transcribe it (Whisper,
-   locally or on the box). `content:transcribe` does this on a Mac and shows the
-   steps. On the server it is a job of its own: slow, and heavy on CPU.
+   locally or on the box). On the server it is a job of its own: slow, and
+   heavy on CPU.
 4. Nothing usable: fail with a sentence. Do not build a record from the title.
 
 Downloading from these platforms can break their terms. Decide that before you

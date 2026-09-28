@@ -23,7 +23,7 @@
     {
       "name": "content",
       "source": "./plugins/content",
-      "description": "Turn reels and videos into text an LLM can use, and generate images with kie.ai. Runs on your Mac.",
+      "description": "Generate images and video for the store page, the landing page and social posts, with kie.ai, fal.ai or Replicate. Runs on your Mac.",
       "version": "0.1.0",
       "license": "MIT"
     },

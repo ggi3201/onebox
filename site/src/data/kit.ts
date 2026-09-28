@@ -27,7 +27,7 @@ export const PLUGINS: Plugin[] = [
     letter: "C",
     title: "Content",
     runsOn: "Your Mac",
-    blurb: "Reels into text an LLM can use. Images without the stock-photo look.",
+    blurb: "Images and video for the store page, the landing page and social posts.",
   },
   {
     id: "dev",
@@ -57,7 +57,6 @@ const TAGLINES: Record<string, string> = {
   "expose-service": "Puts a service on the internet at your domain, with no open ports.",
   "new-landing-page": "A self-hosted landing page, or your Next.js site moved off Vercel.",
   "staging-env": "A second backend for test branches, with its own database.",
-  "transcribe": "Timestamped text from a reel, a TikTok or a voice memo. Free and local.",
   "image": "Generate and edit images with kie.ai, fal or Replicate. Look first, pay little, reroll.",
   "video": "Animate an approved still. Chain shots so the cuts disappear.",
   "test-loop": "Lint, types, tests, then the simulator. Proof before “done”.",

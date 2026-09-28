@@ -240,8 +240,6 @@ Done when: the app is approved and released.
   it).
 - **A landing page** for the app, on the same box. Skill:
   `box:new-landing-page`.
-- **Research.** Turn a video or a reel into text you can work with. Skill:
-  `content:transcribe`.
 - **Images and video** for the store page, the landing page and social posts.
   Skills: `content:image`, `content:video`.
 
