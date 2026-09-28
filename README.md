@@ -4,7 +4,8 @@ Get your app on the App Store.
 
 Agent skills and plain guides for getting an Expo / React Native app onto
 the App Store. If the app needs a backend, it runs on one cheap server: a mini
-PC at home or a small VPS. No AWS, no Kubernetes.
+PC at home or a small VPS. No AWS, no Kubernetes. iOS only for now: nothing
+here covers Android or the Play Store yet.
 
 Site and guides: https://onebox.lokkesveen.com · For agents: https://onebox.lokkesveen.com/llms.txt
 
@@ -48,7 +49,7 @@ policy, support and terms pages that App Store Connect and your paywall link to.
 | Plugin | Runs on | Skills |
 |---|---|---|
 | `start` | your Mac | plan |
-| `ship-ios` | your Mac | app-store-ready, expo-local-build, appstore-connect, ios-preview-build, app-store-screenshots, draw-app-icon, draw-icon-set |
+| `ship-ios` | your Mac | app-store-ready, expo-local-build, eas-update, appstore-connect, ios-preview-build, app-store-screenshots, draw-app-icon, draw-icon-set |
 | `box` | your server | box-setup, expose-service, new-landing-page, staging-env |
 | `content` | your Mac | image, video |
 | `dev` | your Mac | test-loop, trim-tests |

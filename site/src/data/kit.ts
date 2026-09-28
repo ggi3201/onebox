@@ -48,6 +48,7 @@ export const PLUGINS: Plugin[] = [
 const TAGLINES: Record<string, string> = {
   "app-store-ready": "Tells you why Apple will reject your app, before Apple does.",
   "expo-local-build": "Builds on your own Mac and sends it to TestFlight. No build credits.",
+  "eas-update": "Sends a JavaScript fix to phones without a new build or App Review.",
   "appstore-connect": "TestFlight builds, testers, groups and subscriptions from the terminal.",
   "ios-preview-build": "A build for your real phone that talks to staging, not production.",
   "app-store-screenshots": "Store images from your real screens, in your app’s own fonts.",

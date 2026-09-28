@@ -151,9 +151,11 @@ services:
     tmpfs: /var/lib/postgresql/data
 ```
 
-Write the two tests from [backend.md](backend.md), "Keep each user's data apart": one that
-fails when a table has no filter, and one where user B asks for user A's row
-and gets 404.
+When the app has its own backend, write the two tests from
+[backend.md](backend.md), "Keep each user's data apart": one that fails when a
+table has no filter, and one where user B asks for user A's row and gets 404.
+The backend comes in Phase 3 of [start-here.md](start-here.md), so come back
+to this step then. Until then, the test database is enough.
 
 ### 6. A dev database with edge cases
 

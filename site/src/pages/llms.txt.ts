@@ -8,7 +8,7 @@ export const GET: APIRoute = ({ site }) => {
   const lines = [
     "# onebox",
     "",
-    "> Free agent skills (SKILL.md, for Claude Code, Codex, Cursor, Gemini CLI and others) and plain guides for getting an Expo / React Native app onto the App Store. If the app needs a backend, it runs on one cheap server (a mini PC at home or a small VPS). MIT licensed.",
+    "> Free agent skills (SKILL.md, for Claude Code, Codex, Cursor, Gemini CLI and others) and plain guides for getting an Expo / React Native app onto the App Store. If the app needs a backend, it runs on one cheap server (a mini PC at home or a small VPS). MIT licensed. iOS only; Android and the Play Store are not covered.",
     "",
     `Install in Claude Code: \`/plugin marketplace add ${REPO_SLUG}\`, then \`/plugin install <plugin>@onebox\`. Other tools: \`npx skills add ${REPO_SLUG}\`. Source: ${REPO}`,
     "",

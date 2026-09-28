@@ -590,6 +590,13 @@
       }
     },
     {
+      "id": "eas-update",
+      "kind": "skill",
+      "plugin": "ship-ios",
+      "phase": "store",
+      "title": "Ship JavaScript fixes without a new build"
+    },
+    {
       "id": "appstore-connect",
       "kind": "skill",
       "plugin": "ship-ios",

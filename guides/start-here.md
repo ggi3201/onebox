@@ -10,6 +10,9 @@ is the map for that. New words on the way? They are all in
 [glossary.md](glossary.md). Stuck on a step? Read
 [when-you-are-stuck.md](when-you-are-stuck.md).
 
+The kit is for iOS only. Expo apps can also run on Android, but no guide or
+skill here covers the Play Store yet.
+
 This is the setup I use for my own apps:
 
 - an **Expo / React Native** iOS app,
