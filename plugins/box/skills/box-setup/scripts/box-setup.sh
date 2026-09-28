@@ -133,6 +133,8 @@ say()  { printf '  %s\n' "$*"; }
 die()  { printf '  ERROR: %s\n' "$1" >&2; exit "${2:-1}"; }
 run()  { if [ "$DRY" = 1 ]; then say "(dry run) would run: $*"; else "$@"; fi; }
 have() { command -v "$1" >/dev/null 2>&1; }
+# Root for reads that need it (sshd -T, /etc/cloudflared). Never prompts.
+as_root() { if [ "$(id -u)" = 0 ]; then "$@"; else sudo -n "$@"; fi; }
 
 # Write a file only if its content differs. Prints what happened.
 put() {  # put PATH MODE OWNER <<< content
@@ -161,7 +163,8 @@ foreign_traefik() {
 }
 
 foreign_cloudflared() {
-  [ -f "$CF_CONF" ] && ! grep -qF "$MARK" "$CF_CONF"
+  # Unreadable counts as foreign: refusing is the safe answer.
+  [ -f "$CF_CONF" ] && ! as_root grep -qF "$MARK" "$CF_CONF" 2>/dev/null
 }
 
 port_busy() { ss -ltnH "sport = :$1" 2>/dev/null | grep -q .; }
@@ -651,10 +654,16 @@ phase_check() {
   if S docker info >/dev/null 2>&1; then
     ok "docker $(S docker version -f '{{.Server.Version}}' 2>/dev/null), compose $(S docker compose version --short 2>/dev/null)"
     S docker network inspect "$NET" >/dev/null 2>&1 && ok "network $NET exists" || bad "network $NET missing"
-    [ "$(S docker inspect -f '{{.State.Running}}' traefik 2>/dev/null)" = true ] && ok "traefik running" || bad "traefik not running"
-    curl -sf --max-time 5 http://127.0.0.1:8081/ping >/dev/null 2>&1 && ok "traefik API on 127.0.0.1:8081" || bad "traefik API not answering"
+    # Find Traefik by its image, so a box set up by hand is checked too.
+    local tk; tk="$(S docker ps --format '{{.Names}} {{.Image}}' | awk '$2 ~ /^traefik(:|@|$)/ {print $1; exit}')"
+    if [ -n "$tk" ]; then ok "traefik running ($tk)"; else bad "traefik not running"; fi
+    if [ "$tk" = traefik ]; then
+      curl -sf --max-time 5 http://127.0.0.1:8081/ping >/dev/null 2>&1 && ok "traefik API on 127.0.0.1:8081" || bad "traefik API not answering"
+    elif [ -n "$tk" ]; then
+      meh "traefik $tk was not set up by box-setup; its API check is skipped"
+    fi
     local open
-    open="$(S docker ps --format '{{.Names}} {{.Ports}}' | grep -E '(0\.0\.0\.0|\[::\]|:::)[0-9]+->' || true)"
+    open="$(S docker ps --format '{{.Names}} {{.Ports}}' | grep -E '(0\.0\.0\.0|\[::\]|::):[0-9]+->' || true)"
     if [ -n "$open" ]; then
       if [ "$TYPE" = vps ] && [ "$TUNNEL" = cloudflare ]; then
         bad "ports published on all interfaces (Docker skips ufw):"; echo "$open" | sed 's/^/          /'
@@ -668,7 +677,7 @@ phase_check() {
     for c in $(S docker ps -q); do
       S docker inspect -f '{{range .Mounts}}{{.Source}} {{end}}' "$c" 2>/dev/null | grep -qE '(^| )(/var)?/run/docker\.sock( |$)' || continue
       name="$(S docker inspect -f '{{.Name}}' "$c" | sed 's#^/##')"
-      [ "$name" = traefik ] && continue
+      [ "$name" = "${tk:-traefik}" ] && continue
       sock=1
       if [ "$(S docker inspect -f '{{index .Config.Labels "traefik.enable"}}' "$c" 2>/dev/null)" = true ]; then
         bad "docker socket mounted in $name, and Traefik routes to it"
@@ -676,7 +685,7 @@ phase_check() {
         meh "docker socket mounted in $name (fine for a backup or update tool; never for a public service)"
       fi
     done
-    [ "$sock" = 0 ] && ok "docker socket only in traefik"
+    [ "$sock" = 0 ] && ok "docker socket only in ${tk:-traefik}"
   else
     bad "docker not reachable"
   fi
@@ -694,14 +703,21 @@ phase_check() {
       || meh "one tunnel replica only; a restart drops traffic for a few seconds"
   fi
 
-  systemctl is-enabled onebox-backup.timer >/dev/null 2>&1 && ok "backup timer enabled" || bad "backup timer not enabled"
-  local last=/var/backups/onebox/last-run
+  local last=/var/backups/onebox/last-run other
+  if systemctl is-enabled onebox-backup.timer >/dev/null 2>&1; then
+    ok "backup timer enabled"
+  else
+    # A box set up by hand may back up with its own timer. Say so; do not guess what it covers.
+    other="$(systemctl list-timers --all --plain --no-legend 2>/dev/null | grep -oE '[A-Za-z0-9@_.-]*backup[A-Za-z0-9@_.-]*\.timer' | grep -v '^dpkg-db-backup' | sort -u | tr '\n' ' ')"
+    if [ -n "$other" ]; then meh "onebox backup timer not enabled; other backup timers: ${other% }. Check they cover every volume"
+    else bad "backup timer not enabled"; fi
+  fi
   if [ -f "$last" ]; then
     local age=$(( $(date +%s) - $(stat -c %Y "$last") ))
     grep -q '^ok' "$last" && [ "$age" -lt 129600 ] && ok "last backup ok, $((age/3600)) h ago" \
       || bad "last backup: $(head -1 "$last"), $((age/3600)) h ago"
     grep -q 'offsite=none' "$last" && meh "backups stay on this box (no RESTIC_REPOSITORY)"
-  else
+  elif systemctl is-enabled onebox-backup.timer >/dev/null 2>&1; then
     meh "no backup has run yet (run: sudo onebox-backup)"
   fi
 
