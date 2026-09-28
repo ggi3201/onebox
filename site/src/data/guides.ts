@@ -23,6 +23,7 @@ const ORDER = [
   "media-providers",
   "llm-api-key",
   "langfuse",
+  "when-you-are-stuck",
   "glossary",
 ];
 

@@ -7,7 +7,8 @@ You built an app idea with an AI coding agent, such as Claude Code, Codex or
 Cursor. It runs on your phone or in the simulator. Now you want it in the App
 Store, with a real backend, real sign-in and maybe a subscription. This page
 is the map for that. New words on the way? They are all in
-[glossary.md](glossary.md).
+[glossary.md](glossary.md). Stuck on a step? Read
+[when-you-are-stuck.md](when-you-are-stuck.md).
 
 This is the setup I use for my own apps:
 
