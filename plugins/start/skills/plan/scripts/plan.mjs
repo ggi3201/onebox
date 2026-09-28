@@ -242,7 +242,12 @@ function render(answers, sources, detect) {
     const s = sec(`## ${ph.title}`);
     for (const it of its) {
       const k = keyOf(it);
-      s.lines.push({ text: itemText(it), item: { key: k, done: detect.done?.[k], found: detect.seen?.[k] } });
+      // Detection wins. Otherwise an answer can mark an item as likely done
+      // (an app already on TestFlight has an Apple account and Xcode).
+      const likely = !detect.done?.[k] && it.doneWhen && matches(it.doneWhen, answers)
+        ? `you answered "${labelOf(catalog.questions.find((q) => q.id === Object.keys(it.doneWhen)[0]), answers[Object.keys(it.doneWhen)[0]])}"`
+        : undefined;
+      s.lines.push({ text: itemText(it), item: { key: k, done: detect.done?.[k], likely, found: detect.seen?.[k] } });
     }
   }
   sec("## Notes", ["Your own notes. The planner never changes them."]);
@@ -262,7 +267,7 @@ function readOldPlan() {
 }
 
 const ITEM_RE = /^\s*- \[( |x|X)\] (.*<!-- ((?:guide|skill):\S+) -->)\s*$/;
-const NOTE_RE = /^ {2}- (detected|found): /;
+const NOTE_RE = /^ {2}- (detected|likely done|found): /;
 const GEN_RE = [
   /^- `[\w.]+` — (set|not set)$/,
   /^\/plugin install \S+@onebox$/,
@@ -293,7 +298,7 @@ function parseOld(text, staticLines, genHeadings) {
     }
     if (!line.trim()) { if (cur) cur.lines.push(line); continue; }
     if (NOTE_RE.test(line) && curItem && anchor.type === "item") {
-      if (line.startsWith("  - detected: ")) curItem.autoTicked = true;
+      if (line.startsWith("  - detected: ") || line.startsWith("  - likely done: ")) curItem.autoTicked = true;
       continue;
     }
     if (genHeadings.has(line)) { flush(); heading = line; anchor = { type: "heading" }; occ = new Map(); curItem = null; continue; }
@@ -347,15 +352,17 @@ function writeMode() {
     const occ = new Map();
     for (const l of s.lines) {
       if (l.item) {
-        const { key, done, found } = l.item;
+        const { key, done, likely, found } = l.item;
         const prev = parsed.items.get(key);
         // Keep the user's tick. Tick what detection found done, unless the user
         // unticked an item this planner had ticked before.
-        const ticked = prev ? prev.ticked || (!!done && !prev.autoTicked) : !!done;
+        const auto = !!done || !!likely;
+        const ticked = prev ? prev.ticked || (auto && !prev.autoTicked) : auto;
         const fresh = l.text;
         const body = prev && !staticLooksGenerated(prev.body) ? prev.body : fresh;
         out.push(`- [${ticked ? "x" : " "}] ${body}`);
         if (done) out.push(`  - detected: ${done}`);
+        else if (likely) out.push(`  - likely done: ${likely}`);
         else if (found) out.push(`  - found: ${found}`);
         out.push(...blocksFor((b) => b.anchor.type === "item" && b.anchor.key === key).flatMap((b) => b.lines));
         if (ticked) doneCount++;

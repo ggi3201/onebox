@@ -1,14 +1,23 @@
 {
   "version": 1,
-  "about": "One source for the planner skill and the picker on the website. Each question has options; each item says which answers include it. An item with no `when` is always in the plan. `when` lists question ids with the option ids that turn the item on; all listed questions must match (AND), any option within one question matches (OR).",
+  "about": "One source for the planner skill and the picker on the website. Each question has options; each item says which answers include it. An item with no `when` is always in the plan. `when` lists question ids with the option ids that turn the item on; all listed questions must match (AND), any option within one question matches (OR). `doneWhen` uses the same shape: when it matches, the item is still listed but starts ticked as likely done (the user can untick it).",
   "questions": [
     {
       "id": "stage",
       "q": "Where is your app now?",
       "options": [
-        { "id": "idea", "label": "An idea, or a prototype that is not an Expo app yet" },
-        { "id": "expo", "label": "An Expo app that runs on my phone or the simulator" },
-        { "id": "testflight", "label": "Already on TestFlight or the App Store" }
+        {
+          "id": "idea",
+          "label": "An idea, or a prototype that is not an Expo app yet"
+        },
+        {
+          "id": "expo",
+          "label": "An Expo app that runs on my phone or the simulator"
+        },
+        {
+          "id": "testflight",
+          "label": "Already on TestFlight or the App Store"
+        }
       ],
       "default": "expo"
     },
@@ -16,9 +25,18 @@
       "id": "backend",
       "q": "Does the app need a server?",
       "options": [
-        { "id": "none", "label": "No. Everything stays on the phone" },
-        { "id": "hosted", "label": "Yes, and I use Supabase or Firebase" },
-        { "id": "box", "label": "Yes, my own API and database on one cheap box" }
+        {
+          "id": "none",
+          "label": "No. Everything stays on the phone"
+        },
+        {
+          "id": "hosted",
+          "label": "Yes, and I use Supabase or Firebase"
+        },
+        {
+          "id": "box",
+          "label": "Yes, my own API and database on one cheap box"
+        }
       ],
       "default": "box"
     },
@@ -26,8 +44,14 @@
       "id": "login",
       "q": "Do users sign in?",
       "options": [
-        { "id": "none", "label": "No accounts" },
-        { "id": "apple", "label": "Yes, with Sign in with Apple (and maybe others)" }
+        {
+          "id": "none",
+          "label": "No accounts"
+        },
+        {
+          "id": "apple",
+          "label": "Yes, with Sign in with Apple (and maybe others)"
+        }
       ],
       "default": "apple"
     },
@@ -35,8 +59,14 @@
       "id": "paid",
       "q": "Will users pay inside the app?",
       "options": [
-        { "id": "free", "label": "No, it is free" },
-        { "id": "subs", "label": "Yes, subscriptions or one-time purchases" }
+        {
+          "id": "free",
+          "label": "No, it is free"
+        },
+        {
+          "id": "subs",
+          "label": "Yes, subscriptions or one-time purchases"
+        }
       ],
       "default": "subs"
     },
@@ -45,8 +75,14 @@
       "q": "Do you want a landing page?",
       "hint": "Apple needs a privacy policy URL and a support URL either way. Without a landing page you host those two pages somewhere else.",
       "options": [
-        { "id": "yes", "label": "Yes, a page for the app on my own domain" },
-        { "id": "no", "label": "No, just the privacy and support pages somewhere" }
+        {
+          "id": "yes",
+          "label": "Yes, a page for the app on my own domain"
+        },
+        {
+          "id": "no",
+          "label": "No, just the privacy and support pages somewhere"
+        }
       ],
       "default": "yes"
     },
@@ -55,9 +91,18 @@
       "q": "Does the app use AI?",
       "multi": true,
       "options": [
-        { "id": "chat", "label": "A chat or an agent that uses the app's data" },
-        { "id": "import", "label": "Turn a shared link or page into data (recipes, products, …)" },
-        { "id": "media", "label": "Generated images or video (store page, social, in-app)" }
+        {
+          "id": "chat",
+          "label": "A chat or an agent that uses the app's data"
+        },
+        {
+          "id": "import",
+          "label": "Turn a shared link or page into data (recipes, products, …)"
+        },
+        {
+          "id": "media",
+          "label": "Generated images or video (store page, social, in-app)"
+        }
       ],
       "default": []
     },
@@ -65,68 +110,529 @@
       "id": "remote",
       "q": "Do you want to fix things from your phone?",
       "options": [
-        { "id": "yes", "label": "Yes, let me (or Claude) reach the box from anywhere" },
-        { "id": "no", "label": "Not now" }
+        {
+          "id": "yes",
+          "label": "Yes, let me (or Claude) reach the box from anywhere"
+        },
+        {
+          "id": "no",
+          "label": "Not now"
+        }
       ],
       "default": "yes"
     }
   ],
   "phases": [
-    { "id": "accounts", "title": "Accounts and tools" },
-    { "id": "app", "title": "The app" },
-    { "id": "box", "title": "The box" },
-    { "id": "backend", "title": "The backend" },
-    { "id": "features", "title": "Features" },
-    { "id": "store", "title": "App Store Connect and builds" },
-    { "id": "launch", "title": "Store page and submit" }
+    {
+      "id": "accounts",
+      "title": "Accounts and tools"
+    },
+    {
+      "id": "app",
+      "title": "The app"
+    },
+    {
+      "id": "box",
+      "title": "The box"
+    },
+    {
+      "id": "backend",
+      "title": "The backend"
+    },
+    {
+      "id": "features",
+      "title": "Features"
+    },
+    {
+      "id": "store",
+      "title": "App Store Connect and builds"
+    },
+    {
+      "id": "launch",
+      "title": "Store page and submit"
+    }
   ],
   "items": [
-    { "id": "apple-developer", "kind": "guide", "phase": "accounts", "title": "Join the Apple Developer Program" },
-    { "id": "xcode", "kind": "guide", "phase": "accounts", "title": "Install Xcode" },
-    { "id": "domain", "kind": "guide", "phase": "accounts", "title": "Register a domain that stays cheap", "when": { "site": ["yes"] } },
-    { "id": "domain-for-box", "kind": "guide", "slug": "domain", "phase": "accounts", "title": "Register a domain for your API", "when": { "site": ["no"], "backend": ["box"] } },
-
-    { "id": "expo-app", "kind": "guide", "phase": "app", "title": "Make the Expo project fit the setup" },
-    { "id": "agent-test-loop", "kind": "guide", "phase": "app", "title": "Give your agent a test loop" },
-    { "id": "test-loop", "kind": "skill", "plugin": "dev", "phase": "app", "title": "Agent checks its own work, then proves it in the Simulator" },
-    { "id": "trim-tests", "kind": "skill", "plugin": "dev", "phase": "app", "title": "Trim the test suite now and then" },
-
-    { "id": "vps", "kind": "guide", "phase": "box", "title": "Rent a small VPS (or use a mini PC)", "when": { "backend": ["box"] } },
-    { "id": "vps-for-site", "kind": "guide", "slug": "vps", "phase": "box", "title": "Rent a small VPS for the landing page", "when": { "backend": ["none", "hosted"], "site": ["yes"] } },
-    { "id": "cloudflare", "kind": "guide", "phase": "box", "title": "Put the domain on Cloudflare, with a tunnel", "when": { "site": ["yes"] } },
-    { "id": "cloudflare-api", "kind": "guide", "slug": "cloudflare", "phase": "box", "title": "Put the domain on Cloudflare, with a tunnel", "when": { "site": ["no"], "backend": ["box"] } },
-    { "id": "box-setup", "kind": "skill", "plugin": "box", "phase": "box", "title": "Bring the box to a safe baseline", "when": { "backend": ["box"] } },
-    { "id": "box-setup-site", "kind": "skill", "slug": "box-setup", "plugin": "box", "phase": "box", "title": "Bring the box to a safe baseline", "when": { "backend": ["none", "hosted"], "site": ["yes"] } },
-    { "id": "remote-access", "kind": "guide", "phase": "box", "title": "Reach the box from your phone", "when": { "remote": ["yes"], "backend": ["box"] } },
-
-    { "id": "backend", "kind": "guide", "phase": "backend", "title": "API and Postgres on the box, users kept apart, protected", "when": { "backend": ["box"] } },
-    { "id": "expose-service", "kind": "skill", "plugin": "box", "phase": "backend", "title": "Give the API its public hostname", "when": { "backend": ["box"] } },
-    { "id": "staging-env", "kind": "skill", "plugin": "box", "phase": "backend", "title": "A staging API for test builds", "when": { "backend": ["box"] } },
-    { "id": "ios-preview-build", "kind": "skill", "plugin": "ship-ios", "phase": "backend", "title": "A test build for your phone, pointed at a test backend", "when": { "backend": ["box", "hosted"] } },
-
-    { "id": "sign-in-with-apple", "kind": "guide", "phase": "features", "title": "Sign in with Apple, verified on the server", "when": { "login": ["apple"] } },
-    { "id": "revenuecat", "kind": "guide", "phase": "features", "title": "Subscriptions with RevenueCat", "when": { "paid": ["subs"] } },
-    { "id": "llm-api-key", "kind": "guide", "phase": "features", "title": "Get an LLM API key", "when": { "ai": ["chat", "import"] } },
-    { "id": "agent-harness", "kind": "skill", "plugin": "app-features", "phase": "features", "title": "An agent in your API that calls your tools", "when": { "ai": ["chat"], "backend": ["box"] } },
-    { "id": "chat-feature", "kind": "skill", "plugin": "app-features", "phase": "features", "title": "A streamed chat screen", "when": { "ai": ["chat"] } },
-    { "id": "share-import", "kind": "skill", "plugin": "app-features", "phase": "features", "title": "Import from a shared link", "when": { "ai": ["import"] } },
-    { "id": "ai-usage-limits", "kind": "skill", "plugin": "app-features", "phase": "features", "title": "A cost budget per user", "when": { "ai": ["chat", "import"] } },
-    { "id": "ai-consent", "kind": "skill", "plugin": "app-features", "phase": "features", "title": "The AI consent Apple asks for", "when": { "ai": ["chat", "import"] } },
-    { "id": "durable-jobs", "kind": "skill", "plugin": "app-features", "phase": "features", "title": "Slow AI work as background jobs", "when": { "ai": ["chat", "import"], "backend": ["box"] } },
-    { "id": "langfuse", "kind": "guide", "phase": "features", "title": "Trace and cost every AI call", "when": { "ai": ["chat", "import"] } },
-    { "id": "kie-ai", "kind": "guide", "phase": "features", "title": "A kie.ai key for images and video", "when": { "ai": ["media"] } },
-    { "id": "image", "kind": "skill", "plugin": "content", "phase": "features", "title": "Generate images", "when": { "ai": ["media"] } },
-    { "id": "video", "kind": "skill", "plugin": "content", "phase": "features", "title": "Generate video from approved stills", "when": { "ai": ["media"] } },
-
-    { "id": "app-store-connect-setup", "kind": "guide", "phase": "store", "title": "The manual App Store Connect setup" },
-    { "id": "app-store-connect-api-key", "kind": "guide", "phase": "store", "title": "An App Store Connect API key" },
-    { "id": "expo-eas", "kind": "guide", "phase": "store", "title": "Expo account, and local vs cloud builds" },
-    { "id": "expo-local-build", "kind": "skill", "plugin": "ship-ios", "phase": "store", "title": "Build on your Mac and send to TestFlight" },
-    { "id": "appstore-connect", "kind": "skill", "plugin": "ship-ios", "phase": "store", "title": "TestFlight builds, testers and subscriptions" },
-
-    { "id": "new-landing-page", "kind": "skill", "plugin": "box", "phase": "launch", "title": "The landing page with privacy, support and terms", "when": { "site": ["yes"] } },
-    { "id": "draw-app-icon", "kind": "skill", "plugin": "ship-ios", "phase": "launch", "title": "The app icon" },
-    { "id": "app-store-screenshots", "kind": "skill", "plugin": "ship-ios", "phase": "launch", "title": "Store screenshots from real screens" },
-    { "id": "app-store-ready", "kind": "skill", "plugin": "ship-ios", "phase": "launch", "title": "Find what Apple will reject, before Apple does" }
+    {
+      "id": "apple-developer",
+      "kind": "guide",
+      "phase": "accounts",
+      "title": "Join the Apple Developer Program",
+      "doneWhen": {
+        "stage": [
+          "testflight"
+        ]
+      }
+    },
+    {
+      "id": "xcode",
+      "kind": "guide",
+      "phase": "accounts",
+      "title": "Install Xcode",
+      "doneWhen": {
+        "stage": [
+          "testflight"
+        ]
+      }
+    },
+    {
+      "id": "domain",
+      "kind": "guide",
+      "phase": "accounts",
+      "title": "Register a domain that stays cheap",
+      "when": {
+        "site": [
+          "yes"
+        ]
+      }
+    },
+    {
+      "id": "domain-for-box",
+      "kind": "guide",
+      "slug": "domain",
+      "phase": "accounts",
+      "title": "Register a domain for your API",
+      "when": {
+        "site": [
+          "no"
+        ],
+        "backend": [
+          "box"
+        ]
+      }
+    },
+    {
+      "id": "expo-app",
+      "kind": "guide",
+      "phase": "app",
+      "title": "Make the Expo project fit the setup",
+      "doneWhen": {
+        "stage": [
+          "testflight"
+        ]
+      }
+    },
+    {
+      "id": "agent-test-loop",
+      "kind": "guide",
+      "phase": "app",
+      "title": "Give your agent a test loop"
+    },
+    {
+      "id": "test-loop",
+      "kind": "skill",
+      "plugin": "dev",
+      "phase": "app",
+      "title": "Agent checks its own work, then proves it in the Simulator"
+    },
+    {
+      "id": "trim-tests",
+      "kind": "skill",
+      "plugin": "dev",
+      "phase": "app",
+      "title": "Trim the test suite now and then"
+    },
+    {
+      "id": "vps",
+      "kind": "guide",
+      "phase": "box",
+      "title": "Rent a small VPS (or use a mini PC)",
+      "when": {
+        "backend": [
+          "box"
+        ]
+      }
+    },
+    {
+      "id": "vps-for-site",
+      "kind": "guide",
+      "slug": "vps",
+      "phase": "box",
+      "title": "Rent a small VPS for the landing page",
+      "when": {
+        "backend": [
+          "none",
+          "hosted"
+        ],
+        "site": [
+          "yes"
+        ]
+      }
+    },
+    {
+      "id": "cloudflare",
+      "kind": "guide",
+      "phase": "box",
+      "title": "Put the domain on Cloudflare, with a tunnel",
+      "when": {
+        "site": [
+          "yes"
+        ]
+      }
+    },
+    {
+      "id": "cloudflare-api",
+      "kind": "guide",
+      "slug": "cloudflare",
+      "phase": "box",
+      "title": "Put the domain on Cloudflare, with a tunnel",
+      "when": {
+        "site": [
+          "no"
+        ],
+        "backend": [
+          "box"
+        ]
+      }
+    },
+    {
+      "id": "box-setup",
+      "kind": "skill",
+      "plugin": "box",
+      "phase": "box",
+      "title": "Bring the box to a safe baseline",
+      "when": {
+        "backend": [
+          "box"
+        ]
+      }
+    },
+    {
+      "id": "box-setup-site",
+      "kind": "skill",
+      "slug": "box-setup",
+      "plugin": "box",
+      "phase": "box",
+      "title": "Bring the box to a safe baseline",
+      "when": {
+        "backend": [
+          "none",
+          "hosted"
+        ],
+        "site": [
+          "yes"
+        ]
+      }
+    },
+    {
+      "id": "remote-access",
+      "kind": "guide",
+      "phase": "box",
+      "title": "Reach the box from your phone",
+      "when": {
+        "remote": [
+          "yes"
+        ],
+        "backend": [
+          "box"
+        ]
+      }
+    },
+    {
+      "id": "backend",
+      "kind": "guide",
+      "phase": "backend",
+      "title": "API and Postgres on the box, users kept apart, protected",
+      "when": {
+        "backend": [
+          "box"
+        ]
+      }
+    },
+    {
+      "id": "expose-service",
+      "kind": "skill",
+      "plugin": "box",
+      "phase": "backend",
+      "title": "Give the API its public hostname",
+      "when": {
+        "backend": [
+          "box"
+        ]
+      }
+    },
+    {
+      "id": "staging-env",
+      "kind": "skill",
+      "plugin": "box",
+      "phase": "backend",
+      "title": "A staging API for test builds",
+      "when": {
+        "backend": [
+          "box"
+        ]
+      }
+    },
+    {
+      "id": "ios-preview-build",
+      "kind": "skill",
+      "plugin": "ship-ios",
+      "phase": "backend",
+      "title": "A test build for your phone, pointed at a test backend",
+      "when": {
+        "backend": [
+          "box",
+          "hosted"
+        ]
+      }
+    },
+    {
+      "id": "sign-in-with-apple",
+      "kind": "guide",
+      "phase": "features",
+      "title": "Sign in with Apple, verified on the server",
+      "when": {
+        "login": [
+          "apple"
+        ]
+      }
+    },
+    {
+      "id": "revenuecat",
+      "kind": "guide",
+      "phase": "features",
+      "title": "Subscriptions with RevenueCat",
+      "when": {
+        "paid": [
+          "subs"
+        ]
+      }
+    },
+    {
+      "id": "llm-api-key",
+      "kind": "guide",
+      "phase": "features",
+      "title": "Get an LLM API key",
+      "when": {
+        "ai": [
+          "chat",
+          "import"
+        ]
+      }
+    },
+    {
+      "id": "agent-harness",
+      "kind": "skill",
+      "plugin": "app-features",
+      "phase": "features",
+      "title": "An agent in your API that calls your tools",
+      "when": {
+        "ai": [
+          "chat"
+        ],
+        "backend": [
+          "box"
+        ]
+      }
+    },
+    {
+      "id": "chat-feature",
+      "kind": "skill",
+      "plugin": "app-features",
+      "phase": "features",
+      "title": "A streamed chat screen",
+      "when": {
+        "ai": [
+          "chat"
+        ]
+      }
+    },
+    {
+      "id": "share-import",
+      "kind": "skill",
+      "plugin": "app-features",
+      "phase": "features",
+      "title": "Import from a shared link",
+      "when": {
+        "ai": [
+          "import"
+        ]
+      }
+    },
+    {
+      "id": "ai-usage-limits",
+      "kind": "skill",
+      "plugin": "app-features",
+      "phase": "features",
+      "title": "A cost budget per user",
+      "when": {
+        "ai": [
+          "chat",
+          "import"
+        ]
+      }
+    },
+    {
+      "id": "ai-consent",
+      "kind": "skill",
+      "plugin": "app-features",
+      "phase": "features",
+      "title": "The AI consent Apple asks for",
+      "when": {
+        "ai": [
+          "chat",
+          "import"
+        ]
+      }
+    },
+    {
+      "id": "durable-jobs",
+      "kind": "skill",
+      "plugin": "app-features",
+      "phase": "features",
+      "title": "Slow AI work as background jobs",
+      "when": {
+        "ai": [
+          "chat",
+          "import"
+        ],
+        "backend": [
+          "box"
+        ]
+      }
+    },
+    {
+      "id": "langfuse",
+      "kind": "guide",
+      "phase": "features",
+      "title": "Trace and cost every AI call",
+      "when": {
+        "ai": [
+          "chat",
+          "import"
+        ]
+      }
+    },
+    {
+      "id": "kie-ai",
+      "kind": "guide",
+      "phase": "features",
+      "title": "A kie.ai key for images and video",
+      "when": {
+        "ai": [
+          "media"
+        ]
+      }
+    },
+    {
+      "id": "image",
+      "kind": "skill",
+      "plugin": "content",
+      "phase": "features",
+      "title": "Generate images",
+      "when": {
+        "ai": [
+          "media"
+        ]
+      }
+    },
+    {
+      "id": "video",
+      "kind": "skill",
+      "plugin": "content",
+      "phase": "features",
+      "title": "Generate video from approved stills",
+      "when": {
+        "ai": [
+          "media"
+        ]
+      }
+    },
+    {
+      "id": "app-store-connect-setup",
+      "kind": "guide",
+      "phase": "store",
+      "title": "The manual App Store Connect setup",
+      "doneWhen": {
+        "stage": [
+          "testflight"
+        ]
+      }
+    },
+    {
+      "id": "app-store-connect-api-key",
+      "kind": "guide",
+      "phase": "store",
+      "title": "An App Store Connect API key",
+      "doneWhen": {
+        "stage": [
+          "testflight"
+        ]
+      }
+    },
+    {
+      "id": "expo-eas",
+      "kind": "guide",
+      "phase": "store",
+      "title": "Expo account, and local vs cloud builds",
+      "doneWhen": {
+        "stage": [
+          "testflight"
+        ]
+      }
+    },
+    {
+      "id": "expo-local-build",
+      "kind": "skill",
+      "plugin": "ship-ios",
+      "phase": "store",
+      "title": "Build on your Mac and send to TestFlight",
+      "doneWhen": {
+        "stage": [
+          "testflight"
+        ]
+      }
+    },
+    {
+      "id": "appstore-connect",
+      "kind": "skill",
+      "plugin": "ship-ios",
+      "phase": "store",
+      "title": "TestFlight builds, testers and subscriptions"
+    },
+    {
+      "id": "privacy-and-support-pages",
+      "kind": "guide",
+      "phase": "launch",
+      "title": "Host the privacy policy and support page Apple asks for",
+      "when": {
+        "site": [
+          "no"
+        ]
+      }
+    },
+    {
+      "id": "new-landing-page",
+      "kind": "skill",
+      "plugin": "box",
+      "phase": "launch",
+      "title": "The landing page with privacy, support and terms",
+      "when": {
+        "site": [
+          "yes"
+        ]
+      }
+    },
+    {
+      "id": "draw-app-icon",
+      "kind": "skill",
+      "plugin": "ship-ios",
+      "phase": "launch",
+      "title": "The app icon"
+    },
+    {
+      "id": "app-store-screenshots",
+      "kind": "skill",
+      "plugin": "ship-ios",
+      "phase": "launch",
+      "title": "Store screenshots from real screens"
+    },
+    {
+      "id": "app-store-ready",
+      "kind": "skill",
+      "plugin": "ship-ios",
+      "phase": "launch",
+      "title": "Find what Apple will reject, before Apple does"
+    }
   ]
 }

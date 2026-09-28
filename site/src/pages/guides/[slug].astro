@@ -30,6 +30,10 @@ const toc = guide.module.getHeadings().filter((h) => h.depth === 2);
             </li>
           ))}
         </ol>
+        <p class="side-plan">
+          <span class="label">Which do I need?</span>
+          <code>/start:plan</code> in your app’s folder lists only yours. <a href="/#start">Or pick online</a>.
+        </p>
       </nav>
     </aside>
 
@@ -73,6 +77,9 @@ const toc = guide.module.getHeadings().filter((h) => h.depth === 2);
   .side a[aria-current="page"] { color: var(--signal); }
   .side a[aria-current="page"] .label { color: var(--signal); }
 
+  .side-plan { margin: 18px 0 0; padding: 10px 12px; border-left: 3px solid var(--signal); background: var(--paper-2); font-size: 0.92rem; line-height: 1.4; }
+  .side-plan .label { display: block; margin-bottom: 2px; }
+  .side-plan code { font-family: var(--mono); font-size: 0.85em; }
   .crumb { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; margin: 0 0 12px; }
   .prose .crumb p { margin: 0; font-size: 0.72rem; line-height: 1.4; }
   .for-ai { text-transform: none; letter-spacing: 0.02em; }

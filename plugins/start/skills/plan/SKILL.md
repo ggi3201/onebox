@@ -91,7 +91,10 @@ It writes `PLAN.md` with:
 4. One section per phase, in order. Each item is a checkbox with its guide
    link (web and raw Markdown) or its skill (`/plugin:skill`). Items detection
    found done are ticked, with a `detected:` line. Partial evidence adds a
-   `found:` line and no tick.
+   `found:` line and no tick. An answer can also mark an item as likely done
+   (an app already on TestFlight has an Apple account and an App Store
+   Connect record): it starts ticked with a `likely done:` line, and the user
+   can untick it. Detection wins over "likely done".
 5. **Notes**, for the user.
 
 The same answers and the same repo give the same file. Show the user the

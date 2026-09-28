@@ -198,8 +198,9 @@ the main feature end to end against the production API.
    artwork: `content:image` (needs [kie-ai.md](kie-ai.md)).
 3. **Privacy.** You need a privacy policy at a public URL, and the App
    Privacy answers in App Store Connect must match what the app really
-   collects. A simple site for the policy and a support page: skill
-   `box:new-landing-page`.
+   collects. A site for the policy and a support page: skill
+   `box:new-landing-page`. No landing page? Host the two pages for free:
+   [privacy-and-support-pages.md](privacy-and-support-pages.md).
 4. **Review notes.** Tell App Review how to reach every feature. If a feature
    needs a subscription, say so. If sign-in needs anything other than Sign in
    with Apple, give a demo account.

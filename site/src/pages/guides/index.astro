@@ -11,6 +11,11 @@ import { GUIDES } from "../../data/guides";
       Accounts, keys and settings in Apple, Expo, Cloudflare and the rest. Each guide says what it costs,
       what to click, where the value goes, and how to check it worked. Read them in order the first time.
     </p>
+    <p class="planner">
+      <span class="label">Which do I need?</span>
+      Run <code>/start:plan</code> in your app’s folder. It checks what the app has and lists only the guides it still needs.
+      Or <a href="/#start">answer the questions on the home page</a>.
+    </p>
     <ol class="list">
       {GUIDES.map((g) => (
         <li>
@@ -29,6 +34,12 @@ import { GUIDES } from "../../data/guides";
   .page { padding-top: clamp(40px, 7vw, 88px); }
   .title { font-size: clamp(2.3rem, 6vw, 4.8rem); margin: 14px 0 22px; max-width: 14ch; }
   .intro { max-width: 46ch; color: var(--ink-2); font-size: 1.2rem; margin: 0 0 48px; }
+  .planner {
+    margin: 0 0 40px; padding: 14px 16px; max-width: 62ch;
+    border-left: 3px solid var(--signal); background: var(--paper-2); font-size: 1.05rem;
+  }
+  .planner .label { display: block; margin-bottom: 4px; }
+  .planner code { font-family: var(--mono); font-size: 0.88em; }
   .list { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--ink); }
   .list li { border-bottom: 1px solid var(--rule); }
   .list a {
