@@ -105,11 +105,12 @@ export const APPS = [
 ];
 
 // Paid services a first app can skip. Prices checked on 2026-09-28.
+// `cost` feeds the total: one typical plan per row, not every example added up.
 export const SKIPPABLE = [
-  { what: "An App Store upload service", example: "Lance Pro", cost: 40, instead: "ship-ios skills on your Mac" },
-  { what: "A hosting platform", example: "Vercel Pro", cost: 20, instead: "the box, or Cloudflare Pages for a static site" },
-  { what: "A managed database", example: "Supabase Pro", cost: 25, instead: "Postgres on the box" },
-  { what: "A cloud build plan", example: "EAS Starter", cost: 19, instead: "local builds on your Mac" },
+  { what: "An App Store upload service", example: "Lance Pro, $40/mo", cost: 40, instead: "ship-ios skills on your Mac" },
+  { what: "A hosting platform", example: "Vercel Pro, $20/mo", cost: 20, instead: "the box, or Cloudflare Pages for a static site" },
+  { what: "A managed database", example: "Supabase Pro or Convex Pro, $25/mo; PlanetScale Postgres from $5/mo", cost: 25, instead: "Postgres on the box" },
+  { what: "A cloud build plan", example: "EAS Starter, $19/mo", cost: 19, instead: "local builds on your Mac" },
 ];
 
 // Skills by other people that work well next to these. Links only; each has its own licence.

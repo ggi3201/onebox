@@ -186,7 +186,7 @@ const bill = [
             <ul>
               {SKIPPABLE.map((x) => (
                 <li>
-                  <span class="skip-what">{x.what} <small>({x.example}, ${x.cost}/mo)</small></span>
+                  <span class="skip-what">{x.what} <small>({x.example})</small></span>
                   <span class="skip-instead">→ {x.instead}</span>
                 </li>
               ))}
@@ -194,8 +194,8 @@ const bill = [
             <p class="skip-note">
               These are good products, and they save time. Together they cost about ${skipTotal} a month
               before you know if anyone wants your app. Test the idea first. Pay for comfort when users
-              make it worth it. Free tiers have limits: Vercel’s is for non-commercial use, and Supabase
-              pauses a free project after a week without traffic.
+              make it worth it. Free tiers have limits: Vercel’s is for non-commercial use, Supabase
+              pauses a free project after a week without traffic, and PlanetScale has no free tier.
             </p>
           </div>
         </div>
