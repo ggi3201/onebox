@@ -176,6 +176,17 @@
       }
     },
     {
+      "id": "tools",
+      "kind": "guide",
+      "phase": "accounts",
+      "title": "Install the command-line tools",
+      "doneWhen": {
+        "stage": [
+          "testflight"
+        ]
+      }
+    },
+    {
       "id": "secrets",
       "kind": "guide",
       "phase": "accounts",

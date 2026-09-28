@@ -57,6 +57,7 @@ Skills read these from `~/.config/onebox/config.json`, or `.onebox.json` for thi
 - [ ] Join the Apple Developer Program — guide: https://onebox.lokkesveen.com/guides/apple-developer/ (raw: https://onebox.lokkesveen.com/guides/apple-developer.md) <!-- guide:apple-developer -->
 - [x] Install Xcode — guide: https://onebox.lokkesveen.com/guides/xcode/ (raw: https://onebox.lokkesveen.com/guides/xcode.md) <!-- guide:xcode -->
   - detected: Xcode is installed on this Mac
+- [ ] Install the command-line tools — guide: https://onebox.lokkesveen.com/guides/tools/ (raw: https://onebox.lokkesveen.com/guides/tools.md) <!-- guide:tools -->
 - [ ] Pick one place for your secrets — guide: https://onebox.lokkesveen.com/guides/secrets/ (raw: https://onebox.lokkesveen.com/guides/secrets.md) <!-- guide:secrets -->
 - [ ] Register a domain that stays cheap — guide: https://onebox.lokkesveen.com/guides/domain/ (raw: https://onebox.lokkesveen.com/guides/domain.md) <!-- guide:domain -->
 

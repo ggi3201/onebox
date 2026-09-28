@@ -105,7 +105,9 @@ next phase before that line is true.
    Guide: [apple-developer.md](apple-developer.md).
 2. Install Xcode on your Mac and sign in with your Apple Account. Guide:
    [xcode.md](xcode.md).
-3. Pick one place for your secrets, for your app and for your agent, before
+3. Install the command-line tools the skills use, on your Mac. The box
+   needs almost nothing from you. Guide: [tools.md](tools.md).
+4. Pick one place for your secrets, for your app and for your agent, before
    the first API key arrives. Guide: [secrets.md](secrets.md).
 
 Done when: you can see your Team ID in your Apple Developer account, and
@@ -294,6 +296,7 @@ Done when: the app is approved and released.
 
 - [ ] Apple Developer Program active, Team ID noted in the onebox config
 - [ ] Xcode installed, signed in, runs an app on your iPhone
+- [ ] Command-line tools installed on your Mac ([tools.md](tools.md))
 - [ ] Bundle identifier chosen and written down (it cannot change later)
 - [ ] Expo project in `apps/mobile`, EAS project linked
 - [ ] `eas.json` has `development`, `preview` and `production` profiles
