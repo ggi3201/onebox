@@ -6,8 +6,13 @@ items go into `PLAN.md`. The exact rules are in `catalog.json`.
 ## Where is your app now? (`stage`)
 
 It tells the plan where you start. **An idea** adds the `start:new-app`
-skill, which makes the repo. The answer shows in the plan's header, and
-detection usually knows it from the repo.
+skill, which makes the repo. **On TestFlight** marks the accounts, the App
+Store Connect setup, the local build and the app icon as likely done. **On
+the App Store** also marks the screenshots, the store text and the landing
+page (or the privacy and support pages) as likely done, because App Review
+needs them. Detection knows an Expo app from the repo. It sees an App Store
+Connect app id in `eas.json`, but it cannot tell TestFlight from the App
+Store, so the plan asks.
 
 ## Does the app need a server? (`backend`)
 
