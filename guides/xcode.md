@@ -90,10 +90,12 @@ app in the simulator.
 - **Upload rejected for the SDK version.** The build was made with an Xcode
   older than Apple's current minimum. Update Xcode and build again.
 - **`pod install` "works", then the app crashes at launch, or a native
-  feature silently does nothing.** CocoaPods ran on the macOS system Ruby
-  (2.6). Expo needs Ruby 2.7 or later. Use Homebrew's CocoaPods.
-- **`Unicode Normalization not appropriate for ASCII-8BIT`.** The shell has no
-  UTF-8 locale (common in scripts and CI). `export LANG=en_US.UTF-8`.
+  feature silently does nothing. Or `pod install` crashes with
+  `Unicode Normalization not appropriate for ASCII-8BIT`.** CocoaPods ran on
+  the macOS system Ruby (2.6), or the shell has no UTF-8 locale (common in
+  scripts, CI and agent shells). Expo needs Ruby 2.7 or later and a UTF-8
+  locale. Use Homebrew's CocoaPods, and see "Common errors" in
+  [tools.md](tools.md) for the fix and how to check it.
 - **Not enough disk space during install.** The installer needs room for the
   download and the unpacked app at the same time. Free more space, or delete
   old simulator runtimes: `xcrun simctl runtime list`, then
