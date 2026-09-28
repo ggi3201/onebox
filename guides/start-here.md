@@ -72,7 +72,9 @@ Then run `/start:plan` in your app's folder. It checks what your app already
 has, asks what you want (a server or not, sign-in, paid or free, a landing
 page, AI), and writes `PLAN.md` with only the steps below that your app needs,
 plus the exact `/plugin install` lines for the rest. You can answer the same
-questions on the home page first.
+questions on the home page first. No app yet? Run `/start:new-app` in an empty
+folder first. It makes the Expo app, the API and the checks in the layout
+below.
 
 The plugins: `ship-ios` is the app and App Store side. `box` is the server
 side. `dev` is the agent's test loop. `content` makes images and video. `app-features` adds features to your app and API: an AI chat and

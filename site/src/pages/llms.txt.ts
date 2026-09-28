@@ -12,7 +12,7 @@ export const GET: APIRoute = ({ site }) => {
     "",
     `Install in Claude Code: \`/plugin marketplace add ${REPO_SLUG}\`, then \`/plugin install <plugin>@onebox\`. Other tools: \`npx skills add ${REPO_SLUG}\`. Source: ${REPO}`,
     "",
-    "Start here: install the `start` plugin, then run `/start:plan` in the app's folder (in other agents, ask for the plan skill). It detects what the app already has, asks what the user wants (server or not, sign-in, paid or free, landing page, AI), and writes PLAN.md with only the guides, skills and plugins that app needs.",
+    "Start here: install the `start` plugin, then run `/start:plan` in the app's folder (in other agents, ask for the plan skill). It detects what the app already has, asks what the user wants (server or not, sign-in, paid or free, landing page, AI), and writes PLAN.md with only the guides, skills and plugins that app needs. No app yet: `/start:new-app` makes the repo first.",
     "",
     `Example of the PLAN.md it writes: ${base}/example-plan/`,
     "",

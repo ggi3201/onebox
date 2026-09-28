@@ -292,6 +292,7 @@ if (expo.found) {
   if (lack.length) missing.push(`eas.json profiles: ${lack.join(", ")}`);
   if (!missing.length) done["guide:expo-app"] = `Expo app in ${expo.dir} with a bundle id, a dev client and the three EAS profiles`;
   else seen["guide:expo-app"] = `Expo app in ${expo.dir}; still missing ${missing.join("; ")}`;
+  done["skill:start/new-app"] = `Expo app in ${expo.dir}`;
   if (expo.easProjectId && expo.eas) done["guide:expo-eas"] = "the EAS project is linked";
   if (expo.eas?.ascAppId) seen["guide:app-store-connect-setup"] = "eas.json has an ascAppId, so the app record exists";
 }

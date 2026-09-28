@@ -208,6 +208,18 @@
       }
     },
     {
+      "id": "new-app",
+      "kind": "skill",
+      "plugin": "start",
+      "phase": "app",
+      "title": "Make the repo: the Expo app, the API and the checks",
+      "when": {
+        "stage": [
+          "idea"
+        ]
+      }
+    },
+    {
       "id": "expo-app",
       "kind": "guide",
       "phase": "app",

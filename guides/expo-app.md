@@ -34,6 +34,15 @@ myapp/
   package.json         workspace root (pnpm or npm workspaces)
 ```
 
+With pnpm, list only `apps/mobile` in `pnpm-workspace.yaml` (a .NET API is
+not a pnpm package), and put `node-linker=hoisted` in `.npmrc`. Metro and
+CocoaPods do not follow pnpm's symlinked `node_modules`.
+
+Put git worktree folders in `.gitignore` (for example `.claude/worktrees/`).
+`eas build --local` packs every file git does not ignore, and one build with
+worktrees inside the repo packed 34 GB. Do not add an `.easignore`: when it
+exists, EAS reads it instead of `.gitignore`.
+
 `ios/` and `android/` inside `apps/mobile` are **generated** and belong in
 `.gitignore`. Expo writes them from your app config when you build
 ("continuous native generation"). Change native settings through the app
@@ -64,7 +73,8 @@ Root scripts should delegate, for example
 
 ### 1. Create or adopt the project
 
-New project:
+New project: the `start:new-app` skill does this step and the rest of this
+guide, plus the API and the checks. By hand:
 
 ```bash
 mkdir -p myapp/apps && cd myapp/apps
