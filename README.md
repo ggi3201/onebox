@@ -85,3 +85,6 @@ install steps and licence.
 ## License
 
 MIT. See [LICENSE](LICENSE) and [NOTICE.md](NOTICE.md) for third-party code.
+
+Not affiliated with Apple, Expo or the other companies named here. Names and
+trademarks belong to their owners.
