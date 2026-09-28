@@ -149,6 +149,10 @@ End with the next step from the summary, and offer to start it:
 Say what detection cannot see (the `cannotDetect` list), in one line, so the
 user knows why some items stay unticked.
 
+If the plan is wrong for this app (a wrong tick, a missed item, a question
+the repo already answers), offer to report it: `when-you-are-stuck.md`,
+"When to ask a person", says how. Leave out the app's name and hosts.
+
 ## Rules
 
 - Write only `PLAN.md` (or the `--out` file). No other file, no config, no
