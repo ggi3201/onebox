@@ -1,10 +1,10 @@
 # onebox
 
-Ship your app from one box.
+Get your app on the App Store.
 
 Claude Code skills and plain guides for getting an Expo / React Native app onto
-the App Store, with the backend on one cheap server: a mini PC at home or a
-small VPS. No AWS, no Kubernetes.
+the App Store. If the app needs a backend, it runs on one cheap server: a mini
+PC at home or a small VPS. No AWS, no Kubernetes.
 
 Site and guides: https://onebox.lokkesveen.com · For agents: https://onebox.lokkesveen.com/llms.txt
 

@@ -1,4 +1,4 @@
-// The packing list is read from the repo, so the site never lists a skill
+// The box contents are read from the repo, so the site never lists a skill
 // that does not exist. Short taglines live here; a skill without one falls
 // back to the first sentence of its description.
 
