@@ -103,3 +103,21 @@ export const APPS = [
   { name: "Chewable", what: "The first one. A fitness app, 2019 onwards.", status: "On the App Store", url: "https://apps.apple.com/app/chewablefit/id6740989274" },
   { name: "Lift", what: "A strength log that feels native. Built in eight days.", status: "In TestFlight", url: null },
 ];
+
+// Paid services a first app can skip. Prices checked on 2026-09-28.
+export const SKIPPABLE = [
+  { what: "An App Store upload service", example: "Lance Pro", cost: 40, instead: "ship-ios skills on your Mac" },
+  { what: "A hosting platform", example: "Vercel Pro", cost: 20, instead: "the box, or Cloudflare Pages for a static site" },
+  { what: "A managed database", example: "Supabase Pro", cost: 25, instead: "Postgres on the box" },
+  { what: "A cloud build plan", example: "EAS Starter", cost: 19, instead: "local builds on your Mac" },
+];
+
+// Skills by other people that work well next to these. Links only; each has its own licence.
+export const OTHERS = [
+  { name: "ponytail", by: "Dietrich Gebert", url: "https://github.com/DietrichGebert/ponytail", line: "Stops the agent from overbuilding. The simplest code that works, with safety kept." },
+  { name: "impeccable", by: "Paul Bakaus", url: "https://github.com/pbakaus/impeccable", line: "Design vocabulary, audits and polish for a landing page or app UI." },
+  { name: "taste-skill", by: "Leonxlnx", url: "https://github.com/Leonxlnx/taste-skill", line: "Pushes UI away from the generic AI look. Includes a redesign skill for an existing site." },
+  { name: "emil-design-eng", by: "Emil Kowalski", url: "https://github.com/emilkowalski/skills", line: "Small details that make an interface feel good: motion, timing, polish." },
+  { name: "RevenueCat ai-toolkit", by: "RevenueCat", url: "https://github.com/RevenueCat/ai-toolkit", line: "RevenueCat's own plugin for the SDK, offerings and the paywall." },
+  { name: "frontend-design", by: "Anthropic", url: "https://github.com/anthropics/claude-plugins-official/tree/main/plugins/frontend-design", line: "The official plugin for distinctive frontends. /plugin install frontend-design@claude-plugins-official" },
+];

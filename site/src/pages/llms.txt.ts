@@ -1,7 +1,7 @@
 // llms.txt: a plain index for agents. Links point at the raw markdown.
 import type { APIRoute } from "astro";
 import { GUIDES } from "../data/guides";
-import { PLUGINS, SKILLS, REPO, REPO_SLUG } from "../data/kit";
+import { PLUGINS, SKILLS, REPO, REPO_SLUG, OTHERS } from "../data/kit";
 
 export const GET: APIRoute = ({ site }) => {
   const base = site!.origin;
@@ -37,6 +37,10 @@ export const GET: APIRoute = ({ site }) => {
       ),
       "",
     ]),
+    "## Skills by others that work well next to these",
+    "",
+    ...OTHERS.map((o) => `- [${o.name}](${o.url}) by ${o.by}: ${o.line}`),
+    "",
     "## Optional",
     "",
     `- [All guides in one file](${base}/llms-full.txt)`,

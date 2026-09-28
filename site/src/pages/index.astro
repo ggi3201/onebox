@@ -2,10 +2,11 @@
 import Base from "../layouts/Base.astro";
 import RouteMap from "../components/RouteMap.astro";
 import Picker from "../components/Picker.astro";
-import { PLUGINS, SKILLS, skillsFor, APPS, REPO_SLUG } from "../data/kit";
+import { PLUGINS, SKILLS, skillsFor, APPS, REPO_SLUG, SKIPPABLE, OTHERS } from "../data/kit";
 import { GUIDES } from "../data/guides";
 
 const count = SKILLS.length;
+const skipTotal = SKIPPABLE.reduce((t, x) => t + x.cost, 0);
 const n = (k: number, word: string) => `${k} ${word}${k === 1 ? "" : "s"}`;
 const mailto =
   "mailto:geir@lokkesveen.com?subject=" +
@@ -150,6 +151,25 @@ const bill = [
       </div>
     </section>
 
+    <!-- ============ GOOD COMPANY ============ -->
+    <section id="others" class="others">
+      <div class="wrap">
+        <header class="section-head">
+          <h2 class="display h2">Good company</h2>
+          <p class="muted">Skills by other people that I use next to these. Not mine. Each has its own install steps and licence.</p>
+        </header>
+        <ul class="other-list">
+          {OTHERS.map((o) => (
+            <li>
+              <a class="other-name" href={o.url}>{o.name} ↗</a>
+              <span class="label other-by">{o.by}</span>
+              <span class="line">{o.line}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+
     <!-- ============ THE BILL ============ -->
     <section class="bill-section">
       <div class="wrap bill-grid">
@@ -161,6 +181,23 @@ const bill = [
             internet without opening a port. Your Mac builds the app for free. When one box is not enough,
             you will know, and you will have users to pay for the next one.
           </p>
+          <div class="skip">
+            <p class="label skip-head">Subscriptions you can skip for now</p>
+            <ul>
+              {SKIPPABLE.map((x) => (
+                <li>
+                  <span class="skip-what">{x.what} <small>({x.example}, ${x.cost}/mo)</small></span>
+                  <span class="skip-instead">→ {x.instead}</span>
+                </li>
+              ))}
+            </ul>
+            <p class="skip-note">
+              These are good products, and they save time. Together they cost about ${skipTotal} a month
+              before you know if anyone wants your app. Test the idea first. Pay for comfort when users
+              make it worth it. Free tiers have limits: Vercel’s is for non-commercial use, and Supabase
+              pauses a free project after a week without traffic.
+            </p>
+          </div>
         </div>
         <figure class="receipt" aria-label="Monthly cost">
           <p class="label receipt-head">Receipt · one app with a backend</p>
@@ -354,10 +391,30 @@ const bill = [
   .skill { font-family: var(--mono); font-size: 0.92rem; font-weight: 500; }
   .line { color: var(--ink-2); }
 
+  /* good company */
+  .others { padding-top: 0; }
+  .other-list { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--ink); }
+  .other-list li {
+    display: grid; grid-template-columns: minmax(150px, 220px) minmax(110px, 160px) 1fr; gap: 4px 20px; align-items: baseline;
+    padding: 14px 0; border-bottom: 1px dashed var(--rule);
+  }
+  .other-name { font-family: var(--mono); font-size: 0.95rem; font-weight: 500; }
+  .other-by { text-transform: none; letter-spacing: 0.02em; }
+
+  /* skip list */
+  .skip { margin-top: 30px; max-width: 46ch; }
+  .bill-copy .skip-head { margin: 0 0 8px; font-size: 0.72rem; color: color-mix(in oklab, var(--paper) 70%, transparent); }
+  .skip ul { list-style: none; margin: 0; padding: 0; border-top: 1px solid color-mix(in oklab, var(--paper) 30%, transparent); }
+  .skip li { display: grid; gap: 2px; padding: 10px 0; border-bottom: 1px dashed color-mix(in oklab, var(--paper) 25%, transparent); }
+  .skip-what { font-size: 1.05rem; }
+  .skip-what small { color: color-mix(in oklab, var(--paper) 60%, transparent); font-size: 0.85em; }
+  .skip-instead { font-family: var(--mono); font-size: 0.82rem; color: var(--signal); }
+  .bill-copy .skip-note { font-size: 1rem; margin-top: 14px; }
+
   /* bill */
   .bill-section { background: var(--ink); color: var(--paper); }
   .bill-section a:hover { color: var(--signal); }
-  .bill-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: clamp(32px, 6vw, 80px); align-items: center; }
+  .bill-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: clamp(32px, 6vw, 80px); align-items: start; }
   .bill-copy p { color: color-mix(in oklab, var(--paper) 78%, transparent); max-width: 40ch; margin: 22px 0 0; font-size: 1.2rem; }
   .receipt {
     margin: 0; background: var(--paper); color: var(--ink); padding: 22px 22px 18px;
@@ -420,6 +477,8 @@ const bill = [
     .items li .line { grid-column: 2; }
     .items li::before { left: -10px; }
     .apps li { grid-template-columns: 1fr auto; }
+    .other-list li { grid-template-columns: 1fr auto; }
+    .other-list .line { grid-column: 1 / -1; }
     .app-what { grid-column: 1 / -1; grid-row: 2; }
     .label-rows > div { grid-template-columns: 76px 1fr; }
   }

@@ -61,8 +61,21 @@ Start with [guides/start-here.md](guides/start-here.md).
 
 ## Also good
 
-RevenueCat's own plugin covers SDK setup and paywalls:
-`claude plugins marketplace add RevenueCat/ai-toolkit`.
+Skills by other people that work well next to these. Each has its own
+install steps and licence.
+
+- [ponytail](https://github.com/DietrichGebert/ponytail): stops the agent from
+  overbuilding.
+- [impeccable](https://github.com/pbakaus/impeccable): design audits and polish
+  for a landing page or app UI.
+- [taste-skill](https://github.com/Leonxlnx/taste-skill): pushes UI away from the
+  generic AI look.
+- [emil-design-eng](https://github.com/emilkowalski/skills): motion, timing and
+  polish.
+- [RevenueCat ai-toolkit](https://github.com/RevenueCat/ai-toolkit): SDK setup
+  and paywalls. `claude plugins marketplace add RevenueCat/ai-toolkit`.
+- [frontend-design](https://github.com/anthropics/claude-plugins-official/tree/main/plugins/frontend-design):
+  Anthropic's plugin. `/plugin install frontend-design@claude-plugins-official`.
 
 ## License
 
