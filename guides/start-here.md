@@ -152,6 +152,10 @@ per-user AI quotas and safe URL fetching (the "Protect the API" section).
 Guide: [backend.md](backend.md). Skills: `box:expose-service` (the hostname),
 `box:box-setup` (the GitHub Actions runner, in its `references/runner.md`).
 
+Hosted instead of the box? Guide: [hosted-backend.md](hosted-backend.md). It
+covers Supabase, Convex and Firebase, and skips Phase 2 unless you want a
+landing page.
+
 Done when: `curl https://api.example.com/health` returns 200 from your phone
 on mobile data, a push to `main` redeploys the API without you logging in to
 the box, and the "every owned entity has a query filter" test passes.

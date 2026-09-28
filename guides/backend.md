@@ -10,8 +10,8 @@ Before you start, the box must be set up with `box:box-setup` (Docker,
 Traefik on the `proxy` network, a Cloudflare Tunnel, backups). See
 [vps.md](vps.md) or use your own mini PC, and [cloudflare.md](cloudflare.md).
 
-**Using Supabase or Firebase instead?** You can skip this guide. Their auth
-verifies the Apple token for you. Still read the account deletion part of
+**Using Supabase, Convex or Firebase instead?** Read
+[hosted-backend.md](hosted-backend.md) instead of this guide. Still read the account deletion part of
 [sign-in-with-apple.md](sign-in-with-apple.md): App Review checks it whatever your backend is.
 
 ## What it is and what it costs

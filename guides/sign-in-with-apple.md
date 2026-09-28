@@ -4,7 +4,9 @@ Runs on: your Mac (the app and the developer account) and your box (the
 server check).
 
 This guide adds Sign in with Apple to the Expo app, verifies Apple's token on
-your own server, and adds account deletion with token revocation. It follows
+your own server, and adds account deletion with token revocation. On a hosted
+backend, [hosted-backend.md](hosted-backend.md) has the token check and the
+revoke step for Supabase, Convex and Firebase. The app side below is the same. It follows
 the flow I use in my own apps.
 
 Before you start you need a development build on your phone

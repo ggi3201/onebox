@@ -297,7 +297,7 @@ Check it: export the bundle and search it.
 
 ```bash
 npx expo export --platform ios --output-dir /tmp/myapp-bundle
-grep -raoE 'sk_(live|test)_[A-Za-z0-9]{8,}|sk-[A-Za-z0-9_-]{20,}|AIza[0-9A-Za-z_-]{30,}|BEGIN [A-Z ]*PRIVATE KEY' /tmp/myapp-bundle | head
+grep -raoE 'sk_(live|test)_[A-Za-z0-9]{8,}|sb_secret_[A-Za-z0-9_-]{8,}|sk-[A-Za-z0-9_-]{20,}|AIza[0-9A-Za-z_-]{30,}|BEGIN [A-Z ]*PRIVATE KEY' /tmp/myapp-bundle | head
 ```
 
 Expect no lines. `ship-ios:app-store-ready` runs a similar check on the

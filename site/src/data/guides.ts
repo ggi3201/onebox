@@ -13,6 +13,7 @@ const ORDER = [
   "vps",
   "remote-access",
   "backend",
+  "hosted-backend",
   "sign-in-with-apple",
   "revenuecat",
   "app-store-connect-setup",

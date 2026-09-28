@@ -177,6 +177,7 @@ const nugetHas = (re) => {
 const hosted = {
   supabase: npmHas((n) => n.startsWith("@supabase/")).concat(nugetHas(/^Supabase/)),
   firebase: npmHas((n) => n === "firebase" || n.startsWith("@react-native-firebase/")).concat(nugetHas(/^FirebaseAdmin/)),
+  convex: npmHas((n) => n === "convex" || n.startsWith("@convex-dev/")),
 };
 
 const AI_NPM = (n) => n === "@anthropic-ai/sdk" || n === "openai" || n === "ai" || n.startsWith("@ai-sdk/")
@@ -260,11 +261,11 @@ if (!expo.found) say("stage", "idea", "likely", "no Expo app in this folder");
 else if (expo.eas?.ascAppId) say("stage", "testflight", "likely", "eas.json has an App Store Connect app id");
 else say("stage", "expo", "high", `Expo app in ${expo.dir}`);
 
-const hostedHit = [...hosted.supabase, ...hosted.firebase];
+const hostedHit = [...hosted.supabase, ...hosted.firebase, ...hosted.convex];
 if (backends.length) say("backend", "box", compose.length ? "high" : "likely",
   `${backends.map((b) => `${b.kind === "aspnet" ? "ASP.NET" : b.framework} API in ${b.dir}`).join("; ")}${compose.length ? `, ${compose[0]}` : ""}`);
 else if (hostedHit.length) say("backend", "hosted", "high", hostedHit[0]);
-else if (expo.found) say("backend", "none", "low", "no server code and no Supabase or Firebase SDK");
+else if (expo.found) say("backend", "none", "low", "no server code and no Supabase, Convex or Firebase SDK");
 
 if (expo.appleSignIn?.package) say("login", "apple", "high", "expo-apple-authentication is in the app");
 if (expo.revenuecat) say("paid", "subs", "high", "react-native-purchases is in the app");

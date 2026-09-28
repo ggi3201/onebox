@@ -12,8 +12,9 @@ the plan's header, and detection usually knows it from the repo.
 
 A server holds data that must live off the phone: accounts, sync, AI calls
 with a secret key. **Your own box** adds a VPS or mini PC, Cloudflare, the box
-setup, the backend guide, a public API hostname and a staging API. **Supabase
-or Firebase** skips the backend steps. **No server** skips both. With either
+setup, the backend guide, a public API hostname and a staging API. **A hosted
+backend** (Supabase, Convex or Firebase) replaces the box steps with the
+hosted-backend guide. **No server** skips both. With either
 of those two, a landing page still adds a small VPS to host it.
 
 ## Do users sign in? (`login`)

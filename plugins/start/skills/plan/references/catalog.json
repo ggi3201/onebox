@@ -31,7 +31,7 @@
         },
         {
           "id": "hosted",
-          "label": "Yes, and I use Supabase or Firebase"
+          "label": "Yes, a hosted backend (Supabase, Convex or Firebase)"
         },
         {
           "id": "box",
@@ -346,6 +346,17 @@
       }
     },
     {
+      "id": "hosted-backend",
+      "kind": "guide",
+      "phase": "backend",
+      "title": "Supabase, Convex or Firebase: set up, keep users apart, secrets",
+      "when": {
+        "backend": [
+          "hosted"
+        ]
+      }
+    },
+    {
       "id": "expose-service",
       "kind": "skill",
       "plugin": "box",
@@ -440,6 +451,9 @@
       "when": {
         "ai": [
           "chat"
+        ],
+        "backend": [
+          "box"
         ]
       }
     },
@@ -452,6 +466,9 @@
       "when": {
         "ai": [
           "import"
+        ],
+        "backend": [
+          "box"
         ]
       }
     },
@@ -465,6 +482,9 @@
         "ai": [
           "chat",
           "import"
+        ],
+        "backend": [
+          "box"
         ]
       }
     },
