@@ -38,6 +38,12 @@ With pnpm, list only `apps/mobile` in `pnpm-workspace.yaml` (a .NET API is
 not a pnpm package), and put `node-linker=hoisted` in `.npmrc`. Metro and
 CocoaPods do not follow pnpm's symlinked `node_modules`.
 
+Pin pnpm 10 with `corepack use pnpm@10` at the repo root. It writes
+`packageManager` in `package.json`. pnpm 12 does not start through corepack
+yet, so do not take the newest version ([tools.md](tools.md)). Put the Node
+major in `.node-version` (for example `24`), and let CI read it with
+`node-version-file: .node-version`.
+
 Put git worktree folders in `.gitignore` (for example `.claude/worktrees/`).
 `eas build --local` packs every file git does not ignore, and one build with
 worktrees inside the repo packed 34 GB. Do not add an `.easignore`: when it
@@ -80,6 +86,17 @@ guide, plus the API and the checks. By hand:
 mkdir -p myapp/apps && cd myapp/apps
 npx create-expo-app@latest mobile
 ```
+
+Inside an existing git repo, it asks whether to skip `git init`. Answer yes.
+The template also writes files next to the app:
+
+- `AGENTS.md`, `CLAUDE.md` and `.claude/settings.json`: Expo's notes for
+  coding agents, and its Claude Code plugin. Keep them.
+- `LICENSE`: Expo's licence for the template. It is not your app's licence.
+  Delete it.
+
+`npm run reset-project` clears the example screens. It asks whether to move
+them to `example/`; answer no to delete them. It also deletes `scripts/`.
 
 Existing project: move it into `apps/mobile` (or keep it at the root if there
 is no backend in the same repo; then skip the tripwire).

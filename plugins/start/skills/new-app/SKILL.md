@@ -16,13 +16,16 @@ files no guide has (`references/files.md`). When a step says "follow
 `expo-app.md`, step 3", fetch
 `https://onebox.lokkesveen.com/guides/expo-app.md` and do that step. Do not
 work from memory, from another app, or from older Expo docs. Versions come
-from `create-expo-app@latest` and `dotnet new`, never from memory.
+from `create-expo-app@latest` and `dotnet new`, never from memory. One
+exception: pnpm is pinned to major 10 (step 0).
 
 ## 0. Check first
 
 - The target folder is empty or does not exist. If it has an Expo app, stop
   and run `/start:plan` instead.
-- Tools: `node -v` (a current LTS; CI uses 22), `corepack enable` then `pnpm -v`,
+- Tools: `node -v` (an LTS: an even major, 22 or newer). `corepack enable`,
+  then `corepack install -g pnpm@10`, then `pnpm -v` (10.x). pnpm 12 does not
+  start through corepack yet, so do not take the newest pnpm (`tools.md`).
   `xcodebuild -version` (else `https://onebox.lokkesveen.com/guides/xcode.md`),
   `git`. With a .NET API also `dotnet --version` (10 or newer). With any API,
   `docker info` (the tests need it).
@@ -67,15 +70,25 @@ no tripwire, no workspace file, no API steps. Skip the steps marked **API**.
 ## 3. Build it, in this order
 
 1. **Repo.** With an API: `git init`, the root files from
-   `references/files.md`, and the tripwire from `expo-app.md`. Without one:
-   nothing yet; step 2 makes the folder.
-2. **Expo app.** With an API: in `apps/`, run
-   `npx create-expo-app@latest mobile --no-install`, then `pnpm install` from
-   the root. Without one: run `npx create-expo-app@latest myapp` in the parent
-   folder, then `git init` in it, and add `.claude/worktrees/` to its
-   `.gitignore` (`expo-app.md`, "Recommended layout", says why). Keep the
-   default template (Expo Router, TypeScript). If it has a `reset-project` script, run it once
-   and delete the example folder it makes.
+   `references/files.md` (with `.node-version`), and the tripwire from
+   `expo-app.md`. Then `corepack use pnpm@10` at the root. It writes
+   `packageManager` and runs a first install. Without an API: nothing yet;
+   step 2 makes the folder.
+2. **Expo app.** Keep the default template (Expo Router, TypeScript). Two
+   commands ask a question, so pipe the answer in:
+   - With an API: in `apps/`, run
+     `echo y | npx create-expo-app@latest mobile --no-install`, then
+     `pnpm install` from the root. The `y` answers "Skip initializing a new
+     git repository?".
+   - Without one: in the parent folder, run
+     `echo y | npx create-expo-app@latest myapp --no-install`. In it:
+     `git init`, `.node-version`, the `.npmrc`, then `corepack use pnpm@10`.
+     Add `.claude/worktrees/` to its `.gitignore` (`expo-app.md`,
+     "Recommended layout", says why).
+   - Then, in the Expo app folder: `echo n | pnpm reset-project`. The `n`
+     deletes the example instead of moving it to `example/`.
+   - The template ships its own agent files and a `LICENSE`. Handle them as
+     `references/files.md`, "The Expo app", says.
 3. **App config.** Follow `expo-app.md` steps 2, 3, 4, 5, 6, 7 and 9: the
    bundle id, `app.json`, the API URL module, `expo-dev-client`, `eas.json`
    with three profiles, remote versions, `expo-secure-store`. Set `scheme` to
@@ -85,9 +98,13 @@ no tripwire, no workspace file, no API steps. Skip the steps marked **API**.
    terminal if `eas whoami` fails. Then run `eas init` from the Expo app's
    folder (`apps/mobile` when there is an API; never the repo root then).
 5. **App checks.** Follow `agent-test-loop.md` steps 1, 2, 4 and 7: strict
-   TypeScript, ESLint, one test runner, one Metro port per worktree. The first
-   test is the one `expo-app.md` step 4 asks for: every `eas.json` profile
-   that leaves the Mac has an `https` API URL.
+   TypeScript, ESLint, one test runner, one Metro port per app and per
+   worktree. The Metro script goes in the Expo app's `scripts/`
+   (`apps/mobile/scripts/`).
+   Make it after `reset-project`, which deletes `scripts/`. The
+   first test is the one `expo-app.md` step 4 asks for: every `eas.json`
+   profile that leaves the Mac has an `https` API URL (`references/files.md`,
+   "The Expo app").
 6. **API.** The project, the solution and the first test:
    `references/files.md`, "The API". It meets the five rules in `backend.md`,
    "The language". Its Dockerfile is `backend.md` step 1.
@@ -99,7 +116,9 @@ no tripwire, no workspace file, no API steps. Skip the steps marked **API**.
 9. **AGENTS.md.** The short block in `references/files.md`, then the
    test-loop block (`plugins/dev/skills/test-loop/assets/AGENTS.snippet.md`;
    without the `dev` plugin, fetch it from GitHub). Link `CLAUDE.md` to it
-   with `ln -s AGENTS.md CLAUDE.md`.
+   with `ln -s AGENTS.md CLAUDE.md`. Without an API, the template's
+   `AGENTS.md` and `CLAUDE.md` are already at the root: put the block at the
+   top of that `AGENTS.md`, and keep its `CLAUDE.md`.
 
 Leave for later, because the plan adds them in the right phase: the
 production `docker-compose.yml` and `deploy-api.yml` (they need the box),
@@ -124,9 +143,28 @@ pnpm dev:api                                 # in the background
 curl -fsS http://127.0.0.1:<api port>/health # {"ok":true}
 ```
 
-App: `pnpm ios` builds the dev client and opens it in the Simulator. Take a
-screenshot and read it. The first build takes minutes. On a CocoaPods or
-Ruby error, read `ship-ios:expo-local-build`, `references/pitfalls.md`.
+App: first check the shell the build runs in. Then give the app its own
+simulator, so the build does not land on one another session uses.
+
+```bash
+which ruby pod        # a Ruby from rbenv or Homebrew, not /usr/bin/ruby
+echo $LANG            # en_US.UTF-8, not empty
+U=$(xcrun simctl create "MyApp" "iPhone 17 Pro") && xcrun simctl boot "$U"
+pnpm ios --device "$U"
+```
+
+Pick a device type that `xcrun simctl list devicetypes` shows. `pnpm ios`
+builds the dev client and opens it in that simulator. The first build takes
+minutes. Take a screenshot and read it.
+
+- iOS can ask "Open in MyApp?" when the build or `xcrun simctl openurl`
+  opens the app's URL. Tap Open.
+- The first start of a dev client shows the developer menu sheet. Close it.
+
+Both are normal, not errors. On a CocoaPods or Ruby error, read
+`ship-ios:expo-local-build`, `references/pitfalls.md`. After a failed
+`pod install`, delete the app's `ios/` folder (`apps/mobile/ios`) before you
+try again.
 
 Then make one commit: `Skeleton from onebox new-app`. Do not push. The user
 creates the GitHub repo.

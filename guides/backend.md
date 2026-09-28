@@ -53,6 +53,7 @@ user.
 ```dockerfile
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
+COPY Directory.Build.props ./
 COPY MyApp.Api/MyApp.Api.csproj MyApp.Api/
 RUN dotnet restore MyApp.Api/MyApp.Api.csproj
 COPY . .
@@ -88,6 +89,12 @@ CMD ["node", "dist/server.js"]
 
 Copy the project file (or `package.json`) and restore before you copy the
 source. Then a source-only change reuses the cached restore layer.
+
+For .NET, copy `Directory.Build.props` first too. It sits in `apps/api`,
+next to the project folders ([agent-test-loop.md](agent-test-loop.md),
+step 3). The restore needs it: the NuGet audit settings from step 10 of
+"Protect the API" run at restore. Without it, the restore in the container
+uses other settings than your Mac.
 
 ### 2. `docker-compose.yml`
 
