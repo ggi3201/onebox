@@ -14,10 +14,12 @@
 //       --dry-run prints the file instead of writing it.
 //
 //   node plan.mjs ready [--answers <json|@file>] [--detect <file|->] [--repo <dir>]
-//                       [--out PLAN.md] [--all] [--step <item id>] [--need <id,id>]
+//                       [--out PLAN.md] [--all] [--list] [--step <item id>] [--need <id,id>]
 //       Finds the next step the way `write` does, and checks only what that
 //       step needs (references/needs.json). Prints JSON with a `say` line:
 //       the next step, and at most one blocker. --all checks every step left.
+//       --list says every need the step lacks, in one list with one question,
+//       instead of the first blocker alone (used by /start:new-app).
 //       --step checks one catalog item instead of the next one. --need checks
 //       only these need ids; with --step it adds them. Read-only: it writes nothing, installs nothing and never
 //       prints a secret or a config value.
@@ -31,7 +33,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { loadNeeds, loadConfig, checkNeeds, sayFor } from "./needs.mjs";
+import { loadNeeds, loadConfig, checkNeeds, sayFor, listFor } from "./needs.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const catalog = JSON.parse(fs.readFileSync(path.join(HERE, "..", "references", "catalog.json"), "utf8"));
@@ -66,7 +68,7 @@ for (let i = 1; i < argv.length; i++) {
   const a = argv[i];
   if (!a.startsWith("--")) die(`unexpected argument ${a}`);
   const k = a.slice(2);
-  if (["dry-run", "convert", "all"].includes(k)) flags[k] = true;
+  if (["dry-run", "convert", "all", "list"].includes(k)) flags[k] = true;
   else { if (argv[i + 1] == null) die(`${a} needs a value`); flags[k] = argv[++i]; }
 }
 const repo = path.resolve(flags.repo ?? ".");
@@ -533,7 +535,7 @@ async function readyMode() {
   const out = flags.all
     ? { next: plan.next ? stepOf(plan.next.item) : null, steps: results.map(({ ids, ...s }) => s) }
     : { next: first?.id ? { id: first.id, nudge: first.nudge, title: first.title, link: first.link } : null, ready: !first?.blocker, blocker: first?.blocker ?? null, needs: first?.needs ?? [] };
-  out.say = sayFor(results, { all: !!flags.all, nothingLeft: !plan.next && !flags.step });
+  out.say = flags.list && first ? listFor(first) : sayFor(results, { all: !!flags.all, nothingLeft: !plan.next && !flags.step });
   out.ms = Date.now() - started;
   console.log(JSON.stringify(out, null, 2));
   process.stderr.write(out.say + "\n");

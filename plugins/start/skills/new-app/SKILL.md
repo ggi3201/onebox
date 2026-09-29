@@ -35,20 +35,40 @@ exception: pnpm is pinned to major 10 (step 0).
 
   ```bash
   node <plan-dir>/scripts/plan.mjs ready --step new-app --repo "$(mktemp -d)" \
-    --answers '{"stage":"idea","backend":"box"}' --need dotnet
+    --answers '{"stage":"idea","backend":"box"}' --need dotnet --list
   ```
 
   `backend` is `box` with an API in the repo, else `hosted` or `none`. Add
   `--need dotnet` only for a .NET API. It checks git, Node 22 or newer,
   pnpm 10, `eas` and its login, Xcode, CocoaPods and its Ruby, a UTF-8
-  locale, and, with an API, Docker. pnpm stays on 10: pnpm 12 does not start
-  through corepack yet (`tools.md`). The check is read-only. Say its `say`
-  line and nothing else: it names at most one problem. Run a fix only when
-  the blocker is `safe` and the user says yes. A `yours` blocker is the
-  user's to do (`/start:plan`, section 6, has the rules). Run the check again
-  until `blocker` is `null`, then go on. Without `node`, the check cannot
-  run: say "One thing first: Node.js is not installed (brew install
-  node@22). Should I run it, then continue?"
+  locale, and, with an API, Docker. pnpm stays on 10 (`tools.md`). The check
+  is read-only.
+
+  **It checks what the user's own Terminal has, not what this app has.**
+  The app often has a longer PATH, so a tool can work here and be missing
+  where the user types. The check uses the PATH of a login shell. When a tool
+  exists only in the app, it says so.
+
+  **Show the whole list once.** `--list` puts every missing tool in one
+  message, with how long each takes and one question. Say its `say` line and
+  nothing else. Do not read out the blockers one at a time, and do not add
+  to it from your own guesses: if you see a problem it did not name, say so
+  after the list.
+
+  - **"Should I install ...?"** On a "yes", run the `safe` fixes in the
+    order listed, each in the user's own shell, so the tool lands where their
+    Terminal finds it:
+
+    ```bash
+    env -i HOME="$HOME" USER="$USER" SHELL=/bin/zsh TERM=xterm-256color \
+      /bin/zsh -lic '<the fix>'
+    ```
+
+    Say what you start and how long it takes.
+  - A `yours` item is the user's to do (`/start:plan`, section 6, has the
+    rules). Tell them when it is due, not before.
+  - Run the check again after the installs. Go on when nothing is missing
+    except `yours` items you have told them about and they have done.
 
 ## 1. Ask
 
@@ -94,9 +114,9 @@ API, the repo root without one. Run every `npx expo` and `eas` command there.
 
 1. **Repo.** With an API: `git init`, the root files from
    `references/files.md` (with `.node-version`), and the tripwire from
-   `expo-app.md`. Then `corepack use pnpm@10` at the root. It writes
-   `packageManager` and runs a first install. Without an API: nothing yet;
-   step 2 makes the folder.
+   `expo-app.md`. Then pin pnpm 10 at the root (`expo-app.md`, "Pin pnpm").
+   It writes `packageManager` and runs a first install. Without an API:
+   nothing yet; step 2 makes the folder.
 2. **Expo app.** Keep the default template (Expo Router, TypeScript).
    - With an API: in `apps/`, run
      `echo y | npx create-expo-app@latest mobile --no-install`, then
@@ -106,7 +126,7 @@ API, the repo root without one. Run every `npx expo` and `eas` command there.
      `npx create-expo-app@latest myapp --no-install`. It asks nothing. It
      runs `git init` and makes a first commit, "Initial commit", so do not
      run `git init` yourself. In `myapp`: `.node-version` and the `.npmrc`
-     from `references/files.md`, then `corepack use pnpm@10`. Add
+     from `references/files.md`, then pin pnpm 10 (`expo-app.md`, "Pin pnpm"). Add
      `.claude/worktrees/` and `.worktrees/` to its `.gitignore`
      (`expo-app.md`, "Recommended layout", says why).
    - Then, in the app folder: `echo n | pnpm reset-project`. It asks whether

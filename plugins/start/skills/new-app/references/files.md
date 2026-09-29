@@ -6,13 +6,13 @@ other part of the skeleton comes from a guide; the skill says which.
 ## Root files (API in the repo)
 
 `package.json`. Root scripts only delegate, so every command runs in the
-right folder. Write it without `packageManager`. Then run
-`corepack use pnpm@10` at the root: it adds `packageManager` with the exact
-version and its hash.
+right folder. Write it without `packageManager`. Then pin pnpm at the root
+(`expo-app.md`, "Pin pnpm"): `npm pkg set packageManager="pnpm@$(pnpm -v)"`,
+where `pnpm -v` prints 10.x. Node 25 and newer have no corepack, so do not
+use `corepack use` unless `command -v corepack` finds it.
 
-Keep pnpm on major 10. pnpm 12 does not start through corepack yet (it has
-no `bin/pnpm.cjs`), so do not "upgrade" it until `corepack pnpm@<new> -v`
-works on this Node.
+Keep pnpm on major 10. Do not "upgrade" it until the kit's check accepts a
+newer major.
 
 ```json
 {
