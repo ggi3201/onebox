@@ -136,6 +136,7 @@ API, the repo root without one. Run every `npx expo` and `eas` command there.
 6. **API.** The project, the solution and the first test:
    `references/files.md`, "The API". It meets the five rules in `backend.md`,
    "The language". Its Dockerfile is `backend.md` step 1.
+   A Node API: `references/node-api.md` has all its files.
 7. **API: dev database and the app's API URL.** `docker-compose.dev.yml`
    from `references/files.md`. Pick a free port first
    (`lsof -iTCP:5433 -sTCP:LISTEN` prints nothing). Then point the dev

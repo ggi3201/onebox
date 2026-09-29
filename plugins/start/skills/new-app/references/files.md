@@ -379,8 +379,7 @@ public sealed class SkeletonTests(ApiFactory factory) : IClassFixture<ApiFactory
 The fixture uses the xunit v2 `IAsyncLifetime`, which the `dotnet new xunit`
 template installs. In xunit v3 its methods return `ValueTask`.
 
-For Node, follow `backend.md` "The language" and "On Node", with
-`@testcontainers/postgresql` for the same two tests.
+For Node, use `node-api.md` instead of this section.
 
 ## `docker-compose.dev.yml`
 

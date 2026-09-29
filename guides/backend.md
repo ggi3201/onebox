@@ -68,33 +68,14 @@ EXPOSE 8080
 ENTRYPOINT ["dotnet", "MyApp.Api.dll"]
 ```
 
-Node (`apps/api/Dockerfile`):
+Copy the project file and restore before you copy the source. Then a
+source-only change reuses the cached restore layer.
 
-```dockerfile
-FROM node:22-slim AS build
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-RUN npm run build && npm prune --omit=dev
-
-FROM node:22-slim
-WORKDIR /app
-ENV NODE_ENV=production PORT=8080
-COPY --from=build /app ./
-USER node
-EXPOSE 8080
-CMD ["node", "dist/server.js"]
-```
-
-Copy the project file (or `package.json`) and restore before you copy the
-source. Then a source-only change reuses the cached restore layer.
-
-For .NET, copy `Directory.Build.props` first too. It sits in `apps/api`,
-next to the project folders ([agent-test-loop.md](agent-test-loop.md),
-step 3). The restore needs it: the NuGet audit settings from step 10 of
-"Protect the API" run at restore. Without it, the restore in the container
-uses other settings than your Mac.
+Copy `Directory.Build.props` first too. It sits in `apps/api`, next to the
+project folders ([agent-test-loop.md](agent-test-loop.md), step 3). The
+restore needs it: the NuGet audit settings from step 10 of "Protect the API"
+run at restore. Without it, the restore in the container uses other settings
+than your Mac.
 
 Add a `.dockerignore` next to the Dockerfile. Without it, `COPY . .` also
 copies your Mac's `bin/` and `obj/` folders and the test project into the
@@ -104,6 +85,66 @@ build:
 **/bin/
 **/obj/
 MyApp.Api.Tests/
+```
+
+Node (`apps/api/Dockerfile`). The API is a package in a pnpm workspace
+(`start:new-app` makes it so). The lockfile, `pnpm-workspace.yaml` and the
+`.npmrc` with `node-linker=hoisted` sit at the repo root. So the build
+context is the repo root:
+
+```bash
+docker build -f apps/api/Dockerfile .
+```
+
+```dockerfile
+FROM node:24-slim AS build
+RUN corepack enable
+WORKDIR /repo
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+COPY apps/api/package.json apps/api/
+RUN pnpm install --frozen-lockfile --filter api
+COPY apps/api apps/api
+RUN pnpm --filter api build
+# Only the API: its "files" and its runtime packages, not the Expo app's.
+RUN pnpm --filter api deploy --prod --legacy /out
+
+FROM node:24-slim
+WORKDIR /app
+ENV NODE_ENV=production HOST=0.0.0.0 PORT=8080
+COPY --from=build /out ./
+USER node
+EXPOSE 8080
+CMD ["node", "dist/server.js"]
+```
+
+- **The image tag matches `.node-version`.** CI tests on that Node major, so
+  the container runs the same one.
+- **`pnpm deploy` makes the image small.** With `node-linker=hoisted`,
+  `--filter` does not limit the install. The build stage also gets Expo and
+  React Native, and an image built from it is over 1 GB. `deploy --prod`
+  copies only the API and its runtime packages to `/out`: about 60 packages
+  and a 390 MB image. `--legacy` lets pnpm 10 deploy without
+  `inject-workspace-packages`.
+- **The API's `package.json` needs a `files` field.** `deploy` copies only
+  those: `"files": ["dist", "drizzle"]` (the build output and the migrations
+  folder of your ORM).
+- **Do not run a second `pnpm install` over the first one.** A full install
+  in a stage `FROM` a prod install stops with
+  `ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY`.
+- **`HOST=0.0.0.0`.** Inside the container, the API must listen on every
+  interface, or Traefik cannot reach it.
+
+The `.dockerignore` goes at the repo root, the root of the build context.
+Without it, the context gets your Mac's `node_modules` and the whole Expo
+app:
+
+```
+**/node_modules/
+**/dist/
+**/.env*
+.git/
+apps/mobile/
+apps/api/test/
 ```
 
 ### 2. `docker-compose.yml`
@@ -171,6 +212,15 @@ networks:
 volumes:
   myapp-db-data:
 ```
+
+For a Node API, change three things:
+
+- `build: { context: ., dockerfile: apps/api/Dockerfile }`. The context is
+  the repo root (step 1).
+- `DATABASE_URL: "postgres://myapp:${DATABASE_PASSWORD}@myapp-db:5432/myapp"`,
+  the URL form that `pg` reads. Make that password with
+  `openssl rand -hex 32`: a `/` or `+` from base64 breaks the URL.
+- The healthcheck: the Node line in the comment.
 
 Why it looks like this:
 
@@ -525,11 +575,16 @@ Prisma and Drizzle have no built-in global filter. Two options that keep the
   `owner_id = current_setting('app.user_id')`, and set that setting at the
   start of each request's transaction. The database refuses other users' rows
   whatever the query says. Connect as a role that is not the table owner, or
-  the policy does not apply.
+  the policy does not apply. A superuser skips it too, and the Postgres
+  image's `POSTGRES_USER` is one. The step 5 test reads the catalog: every
+  table with an `owner_id` column must have RLS on and a policy.
 - **A scoped repository.** Handlers never import the raw client. They get a
   `db.forUser(userId)` object whose methods always add `where owner_id = ?`.
   Add a lint rule or a grep in CI that fails on raw client imports in route
   files.
+
+The kit's Node API (`start:new-app`, `references/node-api.md`) uses
+row-level security, with the role, the helper and the test.
 
 ## Protect the API
 
