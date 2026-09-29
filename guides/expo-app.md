@@ -169,6 +169,10 @@ Most apps do not need this. The API URL does not need it (next step).
 
 ### 4. The API URL, per build profile
 
+No API of your own yet? Skip this step. Write no `src/config/api.ts` and no
+`EXPO_PUBLIC_API_URL`, and never a placeholder URL. Come back when the app
+gets an API.
+
 The app reads its server address from `EXPO_PUBLIC_API_URL`. Metro **inlines
 `EXPO_PUBLIC_*` variables into the JavaScript bundle when the build is made**.
 The value is fixed in that binary forever.
@@ -178,18 +182,19 @@ laptop, a build made anywhere else gets an empty URL. The app still opens. It
 just never reaches the server, and nothing tells you.
 
 So set the URL in `eas.json`, per profile (step 6). It is not a secret; it is
-visible to anyone who opens the app. Then read it in one place and refuse to
+visible to anyone who opens the app. For the development client on your Mac,
+set it in `.env.local` (step 6). Then read it in one place and refuse to
 guess:
 
 ```ts
 // src/config/api.ts
-const configured = process.env.EXPO_PUBLIC_API_URL?.trim().replace(/\/+$/, "");
+// No default, not even in development: a default port can be another app's API.
+export const API_URL = process.env.EXPO_PUBLIC_API_URL?.trim().replace(/\/+$/, "") ?? "";
 
-export const API_URL = configured ?? (__DEV__ ? "http://localhost:8080" : "");
-
-if (!__DEV__) {
-  if (!API_URL) console.error("[config] EXPO_PUBLIC_API_URL is not set in this build.");
-  else if (!API_URL.startsWith("https://")) console.error("[config] API URL must be https.");
+if (!API_URL) {
+  console.error("[config] EXPO_PUBLIC_API_URL is not set. Dev: .env.local. Builds: eas.json.");
+} else if (!__DEV__ && !API_URL.startsWith("https://")) {
+  console.error("[config] API URL must be https.");
 }
 ```
 
@@ -202,7 +207,7 @@ Rules:
   development build on your home Wi-Fi. That is for development only.
 - Better than a console line: show a visible banner in release builds when
   the URL is missing, and add a test that walks every `eas.json` profile and
-  fails if one has no `https` URL.
+  fails if one has no `https` URL. Only an app with an API has this test.
 
 ### 5. A development build, not Expo Go
 
@@ -259,8 +264,11 @@ Rebuild only when you add or change a native module or a config plugin. The
 
 - **development**: your dev client, installed on registered devices. It gets
   its JavaScript from `npx expo start` on your Mac, so the API URL comes from
-  the Mac's `apps/mobile/.env.local` (git-ignored), for example
-  `EXPO_PUBLIC_API_URL=http://192.168.1.20:8080`.
+  the Mac's `apps/mobile/.env.local` (git-ignored). Use the port your local
+  API listens on. In the Simulator:
+  `EXPO_PUBLIC_API_URL=http://localhost:<api port>`. On a phone, the Mac's
+  LAN address: `EXPO_PUBLIC_API_URL=http://192.168.1.20:<api port>`.
+- No API: leave `EXPO_PUBLIC_API_URL` out of every profile.
 - **preview**: a release build for registered devices ("ad hoc"), pointed at
   a real server. For testing on your phone without TestFlight. Register each
   phone once with `eas device:create`. Skill:
@@ -381,7 +389,7 @@ backup pin and a plan to rotate.
 | Value | Where |
 |---|---|
 | Bundle identifier | `ios.bundleIdentifier` in `app.json`; `.onebox.json` if a skill asks for it |
-| API URL | `env.EXPO_PUBLIC_API_URL` on each profile in `eas.json` |
+| API URL | `env.EXPO_PUBLIC_API_URL` on each profile in `eas.json`; for the dev client, `.env.local` in the app folder |
 | Build mode | `expo.buildMode` in the onebox config: `local` (default) or `cloud` |
 | Expo token (for scripts and CI) | your secrets tool, referenced by `expo.tokenRef` |
 | App Store Connect app ID | `submit.production.ios.ascAppId` in `eas.json` |

@@ -90,11 +90,12 @@ obj/
 
 ## The Expo app
 
+The app folder is `apps/mobile` with an API, and the repo root without one.
 `create-expo-app` writes more than the app. Per file:
 
-| File in `apps/mobile` | What to do |
+| File in the app folder | What to do |
 |---|---|
-| `AGENTS.md` | Keep. It is Expo's guide for agents: read the docs for this SDK, not your memory. Link it from the root `AGENTS.md`. |
+| `AGENTS.md` | Keep. It is Expo's guide for agents: read the docs for this SDK, not your memory. With an API, link it from the root `AGENTS.md`. Without one, it is the root `AGENTS.md`: put the onebox blocks at its top. |
 | `CLAUDE.md` | Keep. It only says `@AGENTS.md`. |
 | `.claude/settings.json` | Keep. It turns on Expo's own Claude Code plugin. |
 | `LICENSE` | Delete. It is Expo's licence for the template, not the app's. |
@@ -103,16 +104,23 @@ obj/
 Delete its `reset-project` entry from `package.json` after it runs. The
 script it points to is gone.
 
+Without an API, the Expo app's `package.json` is the root one. Give it the
+script that runs every check:
+
+```json
+"check": "pnpm typecheck && pnpm lint && pnpm test"
+```
+
 The first test, in `src/config/eas-profiles.test.ts`. It reads `eas.json`
 with Node's `fs`, so it needs `"node"` in the tsconfig `types`
-(`agent-test-loop.md`, step 1):
+(`agent-test-loop.md`, step 1). These four tests fit every layout:
 
 ```ts
-// expo-app.md, step 4: a build that leaves the Mac must have an https API URL.
+// The build profiles: expo-app.md, steps 4, 6, 7 and 10.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-type Profile = { developmentClient?: boolean; env?: Record<string, string> };
+type Profile = { developmentClient?: boolean; autoIncrement?: boolean; env?: Record<string, string> };
 
 const eas = JSON.parse(readFileSync(join(__dirname, "../../eas.json"), "utf8")) as {
   build: Record<string, Profile>;
@@ -120,14 +128,38 @@ const eas = JSON.parse(readFileSync(join(__dirname, "../../eas.json"), "utf8")) 
 
 const shipped = Object.entries(eas.build).filter(([, p]) => !p.developmentClient);
 
-test("eas.json has a preview and a production profile", () => {
-  expect(shipped.map(([name]) => name)).toEqual(expect.arrayContaining(["preview", "production"]));
+test("eas.json has the three profiles", () => {
+  expect(Object.keys(eas.build)).toEqual(expect.arrayContaining(["development", "preview", "production"]));
 });
 
+test("only the development profile has the dev client", () => {
+  expect(Object.keys(eas.build).filter((name) => eas.build[name]?.developmentClient)).toEqual(["development"]);
+});
+
+test("production raises the build number", () => {
+  expect(eas.build.production?.autoIncrement).toBe(true);
+});
+
+test("profiles that leave the Mac use only https URLs", () => {
+  for (const [name, profile] of shipped) {
+    for (const [key, value] of Object.entries(profile.env ?? {})) {
+      if (key.endsWith("_URL")) expect(`${name} ${key}=${value}`).toMatch(/=https:\/\//);
+    }
+  }
+});
+```
+
+With an API in the repo, add the test `expo-app.md` step 4 asks for. Every
+build that leaves the Mac must have an API URL:
+
+```ts
 test.each(shipped)("profile %s has an https API URL", (_name, profile) => {
   expect(profile.env?.EXPO_PUBLIC_API_URL).toMatch(/^https:\/\//);
 });
 ```
+
+Without an API, leave it out. The app has no API URL, and a placeholder
+URL only hides that.
 
 ## The API
 
@@ -418,9 +450,18 @@ jobs:
       - run: dotnet test apps/api/MyApp.sln -c Release --no-build
 ```
 
+Without an API, delete the `api` job. The Expo app's `package.json` is the
+root one, and it has `test`, not `test:mobile`. So the last `mobile` step is:
+
+```yaml
+      - run: pnpm test
+```
+
 ## `AGENTS.md`
 
-Start with this block. Put the test-loop block under it.
+Start with the block for this layout. Put the test-loop block under it.
+
+With an API in the repo:
 
 ```markdown
 # MyApp
@@ -433,8 +474,27 @@ Start with this block. Put the test-loop block under it.
 - `apps/mobile/ios/` is generated. Change `app.json` or a config plugin, then
   rebuild.
 - Dev database: `pnpm db:up`, on port <db port>. API: `pnpm dev:api`, on port
-  <api port>.
+  <api port>. The dev client reads that URL from `apps/mobile/.env.local`
+  (not in git). Change the port in both places.
 - Every setting the API needs is listed in the compose file's `environment:`
   block. A value only in the secrets tool never reaches the container.
 - The user id comes from the token, never from the request.
 ```
+
+Hosted backend or no server. The template's `AGENTS.md` is already at the
+root, so put this block at its top:
+
+```markdown
+# MyApp
+
+- The Expo app is the repo root. There is no API in this repo.
+- Before you change the app, read the Expo part further down in this file.
+  It is Expo's guide for this SDK.
+- Run Expo and EAS commands from the repo root.
+- `ios/` and `android/` are generated. Change `app.json` or a config plugin,
+  then rebuild.
+- All checks: `pnpm check` (typecheck, lint, tests).
+```
+
+With a hosted backend, change the first line to: "The Expo app is the repo
+root. The backend is <service>, hosted. There is no API in this repo."
