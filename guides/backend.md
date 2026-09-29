@@ -667,8 +667,8 @@ app.UseRateLimiter();
 app.MapPost("/api/auth/apple", SignIn).RequireRateLimiting("auth");
 app.MapPost("/api/auth/refresh", Refresh).RequireRateLimiting("auth");
 app.MapPost("/api/auth/sign-out", SignOut).RequireRateLimiting("auth");
-var ai = app.MapGroup("/ai").RequireAuthorization().RequireRateLimiting("ai");
-app.MapPost("/recipes/import", Import).RequireAuthorization().RequireRateLimiting("import");
+var ai = app.MapGroup("/api/ai").RequireAuthorization().RequireRateLimiting("ai");
+app.MapPost("/api/recipes/import", Import).RequireAuthorization().RequireRateLimiting("import");
 app.MapGet("/health", () => Results.Ok(new { ok = true })).DisableRateLimiting();
 ```
 
@@ -771,7 +771,7 @@ using Microsoft.AspNetCore.Mvc;   // RequestSizeLimitAttribute
 
 builder.WebHost.ConfigureKestrel(k => k.Limits.MaxRequestBodySize = 1_000_000);   // 1 MB
 
-app.MapPost("/photos", UploadPhoto)
+app.MapPost("/api/photos", UploadPhoto)
    .WithMetadata(new RequestSizeLimitAttribute(10_000_000));                       // 10 MB here only
 ```
 
@@ -1103,7 +1103,7 @@ const common = { standardHeaders: "draft-8", legacyHeaders: false };
 
 app.use(rateLimit({ ...common, windowMs: 60_000, limit: 100, keyGenerator: byUserOrIp }));
 app.use("/auth", rateLimit({ ...common, windowMs: 60_000, limit: 10, keyGenerator: (req) => ipKeyGenerator(req.ip) }));
-app.use("/ai", requireUser, rateLimit({ ...common, windowMs: 60_000, limit: 5, keyGenerator: byUserOrIp }));
+app.use("/api/ai", requireUser, rateLimit({ ...common, windowMs: 60_000, limit: 5, keyGenerator: byUserOrIp }));
 ```
 
 Fastify: register `@fastify/rate-limit` with `{ max: 100, timeWindow: "1 minute" }`
