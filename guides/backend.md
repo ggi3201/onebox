@@ -397,6 +397,11 @@ public sealed class CurrentUser(IHttpContextAccessor http)
 }
 ```
 
+Code outside a request (the dev seed, a background job) has no user, so it
+throws too. Do not go around the filter there. Add a `CurrentUser.ActAs(userId)`
+that works only outside a request, and use one DI scope per user. The code is
+in the `dev:test-loop` skill (`references/seed-data.md`, "A sketch").
+
 ### 2. A global query filter on every owned table
 
 EF Core adds a query filter to every LINQ query on that entity, including
@@ -463,10 +468,10 @@ var dup = await db.Recipes.IgnoreQueryFilters()
 
 A duplicate check that forgets the `IsShared` part tells user A the name and
 image of user B's private recipe. Keep the list of uses short and check it in
-review:
+review. `ActAs` (step 1) goes on the same list:
 
 ```bash
-git grep -n "IgnoreQueryFilters" -- '*.cs'
+git grep -nE "IgnoreQueryFilters|ActAs\(" -- '*.cs'
 ```
 
 ### 5. A test that fails when a table has no filter

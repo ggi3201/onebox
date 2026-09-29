@@ -57,7 +57,7 @@ Verbs to use, so every flow reads the same:
 |---|---|
 | `Open <deep link>` | `xcrun simctl openurl <udid> "<link>"`, or launch the app |
 | `Tap "<label>"` | tap the element with this text or accessibility label |
-| `Type "<text>" into "<field>"` | tap the field, then type |
+| `Type "<text>" into "<field>"` | tap the field, then type. Emoji or letters outside ASCII: paste them (see Pitfalls) |
 | `Swipe up / down / left / right` | scroll or swipe the main content |
 | `Wait for "<text>"` | re-take the screenshot until the text shows, up to 10 s |
 | `Back` | the back button, or a swipe from the left edge |
@@ -137,6 +137,7 @@ Use whatever simulator tool this session has.
 - **`xcrun simctl`**, always there with Xcode, but it cannot tap:
   - Screenshot: `xcrun simctl io <udid> screenshot /path/shot.png`
   - Deep link: `xcrun simctl openurl <udid> "myapp://lists"`
+  - Put text on the pasteboard: `printf '%s' '<text>' | LANG=en_US.UTF-8 xcrun simctl pbcopy <udid>`
   - Launch fresh: `xcrun simctl launch --terminate-running-process <udid> <bundle-id>`
   - Terminate: `xcrun simctl terminate <udid> <bundle-id>`
   - Dark mode: `xcrun simctl ui <udid> appearance dark`
@@ -154,6 +155,19 @@ Use whatever simulator tool this session has.
   "Open" with your tap tool. Without one, launch the app and navigate instead.
 - **The keyboard covers the button.** Dismiss it, or scroll, before you tap.
   If the button stays covered, that is a bug to report.
+- **Emoji and letters outside ASCII get garbled.** A simulator tool's "type
+  text" can read UTF-8 as Mac Roman: `Café` arrives as `Caf√©`, and an emoji
+  as a few odd symbols. The tool reports success anyway, and the app saves
+  what it got. The step then tests the tool, not the app. Paste such text
+  instead:
+  ```bash
+  printf '%s' 'Weekend 🏕️ trip' | LANG=en_US.UTF-8 xcrun simctl pbcopy <udid>
+  xcrun simctl pbpaste <udid>    # must print the text exactly
+  ```
+  Keep `LANG=en_US.UTF-8`. With a non-UTF-8 locale, `pbcopy` garbles the
+  text in the same way. Then long-press the field and tap "Paste". To replace
+  text, tap "Select All" first. Take a screenshot and read the field. That is
+  the check, not the tool's result.
 - **A red or yellow box (LogBox)** is a failure, even if the screen behind it
   looks right. Read the message.
 - **Animations.** Wait a second and take the screenshot again before you

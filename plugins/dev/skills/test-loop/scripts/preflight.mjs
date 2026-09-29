@@ -167,6 +167,17 @@ const devicesOf = (m) => [...new Set(m.targets.filter((t) => !bundleId || t.appI
 const mine = metros.filter((m) => m.root === appDir);
 const others = metros.filter((m) => m.root !== appDir);
 
+// CI mode: Expo turns off Metro's file watcher when CI is "1" or "true" in
+// its environment. Metro then keeps serving the bundle from its start, and no
+// edit reaches the simulator. `ps -E` prints the environment after the command.
+function ciMode(p) {
+  const cmd = sh("ps", ["-ww", "-o", "command=", "-p", p]);
+  const all = sh("ps", ["-E", "-ww", "-o", "command=", "-p", p]);
+  if (!cmd || !all || all.length <= cmd.length) return null; // environment not readable
+  const ci = all.slice(cmd.length).match(/(?:^|\s)CI=(\S*)/)?.[1] ?? "";
+  return { on: /^(1|true)$/i.test(ci), value: ci };
+}
+
 if (metros.length === 0) info("No Metro server is running.");
 for (const m of metros) {
   const p = ports.get(m.port);
@@ -184,6 +195,14 @@ if (mine.length === 0) {
   const connected = mine.flatMap(devicesOf);
   if (connected.length) ok(`This checkout's Metro (:${mine.map((m) => m.port).join(", :")}) has the app connected on: ${[...new Set(connected)].join(", ")}`);
   else warn(`This checkout's Metro (:${mine[0].port}) has no app connected${bundleId ? ` for ${bundleId}` : ""}. Open the app from this server (press i in the Metro terminal, or open the dev client and pick port ${mine[0].port}).`);
+}
+for (const m of mine) {
+  const pid = ports.get(m.port);
+  const c = ciMode(pid);
+  const restart = `Stop it (pid ${pid}) and start it again without CI, from the app dir: env -u CI npx expo start --dev-client --port ${m.port}`;
+  if (c?.on) fail(`This checkout's Metro (:${m.port}) runs in CI mode (CI=${c.value}). It does not watch files: no edit reaches the simulator, and Expo Router's typed routes are not generated again. ${restart}`);
+  else if (c) ok(`This checkout's Metro (:${m.port}) watches files (not in CI mode)`);
+  else info(`Could not read the environment of this checkout's Metro (pid ${pid}). If its log says "Metro is running in CI mode", it does not watch files. ${restart}`);
 }
 // Another app on this checkout's Metro: two apps use one port, and that app
 // now shows this app's code.

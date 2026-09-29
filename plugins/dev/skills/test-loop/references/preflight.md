@@ -10,6 +10,7 @@ change does not show up on the simulator.
 | No Metro serves this checkout | Start one from the Expo app folder on this worktree's port: `npx expo start --dev-client --port <port>`. Open the app from it. |
 | The app runs another checkout's bundle | Do not stop the other Metro. Another session may own it. Open the dev client's server list and pick this checkout's port, or rebuild here with `npx expo run:ios --port <port> --device "<simulator>"`. |
 | Another app is connected to this checkout's Metro | Two apps use one port, so the other app shows this app's code. Give each app its own port with `scripts/metro-port.sh` (below), start this Metro on its port, and rebuild this app with `npx expo run:ios --port <port>`. |
+| This Metro runs in CI mode | Stop that Metro. Start it again without `CI`: `env -u CI npx expo start --dev-client --port <port>`. See "Metro in CI mode" below. |
 | This Metro has no app connected | Open the app from this server: press `i` in the Metro terminal, or open the dev client and pick the port. |
 | Two or more simulators booted | Choose one and pass its UDID to every command, or shut the others down: `xcrun simctl shutdown <udid>`. |
 | Native package has no code in the binary | Rebuild: `npx expo run:ios --port <port>`. Then run the preflight with `--mark-built`. |
@@ -34,6 +35,30 @@ like a styling bug. Style changes cannot fix it. One agent shipped a styling
 | A package with native code, a config plugin, permissions, entitlements, `infoPlist`, a native patch, the Podfile | Rebuild with `npx expo run:ios --port <port>`, then `preflight.mjs --mark-built`. |
 
 When unsure, rebuild. It costs minutes. A wrong guess can cost hours.
+
+## Metro in CI mode
+
+When `CI` is `1` or `true` in Metro's environment, Expo turns off the file
+watcher. Its log says "Metro is running in CI mode, reloads are disabled".
+Metro then serves the bundle it built at start. No edit reaches the
+simulator, and Fast Refresh and reload show old code. Expo Router's typed
+routes (`.expo/types/router.d.ts`) are not generated again either, so `tsc`
+fails on a new route.
+
+Agent shells often set `CI=1` to stop tools from asking questions. Metro
+inherits it. The preflight reads the Metro process's environment
+(`ps -E -ww -o command= -p <pid>`) and fails when `CI` is on.
+
+Metro does not need `CI=1` or a terminal. Start it in the background without
+`CI`, with its log in the worktree:
+
+```bash
+mkdir -p .expo
+env -u CI nohup npx expo start --dev-client --port <port> > .expo/metro.log 2>&1 < /dev/null &
+```
+
+`--non-interactive` does not help here. Current Expo CLI ignores it and prints
+"use $CI=1 instead". Do not follow that advice for a dev server.
 
 ## One Metro port per app and per worktree
 
@@ -93,6 +118,10 @@ another bundle id is connected to your Metro.
 - **Another session installed its build over yours.** The code is right, but
   the screen is old. The preflight's "binary from" time is later than your
   build. Use your own simulator.
+- **Metro ran with `CI=1` from an agent shell.** The preflight passed, but
+  Metro did not watch files. `tsc` failed on a new route against stale typed
+  routes, and the simulator would have shown old code. The preflight now
+  fails on it. Restart Metro without `CI`.
 - **`pod install` printed a Ruby error and exited 0.** Read the output, not
   just the exit code. Use Homebrew's CocoaPods and a UTF-8 locale (see the
   `ship-ios:expo-local-build` skill).
