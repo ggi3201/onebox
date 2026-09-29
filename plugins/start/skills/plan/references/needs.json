@@ -1,0 +1,439 @@
+{
+  "version": 1,
+  "about": "What a plan step can need before it starts. catalog.json lists need ids per item; `plan.mjs ready` runs the checks. Every check is read-only and non-interactive, and it times out after a few seconds. A check that cannot run gives `unknown`, never `missing`. `check` forms: `run` (a /bin/sh command in the repo: exit 0 is ok, exit 3 is unknown, a timeout is unknown, anything else is missing; `version` compares the first number it prints; `env` passes config values to the command as variables), `config` (these onebox config keys are set), `file` (the config key holds a path to a file that exists), `secret` (a secret with this name exists in the configured secrets.tool: `ref` is the config key that names it, `default` the name when that key is not set; the value is never read into output), `secretsConfig` (with Doppler: the project and config are in the onebox config), `secretsCli` (the configured secrets tool is installed and signed in), `plugin` (the onebox plugin is in Claude Code's installed_plugins.json; no such file means skip), `planItem` (this plan item is done: detect.mjs found it done or seen, or the user ticked it), `detect` (this field of detect.mjs's output is true; for Sign in with Apple, `usesAppleSignIn` in the app config means EAS turns the capability on at the next build), `manual` (nothing can check it; with `yours` the user does it by hand), `any` and `all`. `after` names needs that must pass first; `ready` adds them to the step. `fix` is one line: a command when `safe` is true (a local install the agent may run after the user says yes), otherwise the action. `yours` means only the user can do it. `ask` is the question the agent asks when the fix needs an answer from the user. `problem` overrides the plain sentence `ready` makes from `label`. `hint` goes in brackets after a `yours` fix.",
+  "needs": [
+    {
+      "id": "xcode",
+      "label": "Xcode",
+      "kind": "tool",
+      "check": { "run": "ls -d /Applications/Xcode*.app >/dev/null 2>&1" },
+      "fix": "install Xcode from the Mac App Store",
+      "guide": "https://onebox.lokkesveen.com/guides/xcode/#steps",
+      "yours": true
+    },
+    {
+      "id": "xcode-selected",
+      "label": "Xcode",
+      "kind": "tool",
+      "after": ["xcode"],
+      "problem": "Xcode is installed, but the command line does not use it yet",
+      "check": { "run": "xcode-select -p >/dev/null 2>&1 || exit 1; xcodebuild -version >/dev/null 2>&1", "timeout": 8 },
+      "fix": "run `sudo xcode-select -s /Applications/Xcode.app` in your own terminal, then open Xcode once to finish its setup",
+      "guide": "https://onebox.lokkesveen.com/guides/tools/#common-errors",
+      "yours": true
+    },
+    {
+      "id": "git",
+      "label": "git",
+      "kind": "tool",
+      "check": { "run": "if [ \"$(uname)\" = Darwin ] && ! xcode-select -p >/dev/null 2>&1; then exit 1; fi; git --version >/dev/null 2>&1" },
+      "fix": "install Xcode, which brings git",
+      "guide": "https://onebox.lokkesveen.com/guides/tools/#everyone-needs-these",
+      "yours": true
+    },
+    {
+      "id": "node",
+      "label": "Node.js",
+      "kind": "tool",
+      "check": { "run": "node -v", "version": { "min": "22" } },
+      "fix": "brew install node@22",
+      "safe": true,
+      "guide": "https://onebox.lokkesveen.com/guides/tools/#everyone-needs-these"
+    },
+    {
+      "id": "pnpm",
+      "label": "pnpm",
+      "kind": "tool",
+      "after": ["node"],
+      "check": { "run": "pnpm -v", "version": { "major": 10 }, "timeout": 8 },
+      "fix": "corepack enable && corepack install -g pnpm@10",
+      "safe": true,
+      "guide": "https://onebox.lokkesveen.com/guides/tools/#everyone-needs-these"
+    },
+    {
+      "id": "jq",
+      "label": "jq",
+      "kind": "tool",
+      "check": { "run": "jq --version" },
+      "fix": "brew install jq",
+      "safe": true,
+      "guide": "https://onebox.lokkesveen.com/guides/tools/#everyone-needs-these"
+    },
+    {
+      "id": "eas",
+      "label": "The Expo command line (eas)",
+      "kind": "tool",
+      "after": ["node"],
+      "check": { "run": "eas --version", "timeout": 8 },
+      "fix": "npm install -g eas-cli",
+      "safe": true,
+      "guide": "https://onebox.lokkesveen.com/guides/expo-eas/#steps"
+    },
+    {
+      "id": "eas-login",
+      "label": "Expo",
+      "kind": "login",
+      "after": ["eas"],
+      "problem": "you are not signed in to Expo",
+      "check": {
+        "any": [
+          { "run": "eas whoami >/dev/null 2>&1", "timeout": 8 },
+          { "secret": { "ref": "expo.tokenRef", "default": "EXPO_TOKEN" } }
+        ]
+      },
+      "fix": "run `eas login` in your own terminal",
+      "hint": "1 minute",
+      "guide": "https://onebox.lokkesveen.com/guides/expo-eas/#steps",
+      "yours": true
+    },
+    {
+      "id": "cocoapods",
+      "label": "CocoaPods",
+      "kind": "tool",
+      "check": { "run": "pod --version", "timeout": 8 },
+      "fix": "brew install cocoapods",
+      "safe": true,
+      "guide": "https://onebox.lokkesveen.com/guides/xcode/#steps"
+    },
+    {
+      "id": "cocoapods-ruby",
+      "label": "Ruby for CocoaPods",
+      "kind": "tool",
+      "after": ["cocoapods"],
+      "problem": "CocoaPods runs on the old Ruby that comes with macOS",
+      "check": { "run": "p=$(command -v pod) || exit 3; s=$(head -n 1 \"$p\"); case \"$s\" in *\" ruby\"*|*\"/env ruby\"*) r=$(command -v ruby) || exit 1; [ \"$r\" != /usr/bin/ruby ];; *\"/usr/bin/ruby\"*) exit 1;; *) exit 0;; esac" },
+      "fix": "run `brew install cocoapods`, then put Homebrew's bin folder first in your ~/.zprofile",
+      "guide": "https://onebox.lokkesveen.com/guides/tools/#common-errors",
+      "yours": true
+    },
+    {
+      "id": "utf8-locale",
+      "label": "A UTF-8 locale",
+      "kind": "config",
+      "problem": "this shell has no UTF-8 locale, so CocoaPods can crash",
+      "check": { "run": "case \"${LC_ALL:-}${LANG:-}\" in *UTF-8*|*utf-8*|*UTF8*|*utf8*) exit 0;; esac; exit 1" },
+      "fix": "add `export LANG=\"${LANG:-en_US.UTF-8}\"` to your ~/.zshenv, then start me again",
+      "guide": "https://onebox.lokkesveen.com/guides/tools/#common-errors",
+      "yours": true
+    },
+    {
+      "id": "fastlane",
+      "label": "fastlane",
+      "kind": "tool",
+      "check": { "run": "command -v fastlane >/dev/null 2>&1" },
+      "fix": "brew install fastlane",
+      "safe": true,
+      "guide": "https://onebox.lokkesveen.com/guides/xcode/#steps"
+    },
+    {
+      "id": "docker",
+      "label": "Docker",
+      "kind": "tool",
+      "check": { "run": "command -v docker >/dev/null 2>&1" },
+      "fix": "install OrbStack or Docker Desktop",
+      "hint": "I will show you where",
+      "guide": "https://onebox.lokkesveen.com/guides/tools/#only-for-some-skills",
+      "yours": true
+    },
+    {
+      "id": "docker-running",
+      "label": "Docker",
+      "kind": "tool",
+      "after": ["docker"],
+      "problem": "Docker is not running",
+      "check": { "run": "docker info >/dev/null 2>&1", "timeout": 6 },
+      "fix": "start the OrbStack or Docker app",
+      "guide": "https://onebox.lokkesveen.com/guides/tools/#common-errors",
+      "yours": true
+    },
+    {
+      "id": "dotnet",
+      "label": "The .NET SDK",
+      "kind": "tool",
+      "check": { "run": "dotnet --version", "version": { "min": "10" }, "timeout": 6 },
+      "fix": "run `brew install --cask dotnet-sdk` in your own terminal (it asks for your password)",
+      "guide": "https://onebox.lokkesveen.com/guides/tools/#only-for-some-skills",
+      "yours": true
+    },
+    {
+      "id": "gh",
+      "label": "The GitHub command line (gh)",
+      "kind": "tool",
+      "check": { "run": "gh --version >/dev/null 2>&1" },
+      "fix": "brew install gh",
+      "safe": true,
+      "guide": "https://onebox.lokkesveen.com/guides/tools/#only-for-some-skills"
+    },
+    {
+      "id": "gh-login",
+      "label": "GitHub",
+      "kind": "login",
+      "after": ["gh"],
+      "problem": "you are not signed in to GitHub",
+      "check": { "run": "gh auth status >/dev/null 2>&1", "timeout": 6 },
+      "fix": "run `gh auth login` in your own terminal",
+      "hint": "1 minute",
+      "guide": "https://onebox.lokkesveen.com/guides/tools/#only-for-some-skills",
+      "yours": true
+    },
+    {
+      "id": "ffmpeg",
+      "label": "ffmpeg",
+      "kind": "tool",
+      "check": { "run": "ffmpeg -version >/dev/null 2>&1" },
+      "fix": "brew install ffmpeg",
+      "safe": true,
+      "guide": "https://onebox.lokkesveen.com/guides/tools/#only-for-some-skills"
+    },
+    {
+      "id": "tailscale",
+      "label": "Tailscale",
+      "kind": "tool",
+      "check": { "run": "command -v tailscale >/dev/null 2>&1 || ls -d /Applications/Tailscale.app >/dev/null 2>&1" },
+      "fix": "install Tailscale from the Mac App Store",
+      "guide": "https://onebox.lokkesveen.com/guides/remote-access/#1-install-tailscale-on-all-three",
+      "yours": true
+    },
+    {
+      "id": "ssh-key",
+      "label": "An SSH key",
+      "kind": "login",
+      "problem": "this Mac has no SSH key",
+      "check": { "run": "ls \"$HOME\"/.ssh/id_*.pub >/dev/null 2>&1" },
+      "fix": "make one with `ssh-keygen -t ed25519` in your own terminal",
+      "hint": "1 minute, I will show you how",
+      "guide": "https://onebox.lokkesveen.com/guides/vps/#1-an-ssh-key-on-your-mac",
+      "yours": true
+    },
+    {
+      "id": "box-ssh",
+      "label": "Your box",
+      "kind": "login",
+      "after": ["ssh-key", "vps-rented"],
+      "problem": "I cannot log in to your box",
+      "check": { "run": "ssh -o BatchMode=yes -o ConnectTimeout=5 \"$BOX\" true >/dev/null 2>&1", "env": { "BOX": "box.ssh" }, "timeout": 8 },
+      "fix": "check that the box is on, and that your SSH key can log in to it",
+      "guide": "https://onebox.lokkesveen.com/guides/vps/#check-it-works",
+      "yours": true
+    },
+    {
+      "id": "secrets-config",
+      "label": "Your Doppler project",
+      "kind": "config",
+      "problem": "I do not know which Doppler project holds this app's secrets",
+      "check": { "secretsConfig": true },
+      "fix": "add the Doppler project and config to the app's onebox config",
+      "ask": "Which Doppler project and config should I use?",
+      "guide": "https://onebox.lokkesveen.com/guides/secrets/#doppler-one-config-per-environment"
+    },
+    {
+      "id": "secrets-cli",
+      "label": "Your secrets tool",
+      "kind": "login",
+      "after": ["secrets-config"],
+      "problem": "your secrets tool is not installed or not signed in",
+      "check": { "secretsCli": true },
+      "fix": "install your secrets tool and sign in to it",
+      "hint": "I will show you how",
+      "guide": "https://onebox.lokkesveen.com/guides/tools/#your-secrets-tool-one-of-these",
+      "yours": true
+    },
+    {
+      "id": "apple-developer-account",
+      "label": "An Apple Developer account",
+      "kind": "account",
+      "check": { "any": [{ "config": ["apple.teamId"] }, { "planItem": "guide:apple-developer" }] },
+      "fix": "join the Apple Developer Program",
+      "hint": "99 USD a year, I will show you where",
+      "guide": "https://onebox.lokkesveen.com/guides/apple-developer/#steps",
+      "yours": true
+    },
+    {
+      "id": "asc-app-record",
+      "label": "The app's record in App Store Connect",
+      "kind": "account",
+      "check": { "planItem": "guide:app-store-connect-setup" },
+      "fix": "make the app's record in App Store Connect",
+      "hint": "5 minutes, I will show you where",
+      "guide": "https://onebox.lokkesveen.com/guides/app-store-connect-setup/#2-create-the-app-record",
+      "yours": true
+    },
+    {
+      "id": "paid-apps-agreement",
+      "label": "The Paid Apps agreement",
+      "kind": "account",
+      "check": { "manual": "only App Store Connect shows it" },
+      "fix": "sign the Paid Apps agreement in App Store Connect, with your tax and bank details",
+      "hint": "I will show you where",
+      "guide": "https://onebox.lokkesveen.com/guides/app-store-connect-setup/#3-agreements-tax-and-banking-only-if-you-sell-anything",
+      "yours": true
+    },
+    {
+      "id": "siwa-capability",
+      "label": "Sign in with Apple on your App ID",
+      "kind": "account",
+      "check": { "any": [{ "detect": "expo.appleSignIn.usesAppleSignIn" }, { "manual": "only your Apple Developer account shows it" }] },
+      "fix": "turn it on for your app in your Apple Developer account",
+      "hint": "2 minutes, I will show you where",
+      "guide": "https://onebox.lokkesveen.com/guides/sign-in-with-apple/#1-turn-on-the-capability",
+      "yours": true
+    },
+    {
+      "id": "apns-key",
+      "label": "An APNs key",
+      "kind": "secret",
+      "check": { "manual": "EAS keeps it, and only `eas credentials` shows it, which asks questions" },
+      "fix": "make an APNs key in your Apple Developer account, or let EAS make one on the next build",
+      "hint": "I will show you both ways",
+      "guide": "https://onebox.lokkesveen.com/guides/push-notifications/#1-the-apns-key",
+      "yours": true
+    },
+    {
+      "id": "asc-key",
+      "label": "The App Store Connect API key",
+      "kind": "secret",
+      "after": ["secrets-cli"],
+      "check": {
+        "all": [
+          { "config": ["apple.ascKeyId", "apple.ascIssuerId"] },
+          { "any": [{ "file": "apple.ascKeyPath" }, { "secret": { "ref": "apple.ascKeyRef", "default": "ASC_PRIVATE_KEY" } }] }
+        ]
+      },
+      "fix": "make an App Store Connect API key, and keep it in your secrets",
+      "hint": "5 minutes, I will show you where",
+      "guide": "https://onebox.lokkesveen.com/guides/app-store-connect-api-key/#steps",
+      "yours": true
+    },
+    {
+      "id": "siwa-key",
+      "label": "The Sign in with Apple key",
+      "kind": "secret",
+      "after": ["secrets-cli"],
+      "check": { "secret": { "default": "APPLE_SIGNIN_PRIVATE_KEY" } },
+      "fix": "make a Sign in with Apple key in your Apple Developer account, and keep it in your secrets",
+      "hint": "5 minutes, I will show you where",
+      "guide": "https://onebox.lokkesveen.com/guides/sign-in-with-apple/#make-the-sign-in-with-apple-key",
+      "yours": true
+    },
+    {
+      "id": "revenuecat-key",
+      "label": "The RevenueCat key",
+      "kind": "secret",
+      "after": ["secrets-cli"],
+      "check": { "secret": { "ref": "revenuecat.apiKeyRef", "default": "REVENUECAT_API_KEY" } },
+      "fix": "make a RevenueCat secret API key, and keep it in your secrets",
+      "hint": "I will show you where",
+      "guide": "https://onebox.lokkesveen.com/guides/revenuecat/#steps",
+      "yours": true
+    },
+    {
+      "id": "llm-key",
+      "label": "The LLM API key",
+      "kind": "secret",
+      "after": ["secrets-cli"],
+      "check": { "secret": { "ref": "llm.keyRef", "default": "LLM_API_KEY" } },
+      "fix": "get an API key from your LLM provider, and keep it in your secrets",
+      "hint": "I will show you where",
+      "guide": "https://onebox.lokkesveen.com/guides/llm-api-key/#steps",
+      "yours": true
+    },
+    {
+      "id": "kie-key",
+      "label": "The kie.ai key",
+      "kind": "secret",
+      "after": ["secrets-cli"],
+      "check": { "secret": { "ref": ["media.providers.kie.keyRef", "images.keyRef"], "default": "KIE_AI_API_KEY" } },
+      "fix": "get a kie.ai API key, and keep it in your secrets",
+      "hint": "I will show you where",
+      "guide": "https://onebox.lokkesveen.com/guides/kie-ai/#steps",
+      "yours": true
+    },
+    {
+      "id": "cloudflare-token",
+      "label": "The Cloudflare API token",
+      "kind": "secret",
+      "after": ["secrets-cli"],
+      "check": { "secret": { "ref": "box.cloudflareTokenRef", "default": "CLOUDFLARE_API_TOKEN" } },
+      "fix": "make a Cloudflare API token for DNS, and keep it in your secrets",
+      "hint": "3 minutes, I will show you where",
+      "guide": "https://onebox.lokkesveen.com/guides/cloudflare/#3-create-the-api-token-for-dns",
+      "yours": true
+    },
+    {
+      "id": "expo-token-ci",
+      "label": "The Expo token for GitHub Actions",
+      "kind": "secret",
+      "after": ["gh-login"],
+      "check": { "run": "out=$(gh secret list 2>/dev/null) || exit 3; printf '%s\\n' \"$out\" | cut -f1 | grep -qx EXPO_TOKEN", "timeout": 6 },
+      "fix": "make an Expo access token, and add it to the repo's GitHub secrets as EXPO_TOKEN",
+      "hint": "I will show you where",
+      "guide": "https://onebox.lokkesveen.com/guides/expo-eas/#steps",
+      "yours": true
+    },
+    {
+      "id": "vps-rented",
+      "label": "A box",
+      "kind": "account",
+      "check": { "config": ["box.ssh"] },
+      "fix": "rent a small VPS, or set up a mini PC at home",
+      "hint": "about 6 EUR a month, I will show you how",
+      "guide": "https://onebox.lokkesveen.com/guides/vps/#what-it-costs",
+      "yours": true
+    },
+    {
+      "id": "domain-bought",
+      "label": "A domain",
+      "kind": "account",
+      "check": { "any": [{ "config": ["box.domain"] }, { "planItem": "guide:domain" }] },
+      "fix": "buy a domain",
+      "hint": "about 10 to 15 USD a year, I will show you where",
+      "guide": "https://onebox.lokkesveen.com/guides/domain/#pick-a-registrar",
+      "yours": true
+    },
+    {
+      "id": "plugin-dev",
+      "label": "The dev plugin",
+      "kind": "tool",
+      "problem": "the dev plugin is not installed",
+      "check": { "plugin": "dev" },
+      "fix": "type `/plugin install dev@onebox` in Claude Code, then restart it",
+      "yours": true
+    },
+    {
+      "id": "plugin-ship-ios",
+      "label": "The ship-ios plugin",
+      "kind": "tool",
+      "problem": "the ship-ios plugin is not installed",
+      "check": { "plugin": "ship-ios" },
+      "fix": "type `/plugin install ship-ios@onebox` in Claude Code, then restart it",
+      "yours": true
+    },
+    {
+      "id": "plugin-box",
+      "label": "The box plugin",
+      "kind": "tool",
+      "problem": "the box plugin is not installed",
+      "check": { "plugin": "box" },
+      "fix": "type `/plugin install box@onebox` in Claude Code, then restart it",
+      "yours": true
+    },
+    {
+      "id": "plugin-app-features",
+      "label": "The app-features plugin",
+      "kind": "tool",
+      "problem": "the app-features plugin is not installed",
+      "check": { "plugin": "app-features" },
+      "fix": "type `/plugin install app-features@onebox` in Claude Code, then restart it",
+      "yours": true
+    },
+    {
+      "id": "plugin-content",
+      "label": "The content plugin",
+      "kind": "tool",
+      "problem": "the content plugin is not installed",
+      "check": { "plugin": "content" },
+      "fix": "type `/plugin install content@onebox` in Claude Code, then restart it",
+      "yours": true
+    }
+  ]
+}
