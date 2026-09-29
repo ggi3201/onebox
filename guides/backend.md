@@ -873,7 +873,7 @@ Check it, with a test user's token in `$T`:
 for u in http://127.0.0.1:8080/health http://169.254.169.254/ https://localtest.me/ \
          'https://httpbin.org/redirect-to?url=http://127.0.0.1:8080/health'; do
   curl -s -o /dev/null -w "%{http_code}  $u\n" -H "Authorization: Bearer $T" \
-    -H 'Content-Type: application/json' -d "{\"url\":\"$u\"}" https://api.example.com/recipes/import
+    -H 'Content-Type: application/json' -d "{\"url\":\"$u\"}" https://api.example.com/api/recipes/import
 done
 ```
 
