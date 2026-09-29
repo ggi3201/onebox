@@ -390,7 +390,9 @@ if (expo.found) {
 
 // Backend on the box: a Traefik router with a Host rule means the API has its
 // hostname. With a deploy workflow too, the backend guide is done.
-const prodCompose = compose.filter((f) => !isStagingCompose(f));
+// The dev compose file (docker-compose.dev.yml) is not the production stack either.
+const isDevCompose = (f) => /[.-]dev\./i.test(f);
+const prodCompose = compose.filter((f) => !isStagingCompose(f) && !isDevCompose(f));
 const stagingCompose = compose.filter(isStagingCompose);
 const prodHosts = traefikHosts.filter((f) => !isStagingCompose(f));
 if (prodHosts.length) done["skill:box/expose-service"] = `a Traefik router with a Host rule in ${prodHosts.join(", ")}`;
