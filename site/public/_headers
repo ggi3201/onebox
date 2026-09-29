@@ -1,0 +1,15 @@
+# Cloudflare Pages headers. Guides are plain markdown, for people and for agents.
+/guides/*.md
+  Content-Type: text/plain; charset=utf-8
+  Cache-Control: public, max-age=300
+/llms.txt
+  Content-Type: text/plain; charset=utf-8
+  Cache-Control: public, max-age=300
+/llms-full.txt
+  Content-Type: text/plain; charset=utf-8
+  Cache-Control: public, max-age=300
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
