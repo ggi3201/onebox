@@ -8,8 +8,8 @@ description: Start a new Expo / React Native iOS app from an empty folder, in th
 Runs on: your Mac.
 
 This skill makes a new repo with a skeleton and no features. The app opens in
-the Simulator, the API answers `/health`, and every check passes. Then
-`/start:plan` takes over.
+the Simulator, the API (if there is one) answers `/health`, and every check
+passes. Then `/start:plan` takes over.
 
 **The guides are the source of truth.** This skill sets the order and adds the
 files no guide has (`references/files.md`). When a step says "follow
@@ -26,8 +26,10 @@ exception: pnpm is pinned to major 10 (step 0).
 
 - The target folder is empty or does not exist. If it has an Expo app, stop
   and run `/start:plan` instead.
-- Config (see `CONFIG.md`): `apple.teamId`, `box.domain`, `secrets.tool`. All
-  optional here. Use them as defaults.
+- Config: `apple.teamId`, `box.domain`, `secrets.tool`. All optional here.
+  Use them as defaults. Read them from `~/.config/onebox/config.json`, with
+  `.onebox.json` in the repo over it. The rules:
+  https://github.com/ggi3201/onebox/blob/main/CONFIG.md.
 - Tools: after the questions in step 1, run the checks `/start:plan` uses.
   `<plan-dir>` is `<skill-dir>/../plan`, in the same plugin:
 
@@ -85,6 +87,9 @@ myapp/
 With a hosted backend or no server: the Expo app is the repo root. No `apps/`,
 no tripwire, no workspace file, no API steps. Skip the steps marked **API**.
 
+**The app folder** below means the Expo app's folder: `apps/mobile` with an
+API, the repo root without one. Run every `npx expo` and `eas` command there.
+
 ## 3. Build it, in this order
 
 1. **Repo.** With an API: `git init`, the root files from
@@ -92,19 +97,20 @@ no tripwire, no workspace file, no API steps. Skip the steps marked **API**.
    `expo-app.md`. Then `corepack use pnpm@10` at the root. It writes
    `packageManager` and runs a first install. Without an API: nothing yet;
    step 2 makes the folder.
-2. **Expo app.** Keep the default template (Expo Router, TypeScript). Two
-   commands ask a question, so pipe the answer in:
+2. **Expo app.** Keep the default template (Expo Router, TypeScript).
    - With an API: in `apps/`, run
      `echo y | npx create-expo-app@latest mobile --no-install`, then
-     `pnpm install` from the root. The `y` answers "Skip initializing a new
-     git repository?".
-   - Without one: in the parent folder, run
-     `echo y | npx create-expo-app@latest myapp --no-install`. In it:
-     `git init`, `.node-version`, the `.npmrc`, then `corepack use pnpm@10`.
-     Add `.claude/worktrees/` to its `.gitignore` (`expo-app.md`,
-     "Recommended layout", says why).
-   - Then, in the Expo app folder: `echo n | pnpm reset-project`. The `n`
-     deletes the example instead of moving it to `example/`.
+     `pnpm install` from the root. Inside a git repo it asks "Skip
+     initializing a new git repository?". The `y` answers it.
+   - Without one: in the parent folder, outside any git repo, run
+     `npx create-expo-app@latest myapp --no-install`. It asks nothing. It
+     runs `git init` and makes a first commit, "Initial commit", so do not
+     run `git init` yourself. In `myapp`: `.node-version` and the `.npmrc`
+     from `references/files.md`, then `corepack use pnpm@10`. Add
+     `.claude/worktrees/` and `.worktrees/` to its `.gitignore`
+     (`expo-app.md`, "Recommended layout", says why).
+   - Then, in the app folder: `echo n | pnpm reset-project`. It asks whether
+     to move the example to `example/`. The `n` deletes it instead.
    - The template ships its own agent files and a `LICENSE`. Handle them as
      `references/files.md`, "The Expo app", says.
 3. **App config.** Follow `expo-app.md` steps 2, 3, 4, 5, 6, 7 and 9: the
@@ -112,31 +118,48 @@ no tripwire, no workspace file, no API steps. Skip the steps marked **API**.
    with three profiles, remote versions, `expo-secure-store`. Set `scheme` to
    the slug. Set `supportsTablet: false`. With "Sign in with Apple: Later",
    leave out `usesAppleSignIn` and its plugin.
+   - The API URL module (`expo-app.md` step 4) is for an API in the repo
+     only. Hosted or no server: skip step 4. No `src/config/api.ts`, and no
+     `EXPO_PUBLIC_API_URL` in `eas.json`. Never put a placeholder URL in.
+     A hosted backend gets its URL later, from its own step in the plan.
 4. **Link to Expo.** Ask the user to run `eas login` once in their own
    terminal if `eas whoami` fails. Then run `eas init` from the Expo app's
    folder (`apps/mobile` when there is an API; never the repo root then).
 5. **App checks.** Follow `agent-test-loop.md` steps 1, 2, 4 and 7: strict
    TypeScript, ESLint, one test runner, one Metro port per app and per
-   worktree. The Metro script goes in the Expo app's `scripts/`
-   (`apps/mobile/scripts/`).
-   Make it after `reset-project`, which deletes `scripts/`. The
-   first test is the one `expo-app.md` step 4 asks for: every `eas.json`
-   profile that leaves the Mac has an `https` API URL (`references/files.md`,
-   "The Expo app").
+   worktree. The Metro script goes in the app folder's `scripts/`
+   (`apps/mobile/scripts/` with an API, `scripts/` at the root without).
+   Make it after `reset-project`, which deletes `scripts/`. The first test
+   checks `eas.json` (`references/files.md`, "The Expo app"). With an API,
+   it also checks what `expo-app.md` step 4 asks for: every profile that
+   leaves the Mac has an `https` API URL.
 6. **API.** The project, the solution and the first test:
    `references/files.md`, "The API". It meets the five rules in `backend.md`,
    "The language". Its Dockerfile is `backend.md` step 1.
-7. **API: dev database.** `docker-compose.dev.yml` from `references/files.md`.
-   Pick a free port first (`lsof -iTCP:5433 -sTCP:LISTEN` prints nothing).
-   Write the port in `AGENTS.md`.
-8. **CI.** `.github/workflows/ci.yml` from `references/files.md`. Drop the
-   `api` job without an API.
-9. **AGENTS.md.** The short block in `references/files.md`, then the
-   test-loop block (`plugins/dev/skills/test-loop/assets/AGENTS.snippet.md`;
-   without the `dev` plugin, fetch it from GitHub). Link `CLAUDE.md` to it
-   with `ln -s AGENTS.md CLAUDE.md`. Without an API, the template's
-   `AGENTS.md` and `CLAUDE.md` are already at the root: put the block at the
-   top of that `AGENTS.md`, and keep its `CLAUDE.md`.
+7. **API: dev database and the app's API URL.** `docker-compose.dev.yml`
+   from `references/files.md`. Pick a free port first
+   (`lsof -iTCP:5433 -sTCP:LISTEN` prints nothing). Then point the dev
+   client at the API port from step 6. Write `apps/mobile/.env.local`:
+
+   ```
+   EXPO_PUBLIC_API_URL=http://localhost:<api port>
+   ```
+
+   The Simulator reaches the Mac on `localhost`. The template's `.gitignore`
+   already ignores `.env*.local`, so the file stays on this Mac. Builds that
+   leave the Mac take the URL from `eas.json`. Write both ports in
+   `AGENTS.md`.
+8. **CI.** `.github/workflows/ci.yml` from `references/files.md`. Without
+   an API, use its no-server form: no `api` job, and `pnpm test` instead of
+   `pnpm test:mobile`.
+9. **AGENTS.md.** The short block in `references/files.md` for this layout,
+   then the test-loop block
+   (`plugins/dev/skills/test-loop/assets/AGENTS.snippet.md`; without the
+   `dev` plugin, fetch it from GitHub). Delete its lines for steps this repo
+   does not have. With an API, link `CLAUDE.md` to it with
+   `ln -s AGENTS.md CLAUDE.md`. Without an API, the template's `AGENTS.md`
+   and `CLAUDE.md` are already at the root: put the blocks at the top of that
+   `AGENTS.md`, and keep its `CLAUDE.md`.
 
 Leave for later, because the plan adds them in the right phase: the
 production `docker-compose.yml` and `deploy-api.yml` (they need the box),
@@ -152,6 +175,11 @@ pnpm check                                   # typecheck, lint, all tests
 (cd apps/mobile && npx expo-doctor)
 (cd apps/mobile && npx expo config --type public | grep -E 'bundleIdentifier|scheme')
 ```
+
+Without an API, run the two `npx expo` lines at the repo root, with no `cd`.
+There, every `npx` command prints `npm warn Unknown project config
+"node-linker"`. It is harmless: npm reads the `.npmrc` too, and the setting
+is for pnpm. Keep the line.
 
 API:
 
@@ -181,11 +209,12 @@ minutes. Take a screenshot and read it.
 
 Both are normal, not errors. On a CocoaPods or Ruby error, read
 `ship-ios:expo-local-build`, `references/pitfalls.md`. After a failed
-`pod install`, delete the app's `ios/` folder (`apps/mobile/ios`) before you
-try again.
+`pod install`, delete the app folder's `ios/` (`apps/mobile/ios` with an API,
+`ios` at the root without) before you try again.
 
 Then make one commit: `Skeleton from onebox new-app`. Do not push. The user
-creates the GitHub repo.
+creates the GitHub repo. With an API, it is the repo's first commit. Without
+one, it comes after the template's "Initial commit". Keep that commit.
 
 ## 5. Hand off
 
@@ -205,7 +234,8 @@ list and no check output, unless the user asks.
 - No features, no sample screens, no auth code. The skeleton only.
 - Never write a secret. The dev database password is a fixed dev value, and
   its port is bound to `127.0.0.1`.
-- Run Expo and EAS commands only from `apps/mobile`.
+- Run Expo and EAS commands only from the app folder: `apps/mobile` with an
+  API (the root has the tripwire), the repo root without.
 - Never commit `ios/` or `android/`. They are generated.
 - If a guide step and this skill disagree, the guide wins. Tell the user, so
   the skill gets fixed.
