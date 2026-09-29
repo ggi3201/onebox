@@ -153,6 +153,11 @@ A static `app.json` is enough for most apps. The parts this setup needs:
 }
 ```
 
+- Each name in `plugins` is a package. Expo finds a plugin only in an
+  installed package, so install each one before the first `npx expo config`
+  or build: `npx expo install expo-apple-authentication expo-secure-store`.
+  Without Sign in with Apple, leave out `usesAppleSignIn`, its plugin and
+  its package.
 - `ITSAppUsesNonExemptEncryption: false` answers Apple's export compliance
   question for every build, if the app uses only standard HTTPS and the
   system's own encryption. Without it every TestFlight build waits on

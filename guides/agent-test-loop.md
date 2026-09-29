@@ -188,6 +188,10 @@ const pg = await new PostgreSqlContainer("postgres:17-alpine").start();
 process.env.DATABASE_URL = pg.getConnectionUri();
 ```
 
+Start it once per run, in Vitest's `globalSetup`, and make one database per
+test file. The `start:new-app` skill has the code
+(`references/node-api.md`, "Tests").
+
 Or run a separate Postgres for tests in Docker Compose, on its own port, with
 its data in memory:
 
