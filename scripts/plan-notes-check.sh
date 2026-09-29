@@ -10,6 +10,8 @@ tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
 mkdir -p "$tmp/repo" "$tmp/home"
 # A fake HOME, so the onebox config of this Mac plays no part.
 export HOME="$tmp/home"
+# No tool checks in detection: they mean nothing with a fake HOME.
+export ONEBOX_DETECT_NO_RUN=1
 node "$plan" write --answers '{"stage":"idea"}' --repo "$tmp/repo" >/dev/null
 
 # Notes under an item and in the Notes section, with one and two blank lines.

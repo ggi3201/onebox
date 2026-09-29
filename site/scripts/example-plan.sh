@@ -18,7 +18,8 @@ cat > "$tmp/apps/mobile/eas.json" <<'JSON'
 JSON
 (cd "$tmp" && git init -q)
 # A fake HOME, so the page never shows the onebox config of the Mac that ran this.
-HOME="$tmp" node "$plan/detect.mjs" "$tmp" > "$tmp/detect.json"
+# ONEBOX_DETECT_NO_RUN: no tool checks, which mean nothing with a fake HOME.
+HOME="$tmp" ONEBOX_DETECT_NO_RUN=1 node "$plan/detect.mjs" "$tmp" > "$tmp/detect.json"
 node "$plan/plan.mjs" write --repo "$tmp" --detect "$tmp/detect.json" --out EXAMPLE.md \
   --answers '{"stage":"expo","backend":"box","login":"apple","paid":"subs","site":"yes","ai":["chat"],"remote":"yes"}' >/dev/null
 # Drop the machine-readable first line; the page does not need it.

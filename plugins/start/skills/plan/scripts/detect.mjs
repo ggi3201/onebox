@@ -5,12 +5,20 @@
 // because some repos keep a root app.config.js that throws on purpose, to stop
 // `eas` from running one folder too high.
 //
+// It runs one set of commands: the checks of the tools item (`node -v`,
+// `pnpm -v` and the like), the same ones `plan.mjs ready` runs (needs.mjs).
+// They are read-only and non-interactive, and each has a timeout. A check that
+// cannot run never ticks the item. ONEBOX_DETECT_NO_RUN=1 skips them; the
+// repo's own scripts set it, because they run with a fake HOME.
+//
 // Usage: node detect.mjs [repo-dir]    (default: the current folder)
 // Node 18+, no dependencies.
 
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { loadNeeds, loadConfig, checkNeeds } from "./needs.mjs";
 
 const root = path.resolve(process.argv[2] ?? ".");
 const SKIP = new Set([
@@ -322,7 +330,7 @@ else if (hostedHit.length) say("backend", "hosted", "high", hostedHit[0]);
 else if (expo.found) say("backend", "none", "low", "no server code and no Supabase, Convex or Firebase SDK");
 
 if (expo.appleSignIn?.package) say("login", "apple", "high", "expo-apple-authentication is in the app");
-else if (expo.appleSignIn?.usesAppleSignIn) say("login", "apple", "likely", "the app config turns on Sign in with Apple");
+else if (expo.appleSignIn?.usesAppleSignIn) say("login", "apple", "high", "the app config turns on Sign in with Apple");
 if (expo.revenuecat) say("paid", "subs", "high", "react-native-purchases is in the app");
 if (sites.length) say("site", "yes", "likely", `site folder: ${sites.join(", ")}`);
 const aiHits = [...ai.packages, ...Object.entries(ai.endpoints).map(([h, f]) => `${h} (${f})`)];
@@ -428,6 +436,26 @@ if (sites.length) seen["skill:box/new-landing-page"] = `site folder: ${sites.joi
 if (aiHits.length || hasKey("llm.keyRef")) seen["guide:llm-api-key"] = "the code already calls an AI API";
 if (hasKey("tracing.otlpEndpoint")) done["guide:langfuse"] = "tracing.otlpEndpoint is in the onebox config";
 
+// The tools item: done when every check it needs passes on this Mac. These are
+// the checks `ready` runs before the step. "unknown" (a check that could not
+// run, or timed out) never ticks: it only adds a note.
+let tools = null;
+if (process.env.ONEBOX_DETECT_NO_RUN !== "1") {
+  const catalog = readJson(path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "references", "catalog.json"));
+  const ids = (catalog?.items.find((it) => it.id === "tools")?.needs ?? []).filter((n) => typeof n === "string");
+  if (ids.length) {
+    const [r] = await checkNeeds([{ ids }], loadNeeds(), { repo: root, config: loadConfig(root), detect: {}, ticked: new Set() });
+    const name = (n) => (/^(The|A|An)\b/.test(n.label) ? n.label[0].toLowerCase() + n.label.slice(1) : n.label);
+    const ok = r.needs.filter((n) => ["ok", "skip"].includes(n.status));
+    const unknown = r.needs.filter((n) => n.status === "unknown");
+    const bad = r.needs.filter((n) => !ok.includes(n) && !unknown.includes(n));
+    tools = Object.fromEntries(r.needs.map((n) => [n.id, n.status]));
+    if (bad.length) open["guide:tools"] = `on this Mac, ${bad.map((n) => n.problem).join("; ")}`;
+    else if (unknown.length) seen["guide:tools"] = `could not check ${list(uniq(unknown.map((n) => `${name(n)} (${n.why})`)))}`;
+    else done["guide:tools"] = `the checks pass on this Mac: ${list(uniq(ok.map(name)))}`;
+  }
+}
+
 // The test loop: one command that runs every check, and CI that runs the tests.
 const scriptNames = new Set(testScripts.map((s) => s.split(" ")[0].replace("type-check", "typecheck")));
 const oneCommand = scriptNames.has("check") || ["typecheck", "lint", "test"].every((n) => scriptNames.has(n));
@@ -473,6 +501,6 @@ console.log(JSON.stringify({
   detect: "onebox v1",
   expo, backends, hosted, ai, appleServer, accountDelete, appleRevoke, pushServer, compose, traefikHosts, sites,
   workflows: { files: workflows.map((w) => w.file), deploy: deployWorkflows, tests: testWorkflows },
-  secretsRunIn, config, xcode, plan, testScripts,
+  secretsRunIn, config, xcode, tools, plan, testScripts,
   answers, done, seen, open, notes, cannotDetect,
 }, null, 2));

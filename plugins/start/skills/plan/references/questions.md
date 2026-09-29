@@ -28,7 +28,8 @@ of those two, a landing page still adds a small VPS to host it.
 With accounts, the plan adds Sign in with Apple, checked on your server.
 Apple asks for it (or an equal private option) when you offer another social
 login. App Review also checks that users can delete their account inside the
-app.
+app. **Yes, but later** keeps the same step, and moves it to after your first
+TestFlight build. **No accounts** leaves it out.
 
 ## Will users pay inside the app? (`paid`)
 
