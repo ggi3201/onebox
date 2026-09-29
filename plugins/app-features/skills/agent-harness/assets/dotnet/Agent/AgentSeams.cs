@@ -7,18 +7,20 @@ namespace MyApp.Api.Agent;
 /// </summary>
 public interface IUsageRecorder
 {
-    Task RecordAsync(string userId, string model, int inputTokens, int cachedInputTokens, int outputTokens,
-        CancellationToken ct);
+    Task RecordAsync(string userId, string model, int input, int cached, int output, CancellationToken ct);
 }
 
-public sealed class LogOnlyUsageRecorder(ILogger<LogOnlyUsageRecorder> log) : IUsageRecorder
+public sealed partial class LogOnlyUsageRecorder(ILogger<LogOnlyUsageRecorder> log) : IUsageRecorder
 {
     public Task RecordAsync(string userId, string model, int input, int cached, int output, CancellationToken ct)
     {
-        log.LogInformation("Agent usage {User} {Model}: in={Input} cached={Cached} out={Output}",
-            userId, model, input, cached, output);
+        LogUsage(log, userId, model, input, cached, output);
         return Task.CompletedTask;
     }
+
+    // Source-generated, because the strict analyzers (CA1848) refuse log.LogInformation(...).
+    [LoggerMessage(Level = LogLevel.Information, Message = "Agent usage {User} {Model}: in={Input} cached={Cached} out={Output}")]
+    private static partial void LogUsage(ILogger log, string user, string model, int input, int cached, int output);
 }
 
 /// <summary>A refusal before the stream opens: a status code with a code the client knows.</summary>

@@ -391,6 +391,7 @@ public interface IOwned { string OwnerId { get; set; } }
 public sealed class CurrentUser(IHttpContextAccessor http)
 {
     // Throws instead of returning null: "no user" must never mean "all rows".
+    // "sub" is there only with MapInboundClaims = false ("Protect the API", step 7).
     public string Id =>
         http.HttpContext?.User.FindFirstValue("sub")
         ?? throw new UnauthorizedAccessException("no user on this request");
@@ -413,15 +414,16 @@ public sealed class AppDb(DbContextOptions<AppDb> options, CurrentUser user) : D
 {
     string OwnerId => user.Id;   // read per query, so it is always this request's user
 
-    protected override void OnModelCreating(ModelBuilder b)
+    // The parameter names match the base class. CA1725 fails the strict build otherwise.
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // There is no "all entities" hook. Every new owned table goes here,
         // and the test in step 5 fails if one is missing.
-        b.Entity<Workout>().HasQueryFilter(w => w.OwnerId == OwnerId);
-        b.Entity<Comment>().HasQueryFilter(c => c.OwnerId == OwnerId);
+        modelBuilder.Entity<Workout>().HasQueryFilter(w => w.OwnerId == OwnerId);
+        modelBuilder.Entity<Comment>().HasQueryFilter(c => c.OwnerId == OwnerId);
     }
 
-    public override Task<int> SaveChangesAsync(CancellationToken ct = default)
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         // Stamp the owner on insert, and refuse to move a row to another owner.
         foreach (var e in ChangeTracker.Entries<IOwned>())
@@ -430,7 +432,7 @@ public sealed class AppDb(DbContextOptions<AppDb> options, CurrentUser user) : D
             else if (e.State == EntityState.Modified && e.Property(x => x.OwnerId).IsModified)
                 throw new InvalidOperationException("OwnerId cannot change");
         }
-        return base.SaveChangesAsync(ct);
+        return base.SaveChangesAsync(cancellationToken);
     }
 }
 ```
@@ -624,8 +626,7 @@ using System.Threading.RateLimiting;
 
 static string Ip(HttpContext c) => c.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 static string UserOrIp(HttpContext c) =>
-    (c.User.FindFirstValue("sub") ?? c.User.FindFirstValue(ClaimTypes.NameIdentifier)) is { } id
-        ? "u:" + id : "ip:" + Ip(c);
+    c.User.FindFirstValue("sub") is { } id ? "u:" + id : "ip:" + Ip(c);   // "sub": see step 7
 
 builder.Services.AddRateLimiter(o =>
 {
@@ -636,7 +637,7 @@ builder.Services.AddRateLimiter(o =>
         RateLimitPartition.GetTokenBucketLimiter(UserOrIp(c), _ => new TokenBucketRateLimiterOptions
         { TokenLimit = 100, TokensPerPeriod = 50, ReplenishmentPeriod = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
 
-    // Sign-in and token refresh. No user yet, so per IP.
+    // Sign-in, token refresh and sign-out. No user yet, so per IP.
     o.AddPolicy("auth", c => RateLimitPartition.GetFixedWindowLimiter(Ip(c), _ => new FixedWindowRateLimiterOptions
         { PermitLimit = 10, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
 
@@ -664,7 +665,8 @@ app.UseAuthorization();
 app.UseRateLimiter();
 
 app.MapPost("/api/auth/apple", SignIn).RequireRateLimiting("auth");
-app.MapPost("/auth/refresh", Refresh).RequireRateLimiting("auth");
+app.MapPost("/api/auth/refresh", Refresh).RequireRateLimiting("auth");
+app.MapPost("/api/auth/sign-out", SignOut).RequireRateLimiting("auth");
 var ai = app.MapGroup("/ai").RequireAuthorization().RequireRateLimiting("ai");
 app.MapPost("/recipes/import", Import).RequireAuthorization().RequireRateLimiting("import");
 app.MapGet("/health", () => Results.Ok(new { ok = true })).DisableRateLimiting();
@@ -931,13 +933,13 @@ Stops: a stolen token that works for weeks.
 - **Reuse means theft.** If a refresh token that was already used comes back,
   someone else has a copy. Revoke that whole chain of tokens (its "family")
   and make the user sign in again.
-- **Revoke** the device's chain on sign-out, and every token of the user on
-  account deletion.
+- **Revoke** the device's chain on sign-out (`POST /api/auth/sign-out`, with
+  the refresh token), and every token of the user on account deletion.
 
 ```csharp
 static string Hash(string s) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(s)));
 
-// POST /auth/refresh. RefreshToken is looked up by hash only, so it has no
+// POST /api/auth/refresh. RefreshToken is looked up by hash only, so it has no
 // owner query filter: the refresh call has no user yet.
 var row = await db.RefreshTokens.SingleOrDefaultAsync(t => t.Hash == Hash(body.RefreshToken), ct);
 if (row is null || row.ExpiresAt < now) return Results.Unauthorized();
@@ -962,6 +964,9 @@ Validate access tokens strictly:
 ```csharp
 .AddJwtBearer(o =>
 {
+    // Keep "sub" as "sub". The default maps it to ClaimTypes.NameIdentifier,
+    // and CurrentUser ("Keep each user's data apart", step 1) finds no user.
+    o.MapInboundClaims = false;
     o.IncludeErrorDetails = false;   // do not tell callers why a token failed
     o.TokenValidationParameters = new()
     {
@@ -1189,6 +1194,9 @@ Then push a small change to `main` and watch the Actions run finish green.
   `UseForwardedHeaders` runs after the limiter. See "Protect the API", step 1.
 - **Rate limits by user do not work; everyone is limited by IP.**
   `UseRateLimiter` runs before `UseAuthentication`, so there is no user yet.
+- **A valid token, but `CurrentUser` finds no user.** `AddJwtBearer` renamed
+  `sub` to `ClaimTypes.NameIdentifier`. Set `o.MapInboundClaims = false`
+  ("Protect the API", step 7).
 - **`503` instead of `429` when a limit is hit.** `RejectionStatusCode` is not
   set. The default is 503.
 - **The runner job waits forever.** The runner is offline, busy with another

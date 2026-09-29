@@ -193,12 +193,17 @@ var parameters = new TokenValidationParameters
     ValidAlgorithms = [SecurityAlgorithms.RsaSha256],
     ValidateLifetime = true,
 };
-var principal = new JwtSecurityTokenHandler().ValidateToken(identityToken, parameters, out _);
+// MapInboundClaims = false keeps "sub" as "sub". The default renames it to
+// ClaimTypes.NameIdentifier, and step 4 then finds no user.
+var handler = new JwtSecurityTokenHandler { MapInboundClaims = false };
+var principal = handler.ValidateToken(identityToken, parameters, out _);
 // then compare principal's "nonce" claim with SHA-256 hex of the raw nonce
 ```
 
 Log why a token was refused (bad audience, expired, bad signature). Do not
-log the token itself.
+log the token itself. In .NET, write the log line as a `[LoggerMessage]`
+method. The strict settings refuse `LogWarning(...)` (CA1848,
+[agent-test-loop.md](agent-test-loop.md), step 3).
 
 ### 4. Find or create the user by `sub`
 
@@ -221,8 +226,12 @@ log the token itself.
 After the check, your server issues **its own** tokens: a short-lived access
 token (a JWT signed with `JWT_SECRET_KEY`) and a longer refresh token. The
 app stores both with `expo-secure-store` and sends the access token on every
-request. Do not use Apple's identity token as your session. It is short-lived,
-and getting a new one needs the user to tap again.
+request. It calls `POST /api/auth/refresh` for a new pair, and
+`POST /api/auth/sign-out` to end the session on this device. The server side
+is in [backend.md](backend.md), "Protect the API", step 7.
+
+Do not use Apple's identity token as your session. It is short-lived, and
+getting a new one needs the user to tap again.
 
 ### 6. Account deletion and token revocation
 

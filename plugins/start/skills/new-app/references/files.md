@@ -28,10 +28,16 @@ works on this Node.
     "test": "pnpm test:mobile && pnpm test:api",
     "check": "pnpm typecheck && pnpm lint && dotnet build apps/api/MyApp.sln -warnaserror && pnpm test",
     "db:up": "docker compose -f docker-compose.dev.yml up -d --wait",
-    "dev:api": "dotnet watch --project apps/api/MyApp.Api"
+    "dev:api": "dotnet watch --non-interactive --project apps/api/MyApp.Api"
   }
 }
 ```
+
+`dev:api` runs with `--non-interactive`, because an agent runs it with no
+terminal. Without the flag, a change that needs a restart (a new package, a
+new attribute) makes `dotnet watch` ask "Do you want to restart your app?".
+Nobody can answer. The old API keeps running the old code and holds the port.
+With the flag, `dotnet watch` restarts the app on its own.
 
 A Node API: use its own `test`, `build` and `dev` scripts through
 `pnpm --filter api` instead of the `dotnet` ones. No API: the Expo app is the
@@ -157,8 +163,11 @@ dotnet add apps/api/MyApp.Api.Tests package Microsoft.AspNetCore.Mvc.Testing
 ```
 
 The xunit template already has `coverlet.collector`. Add
-`Directory.Build.props` in `apps/api` from `agent-test-loop.md` step 3. With
-it, every analyzer warning is an error. Two rules touch the files below:
+`Directory.Build.props` and `.editorconfig` in `apps/api` from
+`agent-test-loop.md` step 3. With them, every analyzer warning is an error,
+and the EF Core migrations count as generated code (CA1861 skips them). Log
+lines are `[LoggerMessage]` methods, from the same step (CA1848). Two rules
+touch the files below:
 
 - CA1050: every type has a namespace. `Program` stays global.
 - CA1707: the test names are sentences with underscores. Turn it off in the

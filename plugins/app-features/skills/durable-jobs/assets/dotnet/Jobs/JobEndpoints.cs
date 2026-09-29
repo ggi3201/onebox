@@ -35,7 +35,9 @@ public static class JobEndpoints
     private static async Task<IResult> Start(string kind, StartBody body, ClaimsPrincipal user, AppDb db,
         IEnumerable<IJobHandler> handlers, IServiceProvider services, CancellationToken ct)
     {
-        var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+        // The token's "sub". The API sets MapInboundClaims = false
+        // (backend.md, "Protect the API", step 7), so it is not ClaimTypes.NameIdentifier.
+        var userId = user.FindFirstValue("sub");
         if (userId is null) return Results.Unauthorized();
 
         var handler = handlers.FirstOrDefault(h => h.Kind == kind);
@@ -67,7 +69,7 @@ public static class JobEndpoints
 
     private static async Task<IResult> Get(Guid id, ClaimsPrincipal user, AppDb db, CancellationToken ct)
     {
-        var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = user.FindFirstValue("sub");
         // Scoped to the caller in the SAME query: never reveal that someone
         // else's job id exists.
         var job = await db.Set<Job>().AsNoTracking().FirstOrDefaultAsync(j => j.Id == id && j.UserId == userId, ct);
@@ -76,7 +78,7 @@ public static class JobEndpoints
 
     private static async Task<IResult> Cancel(Guid id, ClaimsPrincipal user, AppDb db, IServiceProvider services, CancellationToken ct)
     {
-        var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = user.FindFirstValue("sub");
         var now = DateTime.UtcNow;
 
         // Clearing the lease is what stops a running worker: its next

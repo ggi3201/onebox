@@ -17,7 +17,7 @@ namespace MyApp.Api.Agent;
 /// native API (Anthropic Messages, OpenAI Responses), rewrite this file; the
 /// tools, the prompt, the events and the client do not change.
 /// </summary>
-public sealed class AgentLoop(
+public sealed partial class AgentLoop(
     ChatClient chat,
     IEnumerable<IAgentTool> tools,
     IOptions<LlmOptions> options,
@@ -232,7 +232,7 @@ public sealed class AgentLoop(
             if (failure is not null)
             {
                 spend.Abandon();
-                log.LogError("Agent run {RunId} provider error {Failure}", runId, failure);
+                LogProviderError(log, runId, failure);
                 AgentTelemetry.RecordFailure(run, "provider_error", failure);
                 yield return new RunError(AgentErrorCodes.ProviderError,
                     "The assistant could not answer that. Please try again.");
@@ -329,14 +329,14 @@ public sealed class AgentLoop(
     /// is re-thrown; a tool's own timeout is not.
     /// </summary>
     private async Task<ToolResult> Execute(
-        IReadOnlyDictionary<string, IAgentTool> offered, string name, string arguments,
+        Dictionary<string, IAgentTool> offered, string name, string arguments,
         AgentToolContext context, CancellationToken ct)
     {
         if (!offered.TryGetValue(name, out var tool))
         {
             // "Not available here", not "no such tool": the second sends the
             // model looking for a spelling mistake it did not make.
-            log.LogWarning("Agent asked for tool {Tool}, which this run does not offer", name);
+            LogToolNotOffered(log, name);
             return ToolResult.Refuse($"{name} is not available here. Use one of the tools you were given.",
                 $"{name} is not available here");
         }
@@ -365,7 +365,7 @@ public sealed class AgentLoop(
         }
         catch (Exception e) when (e is not OperationCanceledException)
         {
-            log.LogError(e, "Tool {Tool} threw", name);
+            LogToolThrew(log, e, name);
             return ToolResult.Refuse($"The {name} tool failed. Try another way.", $"{name} failed");
         }
     }
@@ -385,7 +385,7 @@ public sealed class AgentLoop(
         }
         catch (Exception e)
         {
-            log.LogWarning(e, "Could not record agent usage for user {User}", userId);
+            LogUsageNotRecorded(log, e, userId);
         }
     }
 
@@ -404,6 +404,20 @@ public sealed class AgentLoop(
         public string? Name { get; set; }
         public StringBuilder Arguments { get; } = new();
     }
+
+    // Source-generated log lines. The strict analyzers (CA1848) refuse
+    // log.LogInformation(...) and the other extension methods.
+    [LoggerMessage(Level = LogLevel.Error, Message = "Agent run {RunId} provider error {Failure}")]
+    private static partial void LogProviderError(ILogger log, string runId, string failure);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Agent asked for tool {Tool}, which this run does not offer")]
+    private static partial void LogToolNotOffered(ILogger log, string tool);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Tool {Tool} threw")]
+    private static partial void LogToolThrew(ILogger log, Exception error, string tool);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not record agent usage for user {User}")]
+    private static partial void LogUsageNotRecorded(ILogger log, Exception error, string user);
 }
 
 /// <summary>A data URL to its media type and bytes.</summary>

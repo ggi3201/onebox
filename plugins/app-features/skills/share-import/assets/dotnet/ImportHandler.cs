@@ -22,7 +22,7 @@ namespace MyApp.Api.Import;
 ///       .ConfigurePrimaryHttpMessageHandler(PublicNetworkGuard.CreateHandler);
 ///   builder.Services.AddScoped&lt;IJobHandler, ImportHandler&gt;();
 /// </summary>
-public sealed class ImportHandler(
+public sealed partial class ImportHandler(
     IHttpClientFactory http,
     ChatClient model,
     IImportSink sink,
@@ -75,7 +75,7 @@ public sealed class ImportHandler(
 
         // 3 and 4. Fetch it ourselves, through the guard.
         if (!await PublicNetworkGuard.IsPublicUrlAsync(input.Url, ct))
-            throw new JobFailed("That link cannot be opened. Check it and try again.");
+            throw new JobFailedException("That link cannot be opened. Check it and try again.");
 
         await progress.ReportAsync("Opening the link", ct);
         string html;
@@ -84,14 +84,14 @@ public sealed class ImportHandler(
             using var response = await http.CreateClient("public").GetAsync(input.Url, ct);
             if ((int)response.StatusCode is 401 or 402 or 403 or 429)
                 // Blocked for bots. The share extension would have worked: say so.
-                throw new JobFailed("That site blocks imports. Open the page in Safari and share it from there.");
+                throw new JobFailedException("That site blocks imports. Open the page in Safari and share it from there.");
             response.EnsureSuccessStatusCode();
             html = await response.Content.ReadAsStringAsync(ct);
         }
         catch (HttpRequestException e)
         {
-            log.LogInformation(e, "Import fetch failed for host {Host}", new Uri(input.Url).Host);
-            throw new JobFailed("That page could not be loaded. Try again later.");
+            LogFetchFailed(log, e, new Uri(input.Url).Host);
+            throw new JobFailedException("That page could not be loaded. Try again later.");
         }
 
         foreach (var block in JsonLd.BlocksIn(html))
@@ -144,12 +144,12 @@ public sealed class ImportHandler(
         {
             // ct goes to the model call too: it is how Cancel stops a running import.
             var completion = (await model.CompleteChatAsync(messages, options, ct)).Value;
-            var call = completion.ToolCalls.FirstOrDefault();
+            var call = completion.ToolCalls.Count > 0 ? completion.ToolCalls[0] : null;
             var args = call?.FunctionArguments.ToString() ?? "";
             try
             {
                 var result = JsonSerializer.Deserialize<Extracted>(args, JsonOptions);
-                if (result is { Found: false }) throw new JobFailed(result.Reason is { Length: > 0 } r ? r : "There is nothing to import in that page.");
+                if (result is { Found: false }) throw new JobFailedException(result.Reason is { Length: > 0 } r ? r : "There is nothing to import in that page.");
                 if (result is { Title.Length: > 0, Items.Count: > 0 }) return result;
                 throw new FormatException("found=true needs a title and at least one item");
             }
@@ -159,7 +159,7 @@ public sealed class ImportHandler(
                 messages.Add(new ToolChatMessage(call.Id, $"Rejected: {e.Message}. Call save_result again with valid fields."));
             }
         }
-        throw new JobFailed("That page could not be read. Try another link.");
+        throw new JobFailedException("That page could not be read. Try another link.");
     }
 
     private async Task<JsonElement> Save(Job job, Extracted extracted, string? sourceUrl, CancellationToken ct)
@@ -200,6 +200,10 @@ public sealed class ImportHandler(
         """;
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
+    // Source-generated, because the strict analyzers (CA1848) refuse log.LogInformation(...).
+    [LoggerMessage(Level = LogLevel.Information, Message = "Import fetch failed for host {Host}")]
+    private static partial void LogFetchFailed(ILogger log, Exception error, string host);
 }
 
 /// <summary>Where an import lands: create your record and return its id.</summary>

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 
@@ -50,7 +51,7 @@ public sealed class ListItemsTool(IItemReader items) : IAgentTool
                 "Found nothing");
 
         var sb = new StringBuilder();
-        foreach (var (id, name) in rows) sb.AppendLine($"- id={id} name={name}");
+        foreach (var (id, name) in rows) sb.AppendLine(CultureInfo.InvariantCulture, $"- id={id} name={name}");
         return new ToolResult(sb.ToString(), $"Read {rows.Count} items");
     }
 }
