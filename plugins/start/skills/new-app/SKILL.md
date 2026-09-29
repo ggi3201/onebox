@@ -224,11 +224,13 @@ with one nudge. Say two lines and nothing else:
 
 ```
 Done: your app runs in the Simulator.
-Next: Your Apple Developer account. This part is yours: join the Apple Developer Program (99 USD a year, I will show you where). Ready when you are.
+Next: <the step `plan.mjs ready` names>. Continue?
 ```
 
-The second line is the `say` line from `plan.mjs ready`, as it is. No file
-list and no check output, unless the user asks.
+The second line is the `say` line from `plan.mjs ready`, as it is. It changes
+with the user's Mac and answers: it can be a blocker (something to install or
+a part that is theirs) or a plain "Continue?". Do not write it from memory.
+No file list and no check output, unless the user asks.
 
 ## Rules
 
