@@ -119,26 +119,101 @@ the data your real users have.
 
 ## A sketch
 
-ASP.NET Core, called at startup:
+ASP.NET Core, with the `AppDb` from the backend guide
+(`https://onebox.lokkesveen.com/guides/backend.md`, "Keep each user's data
+apart"). Its query filter and its `SaveChangesAsync` read the owner from
+`CurrentUser`. At startup there is no request and no user. So every read and
+every insert of an owned row throws `no user on this request`. That is on
+purpose: "no user" must never mean "all rows".
+
+So the seed does not go around the filter. It acts as one seed user at a
+time. Give `CurrentUser` an `ActAs` method for code outside a request:
+
+```csharp
+public sealed class CurrentUser(IHttpContextAccessor http)
+{
+    string? actingAs;
+
+    // Throws instead of returning null: "no user" must never mean "all rows".
+    public string Id =>
+        actingAs
+        ?? http.HttpContext?.User.FindFirstValue("sub")
+        ?? throw new UnauthorizedAccessException("no user on this request");
+
+    // Only for code outside a request: the dev seed, a background job.
+    // It lasts for this DI scope. Review every call.
+    public void ActAs(string userId)
+    {
+        if (http.HttpContext is not null)
+            throw new InvalidOperationException("ActAs is for code outside a request");
+        actingAs = userId;
+    }
+}
+```
+
+Then the seed opens one DI scope per seed user:
 
 ```csharp
 public static class DevSeed
 {
-    public static async Task EnsureAsync(AppDb db, IHostEnvironment env)
+    // Each seed user and the rows it owns. Fixed ids, so a second run updates
+    // the rows instead of adding new ones.
+    static readonly (string User, ShoppingList[] Lists)[] Users =
+    [
+        ("dev-empty", []),
+        ("dev-edge",
+        [
+            List("dev-edge/long",  new string('a', 60)),       // one word, no spaces
+            List("dev-edge/emoji", "Weekend 👩🏽‍💻 🏳️‍🌈"),
+            List("dev-edge/rtl",   "قائمة التسوق"),
+            List("dev-edge/nfd",   "Zoë"),               // e + combining diaeresis
+        ]),
+        ("dev-other", [List("dev-other/emoji", "Weekend 👩🏽‍💻 🏳️‍🌈")]),   // the same name as dev-edge's
+        // ...
+    ];
+
+    public static async Task EnsureAsync(IServiceProvider services, IHostEnvironment env, CancellationToken ct = default)
     {
         if (!env.IsDevelopment()) return;              // never in Production
 
-        await Upsert(db, User("dev-empty"));
-        await Upsert(db, User("dev-edge"),
-            List("l-long",  new string('a', 60)),       // one word, no spaces
-            List("l-emoji", "Weekend 👩🏽‍💻 🏳️‍🌈"),
-            List("l-rtl",   "قائمة التسوق"),
-            List("l-nfd",   "Zoë"));             // e + combining diaeresis
-        // ...
-        await db.SaveChangesAsync();
+        foreach (var (user, lists) in Users)
+        {
+            // One scope per seed user. The query filter and the owner stamp
+            // in SaveChangesAsync then work unchanged, for this user only.
+            using var scope = services.CreateScope();
+            scope.ServiceProvider.GetRequiredService<CurrentUser>().ActAs(user);
+            var db = scope.ServiceProvider.GetRequiredService<AppDb>();
+
+            if (await db.Users.FindAsync([user], ct) is null) db.Users.Add(new AppUser { Id = user });
+            foreach (var row in lists)
+            {
+                // The filter scopes this lookup to the user the seed acts as.
+                var old = await db.Lists.FirstOrDefaultAsync(l => l.Id == row.Id, ct);
+                if (old is null) db.Lists.Add(row);      // SaveChangesAsync sets OwnerId
+                else old.Name = row.Name;
+            }
+            await db.SaveChangesAsync(ct);
+        }
     }
+
+    static ShoppingList List(string id, string name) => new() { Id = id, Name = name };
 }
 ```
+
+Call it in `Program.cs`, after the migrations:
+`await DevSeed.EnsureAsync(app.Services, app.Environment);`. Pass the service
+provider, not an `AppDb`. An `AppDb` from outside these scopes has no user.
+
+- **Do not set `OwnerId` by hand, and do not use `IgnoreQueryFilters()`** in
+  the seed. `SaveChangesAsync` overwrites `OwnerId` anyway, and a bypass can
+  put a row under the wrong user. With `ActAs`, the seed cannot.
+- **A background job** that writes owned rows does the same: one scope per
+  user, `ActAs` first.
+- **Review every `ActAs` call**, like every `IgnoreQueryFilters()`. Only the
+  seed and background jobs call it, never a request handler. Inside a request
+  it throws, so a mistake is loud.
+- **Test it.** Seed, then read as each user: `dev-edge` sees only its own
+  rows, and `dev-empty` sees none. A read with no `ActAs` throws.
 
 Node (Prisma or Drizzle): a `scripts/seed.ts` run by a `db:seed` script, with
 `if (process.env.NODE_ENV === "production") throw new Error("no seed in production")`

@@ -43,7 +43,8 @@ It checks, read-only:
 - **Metro:** every running Metro server, its project root and port, and which
   app on which simulator is connected to it. FAIL when the app runs another
   checkout's bundle, when another app is connected to this checkout's Metro,
-  or when no Metro serves this checkout.
+  when no Metro serves this checkout, or when this checkout's Metro runs in
+  CI mode (`CI=1`), which does not watch files.
 - **Simulators:** warns when more than one is booted, because `booted` in
   `simctl` then picks either one.
 - **Native build:** whether each native package has code in the installed
