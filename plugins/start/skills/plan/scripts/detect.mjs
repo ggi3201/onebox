@@ -421,6 +421,8 @@ if (hasKey("apple.ascKeyId") && hasKey("apple.ascIssuerId")) {
   else open["guide:app-store-connect-api-key"] = "the key id and issuer id are in the onebox config; still missing apple.ascKeyPath or apple.ascKeyRef";
 }
 if (hasKey("box.domain")) done["guide:domain"] = "box.domain is in the onebox config";
+// A box.ssh value means the user already has a box: do not ask them to rent one.
+if (hasKey("box.ssh")) done["guide:vps"] = "you have a box: box.ssh is in the onebox config";
 if (hasKey("box.ssh")) seen["skill:box/box-setup"] = "box.ssh is in the onebox config; run the check phase to confirm";
 if (sites.length) seen["skill:box/new-landing-page"] = `site folder: ${sites.join(", ")}`;
 if (aiHits.length || hasKey("llm.keyRef")) seen["guide:llm-api-key"] = "the code already calls an AI API";
