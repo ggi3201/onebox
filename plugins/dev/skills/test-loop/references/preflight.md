@@ -108,6 +108,19 @@ another bundle id is connected to your Metro.
   allow each new device once.
 - **Do not stop a Metro or an API you did not start.** Check its project root
   first (the preflight prints it).
+- **A `dotnet watch` API needs `--non-interactive`.** Without it, a change
+  that needs a restart makes it wait on "Do you want to restart your app?".
+  Nobody answers in an agent's shell, and the old API keeps the port. Check
+  the `dev:api` script.
+- **Stopping a `dotnet watch` API: stop the `dotnet-watch.dll` process.**
+  `kill` on the PID that `&` returned stops only the `dotnet` host. The watch
+  child keeps running and keeps the port. Find the watch for this checkout
+  by its working folder, and stop only that one:
+  ```bash
+  for p in $(pgrep -f dotnet-watch.dll); do
+    echo "$p $(lsof -a -p "$p" -d cwd -Fn | sed -n 's/^n//p')"
+  done
+  ```
 - **One API per dev database** if the API runs background workers. A second
   API on the same database also picks up the queued jobs.
 - **Logs in your own folder.** Write Metro and build logs to the worktree or a
