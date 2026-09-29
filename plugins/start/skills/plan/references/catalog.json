@@ -267,7 +267,8 @@
       "kind": "skill",
       "plugin": "dev",
       "phase": "app",
-      "title": "Trim the test suite now and then"
+      "title": "Trim the test suite now and then",
+      "repeat": true
     },
     {
       "id": "vps",

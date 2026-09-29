@@ -260,7 +260,7 @@ function render(answers, sources, detect) {
       const likely = !detect.done?.[k] && !detect.open?.[k] && it.doneWhen && matches(it.doneWhen, answers)
         ? `you answered "${labelOf(catalog.questions.find((q) => q.id === Object.keys(it.doneWhen)[0]), answers[Object.keys(it.doneWhen)[0]])}"`
         : undefined;
-      s.lines.push({ text: itemText(it), item: { key: k, done: detect.done?.[k], likely, found: detect.open?.[k] ?? detect.seen?.[k], open: !!detect.open?.[k] } });
+      s.lines.push({ text: itemText(it), item: { key: k, done: detect.done?.[k], likely, found: detect.open?.[k] ?? detect.seen?.[k], open: !!detect.open?.[k], repeat: !!it.repeat } });
     }
   }
   sec("## Notes", ["Your own notes. The planner never changes them."]);
@@ -389,7 +389,7 @@ function writeMode() {
     const occ = new Map();
     for (const l of s.lines) {
       if (l.item) {
-        const { key, done, likely, found, open } = l.item;
+        const { key, done, likely, found, open, repeat } = l.item;
         const prev = parsed.items.get(key);
         // Keep the user's tick. Tick what detection found done, unless the user
         // unticked an item this planner had ticked before. Drop a tick this
@@ -404,7 +404,8 @@ function writeMode() {
         else if (found) out.push(`  - found: ${found}`);
         out.push(...blocksFor((b) => b.anchor.type === "item" && b.anchor.key === key).flatMap(userLines));
         if (ticked) doneCount++;
-        else if (!next) next = { heading: s.heading.replace(/^## /, ""), text: fresh.replace(/ \(raw: [^)]*\)/, "").replace(/ <!--.*$/, "") };
+        // A now-and-then item is never the next step: it is never done for good.
+        else if (!next && !repeat) next = { heading: s.heading.replace(/^## /, ""), text: fresh.replace(/ \(raw: [^)]*\)/, "").replace(/ <!--.*$/, "") };
       } else {
         out.push(l.text);
         const n = (occ.get(l.text) ?? 0) + 1; occ.set(l.text, n);
