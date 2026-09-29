@@ -72,20 +72,33 @@ exception: pnpm is pinned to major 10 (step 0).
 
 ## 1. Ask
 
-In chat, ask for:
+Ask everything in one questionnaire with AskUserQuestion: up to 4 questions in
+one call. Do not ask them in chat, one by one. Only when you do not have the
+tool, put the same four questions in one numbered message. Fill in the
+options yourself, from the user's idea and the config, so the user picks and
+does not type. "Other" is always there for their own text. Do not ask a
+question the user already answered.
 
-- **The app name** as users see it, and a **slug**: lowercase, no spaces
-  (`myapp`). The slug names the folder, the scheme, the containers and the
-  solution.
-- **The bundle identifier.** Suggest `com.<domain reversed>.<slug>` from
-  `box.domain`. Say it once: it can never change after the first upload
-  (`expo-app.md`, step 2).
-
-Then ask, with AskUserQuestion if you have it:
-
+- **App name**, as users see it on the App Store. Give one to three names from
+  the idea (for example "Warranty Keeper"). Say in the question that App Store
+  names must be unique.
+- **Bundle identifier.** Say in the question that it can never change after
+  the first upload (`expo-app.md`, step 2). Options:
+  - `com.<domain reversed>.<slug>` (recommended), when `box.domain` is set.
+  - "I have a domain": the user types the reversed pattern under "Other".
+  - `com.example.<slug>`, "I have no domain yet": change it before the first
+    upload to Apple. The Simulator build does not need the real one.
 - **Server:** "Own box, .NET API (recommended)", "Own box, Node API",
   "Hosted (Supabase, Convex, Firebase)", "No server".
 - **Sign in with Apple now:** "Yes (recommended)", "Later".
+
+**The slug** is not a question. Make it from the app name: lowercase letters
+and digits, no spaces (`warrantykeeper`). It names the folder, the scheme,
+the containers and the solution. Put it in the bundle identifier options. If
+the user types another name, make the slug again, and say the slug and the
+bundle identifier in one line before you build: "Slug: `warrantykeeper`.
+Bundle identifier: `com.example.warrantykeeper`. Tell me if either is
+wrong."
 
 Then check the tools (step 0).
 
