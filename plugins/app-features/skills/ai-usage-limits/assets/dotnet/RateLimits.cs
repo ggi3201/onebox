@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Security.Claims;
 using System.Threading.RateLimiting;
@@ -14,7 +15,7 @@ namespace MyApp.Api.Usage;
 ///   app.UseRateLimiter();                               // after auth
 ///   app.MapAgentChat().RequireRateLimiting(AiRateLimits.Agent);
 /// </summary>
-public static class AiRateLimits
+public static partial class AiRateLimits
 {
     public const string Agent = "agent";
 
@@ -28,15 +29,17 @@ public static class AiRateLimits
             o.OnRejected = async (ctx, ct) =>
             {
                 if (ctx.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retry))
-                    ctx.HttpContext.Response.Headers.RetryAfter = ((int)retry.TotalSeconds).ToString();
+                    ctx.HttpContext.Response.Headers.RetryAfter = ((int)retry.TotalSeconds).ToString(CultureInfo.InvariantCulture);
                 await ctx.HttpContext.Response.WriteAsJsonAsync(
                     new { code = "rateLimited", message = "Too many questions. Give it a minute." }, ct);
             };
 
             // Per account, never per IP: every phone on a mobile carrier can
             // share one address, and behind a proxy EVERY request shares one.
+            // "sub", not ClaimTypes.NameIdentifier: the API sets MapInboundClaims = false
+            // (backend.md, "Protect the API", step 7).
             o.AddPolicy(Agent, http => RateLimitPartition.GetFixedWindowLimiter(
-                http.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "anonymous",
+                http.User.FindFirstValue("sub") ?? "anonymous",
                 _ => new FixedWindowRateLimiterOptions
                 {
                     PermitLimit = perHour,
@@ -74,7 +77,7 @@ public static class AiRateLimits
             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         if (entries.Length == 0)
         {
-            app.Logger.LogWarning("Network:TrustedProxies is empty: per-IP limits see the proxy, not the client.");
+            LogNoTrustedProxies(app.Logger);
             return app;
         }
 
@@ -95,7 +98,15 @@ public static class AiRateLimits
         }
 
         app.UseForwardedHeaders(options);
-        app.Logger.LogInformation("Trusting X-Forwarded-For from {Proxies}", string.Join(", ", entries));
+        LogTrustedProxies(app.Logger, string.Join(", ", entries));
         return app;
     }
+
+    // Source-generated log lines. The strict analyzers (CA1848) refuse
+    // log.LogInformation(...) and the other extension methods.
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Network:TrustedProxies is empty: per-IP limits see the proxy, not the client.")]
+    private static partial void LogNoTrustedProxies(ILogger log);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Trusting X-Forwarded-For from {Proxies}")]
+    private static partial void LogTrustedProxies(ILogger log, string proxies);
 }

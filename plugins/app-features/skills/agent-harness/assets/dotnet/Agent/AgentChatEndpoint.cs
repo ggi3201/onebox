@@ -9,7 +9,7 @@ namespace MyApp.Api.Agent;
 /// reconnection and the access_token-in-the-query-string dance. This is one
 /// POST that answers slowly, and your normal auth covers it.
 /// </summary>
-public static class AgentChatEndpoint
+public static partial class AgentChatEndpoint
 {
     public static RouteHandlerBuilder MapAgentChat(this IEndpointRouteBuilder app, string path = "/api/agent/chat") =>
         app.MapPost(path, Handle).RequireAuthorization();
@@ -26,7 +26,9 @@ public static class AgentChatEndpoint
         ILoggerFactory loggers)
     {
         var ct = http.RequestAborted;
-        var userId = http.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        // "sub", not ClaimTypes.NameIdentifier: the API sets MapInboundClaims = false
+        // (backend.md, "Protect the API", step 7).
+        var userId = http.User.FindFirstValue("sub");
         if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
 
         /*
@@ -87,7 +89,7 @@ public static class AgentChatEndpoint
                         await Write(Sse.KeepAlive);
             }
             catch (OperationCanceledException) { }
-            catch (Exception e) { log.LogDebug(e, "Keep-alive stopped"); }
+            catch (Exception e) { LogKeepAliveStopped(log, e); }
         });
 
         try
@@ -101,12 +103,12 @@ public static class AgentChatEndpoint
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
             // They closed the sheet or tapped stop. Nobody is left to tell.
-            log.LogInformation("Agent run cancelled by the client");
+            LogCancelled(log);
         }
         catch (OperationCanceledException)
         {
             // The client is still there, so this was the run deadline.
-            log.LogWarning("Agent run hit the {Deadline}s deadline", AgentLimits.RunDeadline.TotalSeconds);
+            LogDeadline(log, AgentLimits.RunDeadline.TotalSeconds);
             await TryWrite(Write, new RunError(AgentErrorCodes.Timeout, "That took too long. Please try again."), log);
         }
         catch (Exception e)
@@ -114,7 +116,7 @@ public static class AgentChatEndpoint
             // Headers are sent, so the failure goes IN the stream. A code and a
             // plain sentence, never e.Message: database and transport errors
             // carry host names and internal types.
-            log.LogError(e, "Agent run failed");
+            LogRunFailed(log, e);
             await TryWrite(Write, new RunError(AgentErrorCodes.ProviderError,
                 "The assistant could not finish that. Please try again."), log);
         }
@@ -130,6 +132,23 @@ public static class AgentChatEndpoint
     private static async Task TryWrite(Func<string, Task> write, AgentEvent evt, ILogger log)
     {
         try { await write(Sse.Frame(evt)); }
-        catch (Exception e) { log.LogWarning(e, "Could not report the failure to the client"); }
+        catch (Exception e) { LogReportFailed(log, e); }
     }
+
+    // Source-generated log lines. The strict analyzers (CA1848) refuse
+    // log.LogInformation(...) and the other extension methods.
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Keep-alive stopped")]
+    private static partial void LogKeepAliveStopped(ILogger log, Exception error);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Agent run cancelled by the client")]
+    private static partial void LogCancelled(ILogger log);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Agent run hit the {Deadline}s deadline")]
+    private static partial void LogDeadline(ILogger log, double deadline);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Agent run failed")]
+    private static partial void LogRunFailed(ILogger log, Exception error);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not report the failure to the client")]
+    private static partial void LogReportFailed(ILogger log, Exception error);
 }

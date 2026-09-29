@@ -14,30 +14,30 @@ namespace MyApp.Api.Jobs;
 /// the handler says <see cref="IJobHandler.SafeToRetry"/>). It never replays
 /// an import that may already have created its row.
 /// </summary>
-public sealed class JobWorker(IServiceScopeFactory scopes, ILogger<JobWorker> log) : BackgroundService
+public sealed partial class JobWorker(IServiceScopeFactory scopes, ILogger<JobWorker> log) : BackgroundService
 {
-    protected override async Task ExecuteAsync(CancellationToken stopping)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         var nextSweep = DateTime.MinValue;
         var nextCleanup = DateTime.MinValue;
 
-        while (!stopping.IsCancellationRequested)
+        while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
                 var now = DateTime.UtcNow;
-                if (now >= nextSweep) { await SweepExpiredAsync(stopping); nextSweep = now.AddSeconds(30); }
-                if (now >= nextCleanup) { await CleanupAsync(stopping); nextCleanup = now.AddHours(12); }
+                if (now >= nextSweep) { await SweepExpiredAsync(stoppingToken); nextSweep = now.AddSeconds(30); }
+                if (now >= nextCleanup) { await CleanupAsync(stoppingToken); nextCleanup = now.AddHours(12); }
 
-                if (await ClaimAsync(stopping) is { } claim) await RunAsync(claim.Job, claim.Lease, stopping);
-                else await Task.Delay(JobPolicy.Idle, stopping);
+                if (await ClaimAsync(stoppingToken) is { } claim) await RunAsync(claim.Job, claim.Lease, stoppingToken);
+                else await Task.Delay(JobPolicy.Idle, stoppingToken);
             }
-            catch (OperationCanceledException) when (stopping.IsCancellationRequested) { break; }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { break; }
             catch (Exception e)
             {
                 // A database blip must not kill the worker. Queued jobs stay queued.
-                log.LogError(e, "Job worker loop failed");
-                await Task.Delay(JobPolicy.Idle, stopping);
+                LogLoopFailed(log, e);
+                await Task.Delay(JobPolicy.Idle, stoppingToken);
             }
         }
     }
@@ -104,15 +104,15 @@ public sealed class JobWorker(IServiceScopeFactory scopes, ILogger<JobWorker> lo
         {
             // Cancelled from the app, or the lease was lost. That transition
             // was already written by whoever won; do not overwrite it.
-            log.LogInformation("Job {Job} stopped: no longer ours", job.Id);
+            LogNoLongerOurs(log, job.Id);
         }
-        catch (JobFailed f)
+        catch (JobFailedException f)
         {
             await FinishAsync(job.Id, lease, JobStatus.Failed, null, f.Message);
         }
         catch (Exception e)
         {
-            log.LogError(e, "Job {Job} ({Kind}) failed", job.Id, job.Kind);
+            LogJobFailed(log, e, job.Id, job.Kind);
             await FinishAsync(job.Id, lease, JobStatus.Failed, null, "That did not work. Please try again.");
         }
         finally
@@ -152,7 +152,7 @@ public sealed class JobWorker(IServiceScopeFactory scopes, ILogger<JobWorker> lo
                 {
                     if (DateTime.UtcNow >= confirmedUntil - JobPolicy.Heartbeat)
                     {
-                        log.LogWarning(e, "Could not renew job {Job} before its lease ran out; stopping it", id);
+                        LogLeaseLost(log, e, id);
                         work.Cancel();
                         return;
                     }
@@ -232,7 +232,7 @@ public sealed class JobWorker(IServiceScopeFactory scopes, ILogger<JobWorker> lo
                 await FinishAsync(j.Id, lease, JobStatus.Failed, null, "It was interrupted. Please start it again.");
             }
         }
-        if (expired.Count > 0) log.LogWarning("Swept {Count} jobs with expired leases", expired.Count);
+        if (expired.Count > 0) LogSwept(log, expired.Count);
     }
 
     private async Task CleanupAsync(CancellationToken ct)
@@ -269,4 +269,21 @@ public sealed class JobWorker(IServiceScopeFactory scopes, ILogger<JobWorker> lo
                 .ExecuteUpdateAsync(s => s.SetProperty(j => j.Progress, line.Length > 200 ? line[..200] : line), ct) == 1;
         }
     }
+
+    // Source-generated log lines. The strict analyzers (CA1848) refuse
+    // log.LogInformation(...) and the other extension methods.
+    [LoggerMessage(Level = LogLevel.Error, Message = "Job worker loop failed")]
+    private static partial void LogLoopFailed(ILogger log, Exception error);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Job {Job} stopped: no longer ours")]
+    private static partial void LogNoLongerOurs(ILogger log, Guid job);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Job {Job} ({Kind}) failed")]
+    private static partial void LogJobFailed(ILogger log, Exception error, Guid job, string kind);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not renew job {Job} before its lease ran out; stopping it")]
+    private static partial void LogLeaseLost(ILogger log, Exception error, Guid job);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Swept {Count} jobs with expired leases")]
+    private static partial void LogSwept(ILogger log, int count);
 }

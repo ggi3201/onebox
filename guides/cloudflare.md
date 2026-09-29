@@ -105,7 +105,7 @@ drop the worst traffic before it reaches the box. What the Free plan gives you
 
 - **One rate limiting rule.** It counts by client IP, over 10 seconds, and
   blocks for 10 seconds. It can match on the URL path. Use it for sign-in:
-  expression `starts_with(http.request.uri.path, "/auth/")`, 20 requests per
+  expression `starts_with(http.request.uri.path, "/api/auth/")`, 20 requests per
   10 seconds, action Block. Keep it generous: many phones on one mobile
   carrier can share one IP. It sits on the page for rate limiting rules in the
   domain's Security section.
@@ -118,7 +118,7 @@ drop the worst traffic before it reaches the box. What the Free plan gives you
   so the request fails with an HTML page instead of JSON. On the Free plan it
   covers the whole domain, and WAF rules cannot skip it.
 
-Check it: 25 quick requests to `/auth/...` from one machine get a Cloudflare
+Check it: 25 quick requests to `/api/auth/...` from one machine get a Cloudflare
 block page for 10 seconds. `curl -s -o /dev/null -w '%{http_code}\n' https://api.example.com/.env`
 returns `403` and nothing shows in the API log.
 

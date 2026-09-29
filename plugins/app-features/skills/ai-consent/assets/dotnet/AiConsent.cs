@@ -55,11 +55,13 @@ public static class AiConsentEndpoints
     /// </summary>
     public static IEndpointRouteBuilder MapAiConsent(this IEndpointRouteBuilder app)
     {
+        // The user id is the token's "sub". The API sets MapInboundClaims = false
+        // (backend.md, "Protect the API", step 7), so it is not ClaimTypes.NameIdentifier.
         var group = app.MapGroup("/api/me/ai-consent").RequireAuthorization();
 
         group.MapGet("/", async (ClaimsPrincipal user, AppDb db, CancellationToken ct) =>
         {
-            var id = user.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            var id = user.FindFirstValue("sub")!;
             var row = await db.Set<AiConsentRecord>().AsNoTracking().FirstOrDefaultAsync(c => c.UserId == id, ct);
             return Results.Ok(new { version = row?.Version, grantedAt = row?.GrantedAt });
         });
@@ -67,7 +69,7 @@ public static class AiConsentEndpoints
         group.MapPost("/", async (ConsentBody body, ClaimsPrincipal user, AppDb db, CancellationToken ct) =>
         {
             if (body.Version < 1) return Results.BadRequest(new { code = "badRequest", message = "version is required" });
-            var id = user.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            var id = user.FindFirstValue("sub")!;
             var row = await db.Set<AiConsentRecord>().FirstOrDefaultAsync(c => c.UserId == id, ct);
             if (row is null) db.Add(new AiConsentRecord { UserId = id, Version = body.Version, GrantedAt = DateTime.UtcNow });
             else if (body.Version > row.Version) { row.Version = body.Version; row.GrantedAt = DateTime.UtcNow; }
@@ -77,7 +79,7 @@ public static class AiConsentEndpoints
 
         group.MapDelete("/", async (ClaimsPrincipal user, AppDb db, CancellationToken ct) =>
         {
-            var id = user.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            var id = user.FindFirstValue("sub")!;
             await db.Set<AiConsentRecord>().Where(c => c.UserId == id).ExecuteDeleteAsync(ct);
             return Results.NoContent();
         });

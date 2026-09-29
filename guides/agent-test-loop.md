@@ -97,6 +97,37 @@ project:
 If warnings as errors slow you down locally, remove that line and run
 `dotnet build -warnaserror` in CI and in the agent loop instead.
 
+Next to it, an `.editorconfig`:
+
+```ini
+# EF Core writes the migrations. Analyzers skip generated code, so a
+# composite index (CA1861) does not fail the strict build.
+[**/Migrations/*.cs]
+generated_code = true
+```
+
+Write log lines as source-generated `[LoggerMessage]` methods. Under these
+settings, `log.LogInformation(...)` fails the build with CA1848. One class
+holds them all:
+
+```csharp
+namespace MyApp.Api;
+
+// CA1848 refuses the LogInformation(...) extension methods. Never log a token,
+// an email or a request body (backend.md, "Protect the API", step 9).
+public static partial class Log
+{
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Apple identity token refused: {Reason}")]
+    public static partial void AppleTokenRefused(ILogger log, string reason);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Job {JobId} failed")]
+    public static partial void JobFailed(ILogger log, Exception error, Guid jobId);
+}
+```
+
+Call it as `Log.AppleTokenRefused(log, "expired")`. An `Exception`
+parameter becomes the log entry's exception, not a placeholder.
+
 ### 4. Unit tests for the app
 
 Pick one runner:

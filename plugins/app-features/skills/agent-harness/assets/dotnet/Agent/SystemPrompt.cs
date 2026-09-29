@@ -127,7 +127,7 @@ public static class SystemPrompt
     {
         var sb = new StringBuilder();
         sb.AppendLine("NOBODY ASKED YOU ANYTHING. This is a scheduled review. What you produce");
-        sb.AppendLine($"is shown later as a card with an Apply button. The task: {view.Task}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"is shown later as a card with an Apply button. The task: {view.Task}");
         sb.AppendLine();
         sb.AppendLine("Work through this list BEFORE you decide anything. These clear the bar:");
         sb.AppendLine("1. <the first thing worth raising, stated concretely>");

@@ -10,7 +10,7 @@
       "name": "start",
       "source": "./plugins/start",
       "description": "Start here. Run /start:plan in your app's folder: it looks at what the app already has, asks what it cannot see, and writes PLAN.md with only the steps and plugins you need. No app yet: /start:new-app makes the repo first. Runs on your Mac.",
-      "version": "0.1.5",
+      "version": "0.1.6",
       "license": "MIT"
     },
     {
@@ -45,7 +45,7 @@
       "name": "app-features",
       "source": "./plugins/app-features",
       "description": "Features for an Expo app with its own backend: a streamed AI chat, a server-side agent with tools, cost limits, the AI consent Apple requires, background jobs, and import from a shared link. Runs in your app and your API.",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "license": "MIT"
     }
   ]

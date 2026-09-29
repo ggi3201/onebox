@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -37,7 +38,7 @@ public class AgentEvalTests
         {
             var run = await Chat("what is in my list?", new HomeView());
             if (run.Tools.Contains("list_items")) passes++;
-            else failures.AppendLine($"- called [{string.Join(", ", run.Tools)}] and said: {run.Text}");
+            else failures.AppendLine(CultureInfo.InvariantCulture, $"- called [{string.Join(", ", run.Tools)}] and said: {run.Text}");
         }
 
         Assert.True(passes == Runs, $"{passes}/{Runs} runs read the list. The others:\n{failures}");
@@ -95,7 +96,7 @@ public class AgentEvalTests
                 case ToolStart t: tools.Add(t.Name); break;
                 case ProposalEvent: proposals++; break;
                 case TextDelta d: sb.Append(d.Delta); break;
-                case RunError err: throw new Exception($"Run failed: {err.Code} {err.Message}");
+                case RunError err: throw new InvalidOperationException($"Run failed: {err.Code} {err.Message}");
             }
         }
         return new Run(tools, proposals, sb.ToString());

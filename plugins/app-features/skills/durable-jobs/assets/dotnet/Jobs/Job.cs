@@ -94,7 +94,7 @@ public interface IJobHandler
     /// <summary>
     /// Do the work and return the result as JSON. Pass <paramref name="ct"/> to
     /// EVERY call inside, including model calls: it is how cancel and a lost
-    /// lease stop the work. Throw <see cref="JobFailed"/> with a sentence for
+    /// lease stop the work. Throw <see cref="JobFailedException"/> with a sentence for
     /// the person; any other exception shows a generic sentence.
     /// </summary>
     Task<JsonElement> RunAsync(Job job, IJobProgress progress, CancellationToken ct);
@@ -104,7 +104,7 @@ public interface IJobHandler
 }
 
 /// <summary>A failure with a sentence the person may see.</summary>
-public sealed class JobFailed(string userMessage) : Exception(userMessage);
+public sealed class JobFailedException(string userMessage) : Exception(userMessage);
 
 /// <summary>Give back what starting the job took from a quota. Called at most once per job.</summary>
 public interface IJobRefunds

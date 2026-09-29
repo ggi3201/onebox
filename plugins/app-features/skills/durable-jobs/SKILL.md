@@ -42,7 +42,7 @@ running it twice cause harm?** (creates a second row, spends twice). That sets
    `SafeToRetry`, `Validate` (runs before anything is spent) and `RunAsync`.
    Pass the `CancellationToken` to EVERY call inside, model calls included:
    without it, Cancel and a lost lease stop nothing and the model calls run on.
-   Throw `JobFailed("a sentence for the person")` for known failures.
+   Throw `JobFailedException("a sentence for the person")` for known failures.
 3. **Progress.** Call `progress.ReportAsync("Reading the page", ct)` between
    steps. It returns false when the job is no longer yours: stop then.
 4. **Refunds.** If starting a job takes from a quota, implement `IJobRefunds`.
