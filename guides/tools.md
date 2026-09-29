@@ -22,7 +22,7 @@ Install [Homebrew](https://brew.sh) first. Most of the tools below come from it.
 | Xcode | iOS builds, the Simulator, `xcodebuild`, `xcrun` | [xcode.md](xcode.md). The full Xcode, not only the Command Line Tools. |
 | `git` | every repo | comes with Xcode |
 | Node.js 22 or 24 (LTS) | the skills' scripts, Expo, `eas` | `brew install node@22`, or a version manager such as `fnm` |
-| `pnpm` | the package manager in a `/start:new-app` repo | `corepack enable`, then `corepack install -g pnpm@10`. Corepack comes with Node. In a repo it runs the version that `package.json` pins in `packageManager`. Outside a repo it runs the global one; its default, pnpm 12, does not start through corepack yet. |
+| `pnpm` | the package manager in a `/start:new-app` repo | `npm install -g pnpm@10`. Node 25 and newer no longer ship corepack, so the kit does not rely on it. In a repo, pnpm 10 runs the version that `package.json` pins in `packageManager`. |
 | `jq` | reads the onebox config | `brew install jq` |
 | `eas` | Expo builds and updates, also local builds | `npm install -g eas-cli`. See [expo-eas.md](expo-eas.md). |
 | CocoaPods (`pod`) | local iOS builds | `brew install cocoapods`. See [xcode.md](xcode.md), step 6. |
@@ -97,8 +97,9 @@ On the box, after `box:box-setup`, its `check` phase must end with `0 fail`.
   Tools are selected, not Xcode. Run
   `sudo xcode-select -s /Applications/Xcode.app`.
 - **`pnpm -v` fails with `Cannot find module ... pnpm.cjs`.** Corepack picked a
-  pnpm version it cannot start (pnpm 12). Outside a repo:
-  `corepack install -g pnpm@10`. In a repo: `corepack use pnpm@10`.
+  pnpm version it cannot start (pnpm 12). Stop using corepack for pnpm and
+  install it directly: `npm install -g pnpm@10`. If `corepack: command not
+  found`, your Node is 25 or newer and has no corepack; the same command works.
 - **`npx eas-cli` fails with `Cannot find module 'fdir'`.** Use the global
   `eas` from `npm install -g eas-cli`.
 - **`docker info` says it cannot connect.** The Docker app or Colima is not

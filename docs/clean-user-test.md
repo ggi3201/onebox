@@ -62,7 +62,12 @@ Close Terminal, open it again, then type `claude` and press Enter. Log in with
 your Claude account when it asks.
 
 **c. Log in to GitHub.** The onebox repository is private, so GitHub must know
-you:
+you. This uses the GitHub command-line tool, `gh`. It comes from Homebrew: in
+this test it is one of the shared tools from step a. On a real clean Mac you
+install it yourself. First install [Homebrew](https://brew.sh) (its page shows
+the install command and, at the end, two "Next steps" lines to add `brew` to
+`~/.zprofile`; run them). Then run `brew install gh`. Check with `gh --version`.
+If `gh` is not found after step a, that is a stuck place: write it down.
 
 ```bash
 gh auth login

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "about": "What a plan step can need before it starts. catalog.json lists need ids per item; `plan.mjs ready` runs the checks. Every check is read-only and non-interactive, and it times out after a few seconds. A check that cannot run gives `unknown`, never `missing`. `check` forms: `run` (a /bin/sh command in the repo: exit 0 is ok, exit 3 is unknown, a timeout is unknown, anything else is missing; `version` compares the first number it prints; `env` passes config values to the command as variables), `config` (these onebox config keys are set), `file` (the config key holds a path to a file that exists), `secret` (a secret with this name exists in the configured secrets.tool: `ref` is the config key that names it, `default` the name when that key is not set; the value is never read into output), `secretsConfig` (with Doppler: the project and config are in the onebox config), `secretsCli` (the configured secrets tool is installed and signed in), `plugin` (the onebox plugin is in Claude Code's installed_plugins.json; no such file means skip), `planItem` (this plan item is done: detect.mjs found it done or seen, or the user ticked it), `detect` (this field of detect.mjs's output is true; for Sign in with Apple, `usesAppleSignIn` in the app config means EAS turns the capability on at the next build), `manual` (nothing can check it; with `yours` the user does it by hand), `any` and `all`. `after` names needs that must pass first; `ready` adds them to the step. `fix` is one line: a command when `safe` is true (a local install the agent may run after the user says yes), otherwise the action. `yours` means only the user can do it. `ask` is the question the agent asks when the fix needs an answer from the user. `problem` overrides the plain sentence `ready` makes from `label`. `hint` goes in brackets after a `yours` fix.",
+  "about": "What a plan step can need before it starts. catalog.json lists need ids per item; `plan.mjs ready` runs the checks. Every check is read-only and non-interactive, and it times out after a few seconds. A check that cannot run gives `unknown`, never `missing`. `check` forms: `run` (a /bin/sh command in the repo: exit 0 is ok, exit 3 is unknown, a timeout is unknown, anything else is missing; `version` compares the first number it prints; `env` passes config values to the command as variables), `config` (these onebox config keys are set), `file` (the config key holds a path to a file that exists), `secret` (a secret with this name exists in the configured secrets.tool: `ref` is the config key that names it, `default` the name when that key is not set; the value is never read into output), `secretsConfig` (with Doppler: the project and config are in the onebox config), `secretsCli` (the configured secrets tool is installed and signed in), `plugin` (the onebox plugin is in Claude Code's installed_plugins.json; no such file means skip), `planItem` (this plan item is done: detect.mjs found it done or seen, or the user ticked it), `detect` (this field of detect.mjs's output is true; for Sign in with Apple, `usesAppleSignIn` in the app config means EAS turns the capability on at the next build), `manual` (nothing can check it; with `yours` the user does it by hand), `any` and `all`. `after` names needs that must pass first; `ready` adds them to the step. `fix` is one line: a command when `safe` is true (a local install the agent may run after the user says yes), otherwise the action. `yours` means only the user can do it. `ask` is the question the agent asks when the fix needs an answer from the user. `problem` overrides the plain sentence `ready` makes from `label`. `hint` goes in brackets after a `yours` fix. `takes` says how long a `safe` fix takes. `run` checks use the PATH of a login shell, as the user's own Terminal has it, not the PATH of the app that runs this script (see needs.mjs).",
   "needs": [
     {
       "id": "xcode",
@@ -36,7 +36,8 @@
       "label": "Node.js",
       "kind": "tool",
       "check": { "run": "node -v", "version": { "min": "22" } },
-      "fix": "brew install node@22",
+      "fix": "brew install node@22 && brew link --overwrite --force node@22",
+      "takes": "about 2 minutes",
       "safe": true,
       "guide": "https://onebox.lokkesveen.com/guides/tools/#everyone-needs-these"
     },
@@ -46,7 +47,8 @@
       "kind": "tool",
       "after": ["node"],
       "check": { "run": "pnpm -v", "version": { "major": 10 }, "timeout": 8 },
-      "fix": "corepack enable && corepack install -g pnpm@10",
+      "fix": "npm install -g pnpm@10",
+      "takes": "under a minute",
       "safe": true,
       "guide": "https://onebox.lokkesveen.com/guides/tools/#everyone-needs-these"
     },
@@ -66,6 +68,7 @@
       "after": ["node"],
       "check": { "run": "eas --version", "timeout": 8 },
       "fix": "npm install -g eas-cli",
+      "takes": "under a minute",
       "safe": true,
       "guide": "https://onebox.lokkesveen.com/guides/expo-eas/#steps"
     },
@@ -92,6 +95,7 @@
       "kind": "tool",
       "check": { "run": "pod --version", "timeout": 8 },
       "fix": "brew install cocoapods",
+      "takes": "about 5 minutes",
       "safe": true,
       "guide": "https://onebox.lokkesveen.com/guides/xcode/#steps"
     },

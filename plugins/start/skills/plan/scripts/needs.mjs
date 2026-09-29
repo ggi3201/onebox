@@ -53,9 +53,33 @@ const get = (cfg, key) => {
   return v === "" || v == null ? undefined : v;
 };
 
+// ---------- the user's own Terminal ----------
+
+// The app that runs this script often has a longer PATH than the user's
+// Terminal: some add /opt/homebrew/bin whether or not the user has it. A tool
+// found only there is missing where the user types, and a step that says "run
+// this in your own terminal" fails. So the checks run with the PATH a login
+// shell gives, like Terminal.app: only the user's startup files, no
+// inherited PATH. It is read once. If it cannot be read, the checks use this
+// process's PATH, as before.
+let terminal; // a promise of { path }: the checks run in parallel
+const terminalEnv = () => (terminal ??= readTerminal());
+async function readTerminal() {
+  const term = { path: undefined };
+  const home = os.homedir();
+  const shell = ["/bin/zsh", "/bin/bash"].includes(process.env.SHELL) ? process.env.SHELL : "/bin/zsh";
+  if (process.platform !== "darwin" || !fs.existsSync(shell)) return term;
+  const clean = `env -i HOME="${home}" USER="${os.userInfo().username}" SHELL=${shell} TERM=xterm-256color ${shell} -lic`;
+  // Markers, because a startup file may print something.
+  const r = await run(`${clean} 'printf "\n@@P@@%s@@P@@\n" "$PATH"' 2>/dev/null`, { cwd: home, timeout: 8, stdout: true, raw: true });
+  const m = /@@P@@(.*?)@@P@@/.exec(r.out ?? "");
+  if (m && m[1].includes("/usr/bin")) term.path = m[1];
+  return term;
+}
+
 // ---------- running a command ----------
 
-function run(cmd, { cwd, env = {}, timeout = TIMEOUT, stdout = false, stderr = false }) {
+function run(cmd, { cwd, env = {}, timeout = TIMEOUT, stdout = false, stderr = false, raw = false }) {
   return new Promise((resolve) => {
     let child;
     try {
@@ -63,7 +87,7 @@ function run(cmd, { cwd, env = {}, timeout = TIMEOUT, stdout = false, stderr = f
         cwd,
         detached: true, // its own process group, so a timeout kills what it started too
         stdio: ["ignore", stdout ? "pipe" : "ignore", stderr ? "pipe" : "ignore"],
-        env: { ...process.env, COREPACK_ENABLE_DOWNLOAD_PROMPT: "0", NO_COLOR: "1", ...env },
+        env: { ...process.env, ...(raw ? {} : { COREPACK_ENABLE_DOWNLOAD_PROMPT: "0", NO_COLOR: "1" }), ...env },
       });
     } catch (e) { resolve({ error: e.message }); return; }
     let out = "", err = "", done = false;
@@ -163,7 +187,15 @@ async function evaluate(c, ctx) {
       env[k] = String(v);
     }
     const t = c.timeout ?? TIMEOUT;
-    const r = await run(c.run, { cwd: ctx.repo, env, timeout: t, stdout: !!c.version });
+    const term = await terminalEnv();
+    if (term.path) env.PATH = term.path;
+    let r = await run(c.run, { cwd: ctx.repo, env, timeout: t, stdout: !!c.version });
+    if (term.path && r.code === 127) {
+      // Not found where the user types. Is it found where this app runs?
+      const { PATH: _, ...rest } = env;
+      const again = await run(c.run, { cwd: ctx.repo, env: rest, timeout: t });
+      if (again.code === 0) return { status: "missing", why: "found for this app, but not in your own terminal", appOnly: true };
+    }
     if (r.timedOut) return { status: "unknown", why: `the check took longer than ${t} s` };
     if (r.code == null) return { status: "unknown", why: r.error ?? "the check was stopped" };
     if (r.code === 3) return { status: "unknown", why: "the check cannot run here" };
@@ -260,6 +292,17 @@ export async function checkNeeds(steps, NEEDS, ctx) {
       const n = NEEDS.get(id), r = await check(id);
       const x = { id, label: n.label, kind: n.kind, status: r.status };
       for (const k of ["why", "have", "want"]) if (r[k]) x[k] = r[k];
+      if (r.appOnly) x.appOnly = true;
+      if (BLOCKS.has(r.status) || (r.status === "unknown" && r.why?.startsWith("needs "))) {
+        // A need that waits for another (eas after node) is listed with its fix,
+        // so the whole list is known up front.
+        x.problem = problemOf(n, r.status === "unknown" ? { status: "missing" } : r);
+        x.fix = n.fix;
+        x.safe = !!n.safe && !n.yours;
+        x.yours = !!n.yours;
+        x.waits = r.status === "unknown";
+        if (n.takes) x.takes = n.takes;
+      }
       if (BLOCKS.has(r.status)) {
         x.problem = problemOf(n, r);
         x.fix = n.fix;
@@ -287,6 +330,29 @@ function lineFor(s) {
   if (b.ask) return `${pre}One thing first: ${b.problem}. ${b.ask}`;
   if (b.safe) return `${pre}One thing first: ${b.problem} (${b.fix}). Should I run it, then continue?`;
   return `${pre}One thing first: ${b.problem}. To fix it: ${b.fix}. Tell me when it is done.`;
+}
+
+// One list of everything a step still needs, then one question. For the first
+// step (new-app): the user sees what is missing, why, and how long it takes
+// before anything is installed, not one blocker at a time.
+export function listFor(s) {
+  const bad = s.needs.filter((n) => BLOCKS.has(n.status) || n.waits);
+  if (!bad.length) return s.nudge ? `Next: ${s.nudge}. Everything this step needs is here. Continue?` : "Everything is ready.";
+  const mine = bad.filter((n) => n.safe && !n.ask), yours = bad.filter((n) => !mine.includes(n));
+  const lines = [`${s.nudge ? `Next: ${s.nudge}. ` : ""}First, ${bad.length === 1 ? "one thing is" : `${bad.length} things are`} missing on this Mac. I checked with your own Terminal, not only this app.`, ""];
+  let i = 0;
+  const one = (n, how) => {
+    const why = n.appOnly ? " (this app finds it, your Terminal does not)" : "";
+    const took = n.takes ? ` Takes ${n.takes}.` : "";
+    lines.push(`${++i}. ${n.problem.replace(/^you\b/, "You").replace(/^./, (c) => (/^(pnpm|eas)\b/.test(n.problem) ? c : c.toUpperCase()))}${why}. ${how}${how.endsWith(".") ? "" : "."}${took}`);
+  };
+  for (const n of mine) one(n, `I can install it with \`${n.fix}\``);
+  for (const n of yours) one(n, n.ask ? n.ask : `This part is yours: ${n.fix}`);
+  lines.push("");
+  if (mine.length && yours.length) lines.push(`Should I install ${mine.length === 1 ? "the first one" : `the first ${mine.length}`} now, one by one? The rest are yours; I will tell you when each is due.`);
+  else if (mine.length) lines.push(`Should I install ${mine.length === 1 ? "it" : "them"} now, one by one, then continue?`);
+  else lines.push("These are yours to do. Tell me when each is done.");
+  return lines.join("\n");
 }
 
 export function sayFor(results, { all = false, nothingLeft = false } = {}) {

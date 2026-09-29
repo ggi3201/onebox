@@ -58,7 +58,10 @@ load the skill, so it must carry the trigger phrases.
     question: "Next: Sign in with Apple. Continue?". "Yes" must be enough.
     No lists, config keys or detection lines unless the user asks. If
     something blocks the next step, name only that one thing, in plain
-    words (`plan.mjs ready` finds it). Explain a technical word the first
+    words (`plan.mjs ready` finds it). One exception: a setup check before
+    a first step (`/start:new-app`) shows every missing tool in one list with
+    the time each takes and one question (`plan.mjs ready --list`). Finding
+    them one at a time, over several messages, wastes the user's time. Explain a technical word the first
     time you use it, and link
     `https://onebox.lokkesveen.com/guides/glossary/`. Offer a fix only when
     it is a safe local install, and run it only after the user says yes.

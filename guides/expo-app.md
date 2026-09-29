@@ -38,11 +38,20 @@ With pnpm, list only `apps/mobile` in `pnpm-workspace.yaml` (a .NET API is
 not a pnpm package), and put `node-linker=hoisted` in `.npmrc`. Metro and
 CocoaPods do not follow pnpm's symlinked `node_modules`.
 
-Pin pnpm 10 with `corepack use pnpm@10` at the repo root. It writes
-`packageManager` in `package.json`. pnpm 12 does not start through corepack
-yet, so do not take the newest version ([tools.md](tools.md)). Put the Node
-major in `.node-version` (for example `24`), and let CI read it with
-`node-version-file: .node-version`.
+### Pin pnpm
+
+Pin pnpm 10 at the repo root, so every machine and CI use the same one. Node 25
+and newer no longer ship corepack, so do not depend on it:
+
+```bash
+npm pkg set packageManager="pnpm@$(pnpm -v)"   # pnpm -v must print 10.x
+pnpm install
+```
+
+If `corepack` is on your machine, `corepack use pnpm@10` does the same and adds
+a hash. Either way, do not take a newer major than 10 until the kit says so
+([tools.md](tools.md)). Put the Node major in `.node-version` (for example
+`24`), and let CI read it with `node-version-file: .node-version`.
 
 Put git worktree folders in `.gitignore` (for example `.claude/worktrees/`).
 `eas build --local` packs every file git does not ignore, and one build with
