@@ -13,6 +13,15 @@
 //       given; then its text is kept under "Kept from your old plan".
 //       --dry-run prints the file instead of writing it.
 //
+//   node plan.mjs ready [--answers <json|@file>] [--detect <file|->] [--repo <dir>]
+//                       [--out PLAN.md] [--all] [--step <item id>] [--need <id,id>]
+//       Finds the next step the way `write` does, and checks only what that
+//       step needs (references/needs.json). Prints JSON with a `say` line:
+//       the next step, and at most one blocker. --all checks every step left.
+//       --step checks one catalog item instead of the next one. --need checks
+//       only these need ids; with --step it adds them. Read-only: it writes nothing, installs nothing and never
+//       prints a secret or a config value.
+//
 // Answers look like {"backend":"box","login":"apple","ai":["chat"]}. A missing
 // answer falls back to your earlier answer, then detection, then the catalog
 // default. Without --detect it runs detect.mjs on the repo. Same input, same file.
@@ -22,6 +31,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { loadNeeds, loadConfig, checkNeeds, sayFor } from "./needs.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const catalog = JSON.parse(fs.readFileSync(path.join(HERE, "..", "references", "catalog.json"), "utf8"));
@@ -50,13 +60,13 @@ const HEADERS = { stage: "Stage", backend: "Server", login: "Sign-in", paid: "Pa
 function die(msg, code = 2) { process.stderr.write(`plan.mjs: ${msg}\n`); process.exit(code); }
 const argv = process.argv.slice(2);
 const mode = argv[0];
-if (!["questions", "write"].includes(mode)) die("first argument must be `questions` or `write`");
+if (!["questions", "write", "ready"].includes(mode)) die("first argument must be `questions`, `write` or `ready`");
 const flags = {};
 for (let i = 1; i < argv.length; i++) {
   const a = argv[i];
   if (!a.startsWith("--")) die(`unexpected argument ${a}`);
   const k = a.slice(2);
-  if (["dry-run", "convert"].includes(k)) flags[k] = true;
+  if (["dry-run", "convert", "all"].includes(k)) flags[k] = true;
   else { if (argv[i + 1] == null) die(`${a} needs a value`); flags[k] = argv[++i]; }
 }
 const repo = path.resolve(flags.repo ?? ".");
@@ -353,10 +363,13 @@ function mergeBlanks(out) {
 
 // ---------- write mode ----------
 
-function writeMode() {
+// Build the new PLAN.md text, and what a summary needs, without writing.
+// `readonly` (for `ready`) reads a PLAN.md in another format as no plan.
+function buildPlan({ readonly = false } = {}) {
   const detect = loadDetect();
   const explicit = parseAnswers(flags.answers);
-  const old = readOldPlan();
+  let old = readOldPlan();
+  if (old?.foreign && readonly) old = null;
   if (old?.foreign && !flags.convert) {
     die(`${path.relative(repo, outPath) || "PLAN.md"} exists and was not made by /start:plan. Nothing written. ` +
       "Ask the user: keep it and write the plan to another file (--out ONEBOX-PLAN.md), " +
@@ -383,6 +396,7 @@ function writeMode() {
   const userLines = (b) => b.lines.map((user) => ({ user }));
   const out = [];
   let doneCount = 0, next = null;
+  const left = [], newlyDone = [], tickedKeys = new Set();
   for (const s of secs) {
     out.push("", s.heading, "");
     out.push(...blocksFor((b) => b.heading === s.heading && b.anchor.type === "heading").flatMap(userLines));
@@ -403,9 +417,16 @@ function writeMode() {
         else if (likely) out.push(`  - likely done: ${likely}`);
         else if (found) out.push(`  - found: ${found}`);
         out.push(...blocksFor((b) => b.anchor.type === "item" && b.anchor.key === key).flatMap(userLines));
-        if (ticked) doneCount++;
+        const item = items.find((it) => keyOf(it) === key);
+        if (ticked) {
+          doneCount++; tickedKeys.add(key);
+          if (prev && !prev.ticked) newlyDone.push(item);
+        }
         // A now-and-then item is never the next step: it is never done for good.
-        else if (!next && !repeat) next = { heading: s.heading.replace(/^## /, ""), text: fresh.replace(/ \(raw: [^)]*\)/, "").replace(/ <!--.*$/, "") };
+        else if (!repeat) {
+          left.push(item);
+          next ??= { heading: s.heading.replace(/^## /, ""), text: fresh.replace(/ \(raw: [^)]*\)/, "").replace(/ <!--.*$/, ""), item };
+        }
       } else {
         out.push(l.text);
         const n = (occ.get(l.text) ?? 0) + 1; occ.set(l.text, n);
@@ -427,7 +448,11 @@ function writeMode() {
 
   const meta = { answers, sources };
   const file = `${MARK}${JSON.stringify(meta)} -->\n${mergeBlanks(out)}\n`;
+  return { detect, old, answers, sources, items, plugins, keys, file, doneCount, next, left, newlyDone, tickedKeys };
+}
 
+function writeMode() {
+  const { detect, old, answers, sources, items, plugins, keys, file, doneCount, next, newlyDone } = buildPlan();
   const rel = path.relative(repo, outPath) || "PLAN.md";
   if (flags["dry-run"]) process.stdout.write(file);
   else if (old?.text !== file) fs.writeFileSync(outPath, file);
@@ -447,6 +472,7 @@ function writeMode() {
       log(`Check: you answered ${q.id}=${answers[q.id]}, but detection now says ${d.value} (${d.why}).`);
     }
   }
+  if (newlyDone.length) log(`Newly done: ${newlyDone.map((it) => it.nudge ?? it.title).join("; ")}`);
   log(next ? `Next: ${next.text} (${next.heading})` : "Next: nothing left. Every item is ticked.");
   if (detect.cannotDetect?.length) log(`Could not detect: ${detect.cannotDetect.join("; ")}.`);
 }
@@ -455,5 +481,52 @@ function staticLooksGenerated(body) {
   return catalog.items.some((it) => itemText(it) === body);
 }
 
+// ---------- ready mode ----------
+
+// Which needs a step checks: its own list, filtered by the answers.
+// needs.mjs adds what each need must have first (`after`).
+const stepNeeds = (it, answers) => (it.needs ?? [])
+  .map((n) => (typeof n === "string" ? { id: n } : n))
+  .filter((n) => matches(n.when, answers))
+  .map((n) => n.id);
+
+async function readyMode() {
+  const started = Date.now();
+  const NEEDS = loadNeeds();
+  for (const it of catalog.items) for (const id of (it.needs ?? []).map((n) => n.id ?? n)) {
+    if (!NEEDS.has(id)) die(`catalog item ${it.id} needs "${id}", which is not in needs.json`);
+  }
+  const extra = flags.need ? String(flags.need).split(",").map((s) => s.trim()).filter(Boolean) : [];
+  for (const id of extra) if (!NEEDS.has(id)) die(`--need: "${id}" is not in needs.json. Known: ${[...NEEDS.keys()].join(", ")}`);
+
+  const plan = buildPlan({ readonly: true });
+  const stepOf = (it) => ({ id: it.id, nudge: it.nudge ?? it.title, title: it.title, link: it.kind === "guide" ? `${SITE}/guides/${slugOf(it)}/` : `/${it.plugin}:${slugOf(it)}` });
+
+  let steps;
+  if (flags.step) {
+    const it = catalog.items.find((x) => x.id === flags.step);
+    if (!it) die(`--step: "${flags.step}" is not a catalog item`);
+    steps = [{ ...stepOf(it), ids: [...stepNeeds(it, plan.answers), ...extra] }];
+  } else if (extra.length) {
+    steps = [{ id: null, nudge: null, ids: extra }];
+  } else if (flags.all) {
+    steps = plan.left.map((it) => ({ ...stepOf(it), ids: stepNeeds(it, plan.answers) }));
+  } else if (plan.next) {
+    steps = [{ ...stepOf(plan.next.item), ids: stepNeeds(plan.next.item, plan.answers) }];
+  } else steps = [];
+
+  const ctx = { repo, config: loadConfig(repo), detect: plan.detect, ticked: plan.tickedKeys };
+  const results = await checkNeeds(steps, NEEDS, ctx);
+  const first = results[0];
+  const out = flags.all
+    ? { next: plan.next ? stepOf(plan.next.item) : null, steps: results.map(({ ids, ...s }) => s) }
+    : { next: first?.id ? { id: first.id, nudge: first.nudge, title: first.title, link: first.link } : null, ready: !first?.blocker, blocker: first?.blocker ?? null, needs: first?.needs ?? [] };
+  out.say = sayFor(results, { all: !!flags.all, nothingLeft: !plan.next && !flags.step });
+  out.ms = Date.now() - started;
+  console.log(JSON.stringify(out, null, 2));
+  process.stderr.write(out.say + "\n");
+}
+
 if (mode === "questions") questionsMode();
+else if (mode === "ready") await readyMode();
 else writeMode();

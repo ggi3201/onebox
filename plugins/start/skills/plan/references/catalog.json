@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "about": "One source for the planner skill and the picker on the website. Each question has options; each item says which answers include it. An item with no `when` is always in the plan. `when` lists question ids with the option ids that turn the item on; all listed questions must match (AND), any option within one question matches (OR). `doneWhen` uses the same shape: when it matches, the item is still listed but starts ticked as likely done (the user can untick it).",
+  "about": "One source for the planner skill and the picker on the website. Each question has options; each item says which answers include it. An item with no `when` is always in the plan. `when` lists question ids with the option ids that turn the item on; all listed questions must match (AND), any option within one question matches (OR). `doneWhen` uses the same shape: when it matches, the item is still listed but starts ticked as likely done (the user can untick it). `nudge` is the short name the agent says (\"Next: <nudge>. Continue?\"). `needs` lists ids from needs.json: what the step needs before it starts, in the order `plan.mjs ready` checks them. An entry can also be {\"id\", \"when\"}, with `when` in the same shape as an item's.",
   "questions": [
     {
       "id": "stage",
@@ -162,6 +162,10 @@
       "kind": "guide",
       "phase": "accounts",
       "title": "Join the Apple Developer Program",
+      "nudge": "Your Apple Developer account",
+      "needs": [
+        "apple-developer-account"
+      ],
       "doneWhen": {
         "stage": [
           "testflight",
@@ -174,6 +178,11 @@
       "kind": "guide",
       "phase": "accounts",
       "title": "Install Xcode",
+      "nudge": "Xcode",
+      "needs": [
+        "xcode",
+        "xcode-selected"
+      ],
       "doneWhen": {
         "stage": [
           "testflight",
@@ -186,6 +195,19 @@
       "kind": "guide",
       "phase": "accounts",
       "title": "Install the command-line tools",
+      "nudge": "The command-line tools",
+      "needs": [
+        "xcode-selected",
+        "git",
+        "node",
+        "pnpm",
+        "jq",
+        "eas",
+        "cocoapods",
+        "cocoapods-ruby",
+        "utf8-locale",
+        "fastlane"
+      ],
       "doneWhen": {
         "stage": [
           "testflight",
@@ -197,13 +219,19 @@
       "id": "secrets",
       "kind": "guide",
       "phase": "accounts",
-      "title": "Pick one place for your secrets"
+      "title": "Pick one place for your secrets",
+      "nudge": "One place for your secrets",
+      "needs": []
     },
     {
       "id": "domain",
       "kind": "guide",
       "phase": "accounts",
       "title": "Register a domain that stays cheap",
+      "nudge": "Your domain",
+      "needs": [
+        "domain-bought"
+      ],
       "when": {
         "site": [
           "yes"
@@ -216,6 +244,10 @@
       "slug": "domain",
       "phase": "accounts",
       "title": "Register a domain for your API",
+      "nudge": "A domain for your API",
+      "needs": [
+        "domain-bought"
+      ],
       "when": {
         "site": [
           "no"
@@ -231,6 +263,26 @@
       "plugin": "start",
       "phase": "app",
       "title": "Make the repo in the layout the kit expects, with its checks",
+      "nudge": "Make your app's repo",
+      "needs": [
+        "git",
+        "node",
+        "pnpm",
+        "eas",
+        "eas-login",
+        "xcode-selected",
+        "cocoapods",
+        "cocoapods-ruby",
+        "utf8-locale",
+        {
+          "id": "docker-running",
+          "when": {
+            "backend": [
+              "box"
+            ]
+          }
+        }
+      ],
       "when": {
         "stage": [
           "idea"
@@ -242,6 +294,11 @@
       "kind": "guide",
       "phase": "app",
       "title": "Make the Expo project fit the setup",
+      "nudge": "Fit your Expo app to the kit",
+      "needs": [
+        "node",
+        "eas"
+      ],
       "doneWhen": {
         "stage": [
           "testflight",
@@ -253,14 +310,27 @@
       "id": "agent-test-loop",
       "kind": "guide",
       "phase": "app",
-      "title": "Give your agent a test loop"
+      "title": "Give your agent a test loop",
+      "nudge": "A test loop for your agent",
+      "needs": [
+        "node"
+      ]
     },
     {
       "id": "test-loop",
       "kind": "skill",
       "plugin": "dev",
       "phase": "app",
-      "title": "Agent checks its own work, then proves it in the Simulator"
+      "title": "Agent checks its own work, then proves it in the Simulator",
+      "nudge": "Your agent tests its work in the Simulator",
+      "needs": [
+        "plugin-dev",
+        "node",
+        "xcode-selected",
+        "cocoapods",
+        "cocoapods-ruby",
+        "utf8-locale"
+      ]
     },
     {
       "id": "trim-tests",
@@ -268,6 +338,10 @@
       "plugin": "dev",
       "phase": "app",
       "title": "Trim the test suite now and then",
+      "nudge": "Trim the tests",
+      "needs": [
+        "plugin-dev"
+      ],
       "repeat": true
     },
     {
@@ -275,6 +349,11 @@
       "kind": "guide",
       "phase": "box",
       "title": "Rent a small VPS (or use a mini PC)",
+      "nudge": "Rent a small server",
+      "needs": [
+        "ssh-key",
+        "vps-rented"
+      ],
       "when": {
         "backend": [
           "box"
@@ -287,6 +366,11 @@
       "slug": "vps",
       "phase": "box",
       "title": "Rent a small VPS for the landing page",
+      "nudge": "Rent a small server for the landing page",
+      "needs": [
+        "ssh-key",
+        "vps-rented"
+      ],
       "when": {
         "backend": [
           "none",
@@ -302,6 +386,10 @@
       "kind": "guide",
       "phase": "box",
       "title": "Put the domain on Cloudflare, with a tunnel",
+      "nudge": "Your domain on Cloudflare",
+      "needs": [
+        "domain-bought"
+      ],
       "when": {
         "site": [
           "yes"
@@ -314,6 +402,10 @@
       "slug": "cloudflare",
       "phase": "box",
       "title": "Put the domain on Cloudflare, with a tunnel",
+      "nudge": "Your domain on Cloudflare",
+      "needs": [
+        "domain-bought"
+      ],
       "when": {
         "site": [
           "no"
@@ -329,6 +421,13 @@
       "plugin": "box",
       "phase": "box",
       "title": "Bring the box to a safe baseline",
+      "nudge": "Set up the box",
+      "needs": [
+        "plugin-box",
+        "box-ssh",
+        "cloudflare-token",
+        "gh-login"
+      ],
       "when": {
         "backend": [
           "box"
@@ -342,6 +441,12 @@
       "plugin": "box",
       "phase": "box",
       "title": "Bring the box to a safe baseline",
+      "nudge": "Set up the box",
+      "needs": [
+        "plugin-box",
+        "box-ssh",
+        "cloudflare-token"
+      ],
       "when": {
         "backend": [
           "none",
@@ -357,6 +462,10 @@
       "kind": "guide",
       "phase": "box",
       "title": "Reach the box from your phone",
+      "nudge": "Reach the box from your phone",
+      "needs": [
+        "tailscale"
+      ],
       "when": {
         "remote": [
           "yes"
@@ -371,6 +480,8 @@
       "kind": "guide",
       "phase": "box",
       "title": "Get an alert when the box or the API is down",
+      "nudge": "Alerts when the box is down",
+      "needs": [],
       "when": {
         "backend": [
           "box"
@@ -382,6 +493,12 @@
       "kind": "guide",
       "phase": "backend",
       "title": "API and Postgres on the box, users kept apart, protected",
+      "nudge": "Your API on the box",
+      "needs": [
+        "docker-running",
+        "gh-login",
+        "box-ssh"
+      ],
       "when": {
         "backend": [
           "box"
@@ -393,6 +510,8 @@
       "kind": "guide",
       "phase": "backend",
       "title": "Supabase, Convex or Firebase: set up, keep users apart, secrets",
+      "nudge": "Your hosted backend",
+      "needs": [],
       "when": {
         "backend": [
           "hosted"
@@ -405,6 +524,12 @@
       "plugin": "box",
       "phase": "backend",
       "title": "Give the API its public hostname",
+      "nudge": "A public address for your API",
+      "needs": [
+        "plugin-box",
+        "box-ssh",
+        "cloudflare-token"
+      ],
       "when": {
         "backend": [
           "box"
@@ -417,6 +542,12 @@
       "plugin": "box",
       "phase": "backend",
       "title": "A staging API for test builds",
+      "nudge": "A test copy of your API",
+      "needs": [
+        "plugin-box",
+        "box-ssh",
+        "gh-login"
+      ],
       "when": {
         "backend": [
           "box"
@@ -429,6 +560,16 @@
       "plugin": "ship-ios",
       "phase": "backend",
       "title": "A test build for your phone, pointed at a test backend",
+      "nudge": "A test build on your phone",
+      "needs": [
+        "plugin-ship-ios",
+        "eas-login",
+        "xcode-selected",
+        "cocoapods",
+        "cocoapods-ruby",
+        "utf8-locale",
+        "fastlane"
+      ],
       "when": {
         "backend": [
           "box",
@@ -441,6 +582,11 @@
       "kind": "guide",
       "phase": "features",
       "title": "Sign in with Apple, verified on the server",
+      "nudge": "Sign in with Apple",
+      "needs": [
+        "siwa-capability",
+        "siwa-key"
+      ],
       "when": {
         "login": [
           "apple"
@@ -452,6 +598,11 @@
       "kind": "guide",
       "phase": "features",
       "title": "Subscriptions with RevenueCat",
+      "nudge": "In-app purchases with RevenueCat",
+      "needs": [
+        "paid-apps-agreement",
+        "revenuecat-key"
+      ],
       "when": {
         "paid": [
           "subs"
@@ -463,6 +614,11 @@
       "kind": "guide",
       "phase": "features",
       "title": "Send push notifications from your API",
+      "nudge": "Push notifications",
+      "needs": [
+        "eas-login",
+        "apns-key"
+      ],
       "when": {
         "backend": [
           "box"
@@ -474,6 +630,10 @@
       "kind": "guide",
       "phase": "features",
       "title": "Get an LLM API key",
+      "nudge": "An LLM API key",
+      "needs": [
+        "llm-key"
+      ],
       "when": {
         "ai": [
           "chat",
@@ -487,6 +647,11 @@
       "plugin": "app-features",
       "phase": "features",
       "title": "An agent in your API that calls your tools",
+      "nudge": "An AI agent in your API",
+      "needs": [
+        "plugin-app-features",
+        "llm-key"
+      ],
       "when": {
         "ai": [
           "chat"
@@ -502,6 +667,11 @@
       "plugin": "app-features",
       "phase": "features",
       "title": "A streamed chat screen",
+      "nudge": "A chat screen",
+      "needs": [
+        "plugin-app-features",
+        "llm-key"
+      ],
       "when": {
         "ai": [
           "chat"
@@ -517,6 +687,11 @@
       "plugin": "app-features",
       "phase": "features",
       "title": "Import from a shared link",
+      "nudge": "Import from a shared link",
+      "needs": [
+        "plugin-app-features",
+        "llm-key"
+      ],
       "when": {
         "ai": [
           "import"
@@ -532,6 +707,10 @@
       "plugin": "app-features",
       "phase": "features",
       "title": "A cost budget per user",
+      "nudge": "An AI budget per user",
+      "needs": [
+        "plugin-app-features"
+      ],
       "when": {
         "ai": [
           "chat",
@@ -548,6 +727,10 @@
       "plugin": "app-features",
       "phase": "features",
       "title": "The AI consent Apple asks for",
+      "nudge": "The AI consent screen",
+      "needs": [
+        "plugin-app-features"
+      ],
       "when": {
         "ai": [
           "chat",
@@ -561,6 +744,10 @@
       "plugin": "app-features",
       "phase": "features",
       "title": "Slow AI work as background jobs",
+      "nudge": "Slow AI work in the background",
+      "needs": [
+        "plugin-app-features"
+      ],
       "when": {
         "ai": [
           "chat",
@@ -576,6 +763,8 @@
       "kind": "guide",
       "phase": "features",
       "title": "Trace and cost every AI call",
+      "nudge": "See what each AI call costs",
+      "needs": [],
       "when": {
         "ai": [
           "chat",
@@ -588,6 +777,10 @@
       "kind": "guide",
       "phase": "features",
       "title": "A kie.ai key for images and video",
+      "nudge": "A kie.ai key for images and video",
+      "needs": [
+        "kie-key"
+      ],
       "when": {
         "ai": [
           "media"
@@ -600,6 +793,11 @@
       "plugin": "content",
       "phase": "features",
       "title": "Generate images",
+      "nudge": "Generate images",
+      "needs": [
+        "plugin-content",
+        "kie-key"
+      ],
       "when": {
         "ai": [
           "media"
@@ -612,6 +810,12 @@
       "plugin": "content",
       "phase": "features",
       "title": "Generate video from approved stills",
+      "nudge": "Generate video",
+      "needs": [
+        "plugin-content",
+        "kie-key",
+        "ffmpeg"
+      ],
       "when": {
         "ai": [
           "media"
@@ -623,6 +827,10 @@
       "kind": "guide",
       "phase": "store",
       "title": "The manual App Store Connect setup",
+      "nudge": "Your app in App Store Connect",
+      "needs": [
+        "apple-developer-account"
+      ],
       "doneWhen": {
         "stage": [
           "testflight",
@@ -635,6 +843,11 @@
       "kind": "guide",
       "phase": "store",
       "title": "An App Store Connect API key",
+      "nudge": "An App Store Connect API key",
+      "needs": [
+        "apple-developer-account",
+        "asc-key"
+      ],
       "doneWhen": {
         "stage": [
           "testflight",
@@ -647,6 +860,11 @@
       "kind": "guide",
       "phase": "store",
       "title": "Expo account, and local vs cloud builds",
+      "nudge": "Your Expo account",
+      "needs": [
+        "eas",
+        "eas-login"
+      ],
       "doneWhen": {
         "stage": [
           "testflight",
@@ -660,6 +878,18 @@
       "plugin": "ship-ios",
       "phase": "store",
       "title": "Build on your Mac and send to TestFlight",
+      "nudge": "Your first TestFlight build",
+      "needs": [
+        "plugin-ship-ios",
+        "eas-login",
+        "xcode-selected",
+        "cocoapods",
+        "cocoapods-ruby",
+        "utf8-locale",
+        "fastlane",
+        "asc-app-record",
+        "asc-key"
+      ],
       "doneWhen": {
         "stage": [
           "testflight",
@@ -672,20 +902,32 @@
       "kind": "skill",
       "plugin": "ship-ios",
       "phase": "store",
-      "title": "Ship JavaScript fixes without a new build"
+      "title": "Ship JavaScript fixes without a new build",
+      "nudge": "Quick fixes without a new build",
+      "needs": [
+        "plugin-ship-ios",
+        "eas-login"
+      ]
     },
     {
       "id": "appstore-connect",
       "kind": "skill",
       "plugin": "ship-ios",
       "phase": "store",
-      "title": "TestFlight builds, testers and subscriptions"
+      "title": "TestFlight builds, testers and subscriptions",
+      "nudge": "TestFlight testers",
+      "needs": [
+        "plugin-ship-ios",
+        "asc-key"
+      ]
     },
     {
       "id": "privacy-and-support-pages",
       "kind": "guide",
       "phase": "launch",
       "title": "Host the privacy policy and support page Apple asks for",
+      "nudge": "Your privacy and support pages",
+      "needs": [],
       "when": {
         "site": [
           "no"
@@ -703,6 +945,11 @@
       "plugin": "box",
       "phase": "launch",
       "title": "The landing page with privacy, support and terms",
+      "nudge": "Your landing page",
+      "needs": [
+        "plugin-box",
+        "box-ssh"
+      ],
       "when": {
         "site": [
           "yes"
@@ -720,6 +967,10 @@
       "plugin": "ship-ios",
       "phase": "launch",
       "title": "The app icon",
+      "nudge": "Your app icon",
+      "needs": [
+        "plugin-ship-ios"
+      ],
       "doneWhen": {
         "stage": [
           "testflight",
@@ -733,6 +984,11 @@
       "plugin": "ship-ios",
       "phase": "launch",
       "title": "Store screenshots from real screens",
+      "nudge": "Your store screenshots",
+      "needs": [
+        "plugin-ship-ios",
+        "xcode-selected"
+      ],
       "doneWhen": {
         "stage": [
           "store"
@@ -745,6 +1001,10 @@
       "plugin": "ship-ios",
       "phase": "launch",
       "title": "Store page text that search finds",
+      "nudge": "Your store page text",
+      "needs": [
+        "plugin-ship-ios"
+      ],
       "doneWhen": {
         "stage": [
           "store"
@@ -756,13 +1016,19 @@
       "kind": "skill",
       "plugin": "ship-ios",
       "phase": "launch",
-      "title": "Find what Apple will reject, before Apple does"
+      "title": "Find what Apple will reject, before Apple does",
+      "nudge": "A check before Apple's review",
+      "needs": [
+        "plugin-ship-ios"
+      ]
     },
     {
       "id": "crash-reports",
       "kind": "guide",
       "phase": "launch",
-      "title": "See crashes and errors after launch"
+      "title": "See crashes and errors after launch",
+      "nudge": "Crash reports",
+      "needs": []
     }
   ]
 }

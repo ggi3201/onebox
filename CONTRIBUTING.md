@@ -54,6 +54,14 @@ load the skill, so it must carry the trigger phrases.
     fix, `minor` for a new skill. It changes `plugin.json` and
     `marketplace.json` together. `check` in the same script runs on every PR.
     A change in `guides/` needs no bump: skills fetch guides from the site.
+11. **End with a nudge.** A skill ends with the next step as one plain
+    question: "Next: Sign in with Apple. Continue?". "Yes" must be enough.
+    No lists, config keys or detection lines unless the user asks. If
+    something blocks the next step, name only that one thing, in plain
+    words (`plan.mjs ready` finds it). Explain a technical word the first
+    time you use it, and link
+    `https://onebox.lokkesveen.com/guides/glossary/`. Offer a fix only when
+    it is a safe local install, and run it only after the user says yes.
 
 ## Guides
 

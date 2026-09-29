@@ -26,14 +26,27 @@ exception: pnpm is pinned to major 10 (step 0).
 
 - The target folder is empty or does not exist. If it has an Expo app, stop
   and run `/start:plan` instead.
-- Tools: `node -v` (an LTS: an even major, 22 or newer). `corepack enable`,
-  then `corepack install -g pnpm@10`, then `pnpm -v` (10.x). pnpm 12 does not
-  start through corepack yet, so do not take the newest pnpm (`tools.md`).
-  `xcodebuild -version` (else `https://onebox.lokkesveen.com/guides/xcode.md`),
-  `git`. With a .NET API also `dotnet --version` (10 or newer). With any API,
-  `docker info` (the tests need it).
 - Config (see `CONFIG.md`): `apple.teamId`, `box.domain`, `secrets.tool`. All
   optional here. Use them as defaults.
+- Tools: after the questions in step 1, run the checks `/start:plan` uses.
+  `<plan-dir>` is `<skill-dir>/../plan`, in the same plugin:
+
+  ```bash
+  node <plan-dir>/scripts/plan.mjs ready --step new-app --repo "$(mktemp -d)" \
+    --answers '{"stage":"idea","backend":"box"}' --need dotnet
+  ```
+
+  `backend` is `box` with an API in the repo, else `hosted` or `none`. Add
+  `--need dotnet` only for a .NET API. It checks git, Node 22 or newer,
+  pnpm 10, `eas` and its login, Xcode, CocoaPods and its Ruby, a UTF-8
+  locale, and, with an API, Docker. pnpm stays on 10: pnpm 12 does not start
+  through corepack yet (`tools.md`). The check is read-only. Say its `say`
+  line and nothing else: it names at most one problem. Run a fix only when
+  the blocker is `safe` and the user says yes. A `yours` blocker is the
+  user's to do (`/start:plan`, section 6, has the rules). Run the check again
+  until `blocker` is `null`, then go on. Without `node`, the check cannot
+  run: say "One thing first: Node.js is not installed (brew install
+  node@22). Should I run it, then continue?"
 
 ## 1. Ask
 
@@ -51,6 +64,8 @@ Then ask, with AskUserQuestion if you have it:
 - **Server:** "Own box, .NET API (recommended)", "Own box, Node API",
   "Hosted (Supabase, Convex, Firebase)", "No server".
 - **Sign in with Apple now:** "Yes (recommended)", "Later".
+
+Then check the tools (step 0).
 
 ## 2. The layout
 
@@ -150,8 +165,8 @@ App: first check the shell the build runs in. Then give the app its own
 simulator, so the build does not land on one another session uses.
 
 ```bash
-which ruby pod        # a Ruby from rbenv or Homebrew, not /usr/bin/ruby
-echo $LANG            # en_US.UTF-8, not empty
+# CocoaPods on a Ruby from rbenv or Homebrew (not /usr/bin/ruby), and a UTF-8 LANG
+node <plan-dir>/scripts/plan.mjs ready --need cocoapods-ruby,utf8-locale --repo .
 U=$(xcrun simctl create "MyApp" "iPhone 17 Pro") && xcrun simctl boot "$U"
 pnpm ios --device "$U"
 ```
@@ -174,9 +189,16 @@ creates the GitHub repo.
 
 ## 5. Hand off
 
-Run `/start:plan`. It now finds the app, ticks what this skill did, and names
-the next step: usually the Apple Developer account and the App Store Connect
-record.
+Run `/start:plan`. It now finds the app, ticks what this skill did, and ends
+with one nudge. Say two lines and nothing else:
+
+```
+Done: your app runs in the Simulator.
+Next: Your Apple Developer account. This part is yours: join the Apple Developer Program (99 USD a year, I will show you where). Ready when you are.
+```
+
+The second line is the `say` line from `plan.mjs ready`, as it is. No file
+list and no check output, unless the user asks.
 
 ## Rules
 
