@@ -31,7 +31,10 @@ node <skill-dir>/scripts/detect.mjs . > "$TMPDIR/onebox-detect.json"
 It is read-only and needs Node 18+. It never runs the app's code. It reads
 `app.config.js` as text, because some repos keep a root `app.config.js` that
 throws on purpose. It looks at the root, each direct subfolder, and `apps/*`
-and `packages/*`. It prints JSON:
+and `packages/*`. The only commands it runs are the tool checks of the
+command-line tools step, the same ones `ready` runs (section 6). They take
+under a second, ask nothing, and time out. The step is ticked only when every
+check passes; a check that cannot run never ticks it. It prints JSON:
 
 - `expo`: the app folder, bundle id, EAS profiles, dev client or Expo Go,
   Sign in with Apple, RevenueCat, `expo-secure-store`, `expo-updates`,
@@ -86,6 +89,22 @@ the site says "no server" but the repo has an ASP.NET API), say both and ask
 which is right. Drop keys the catalog does not know before you pass them; the
 script rejects them.
 
+**Answers from `/start:new-app`.** When `/start:new-app` made the repo in this
+session, the user already answered the server and sign-in questions there.
+The repo shows an API in `apps/api`, but not "no server", "hosted" or "sign
+in later". Pass those answers with `--answers` to `questions` and `write`, and
+do not ask them again:
+
+| new-app answer | `--answers` |
+|---|---|
+| Server: Own box, .NET API / Own box, Node API | `"backend":"box"` |
+| Server: Hosted (Supabase, Convex, Firebase) | `"backend":"hosted"` |
+| Server: No server | `"backend":"none"` |
+| Sign in with Apple now: Yes | `"login":"apple"` |
+| Sign in with Apple now: Later | `"login":"later"` |
+
+`write` keeps them in `PLAN.md`, so a later run does not ask them either.
+
 If the user answers only some questions, run `questions` again with
 `--answers` holding what you have. Questions can drop out (for example,
 remote access only matters with your own box). If the user asks what a
@@ -104,7 +123,9 @@ back to the user's earlier answer, then detection, then the catalog default.
 
 It writes `PLAN.md` with:
 
-1. The answers, and where each came from (you, detected, default).
+1. The answers, and where each came from (you, detected, default). Only the
+   questions that change this plan: without your own box, remote access is
+   left out.
 2. **Install**: the exact `/plugin install <name>@onebox` lines, only for the
    plugins the plan uses.
 3. **Config keys** the chosen path needs (from https://github.com/ggi3201/onebox/blob/main/CONFIG.md), marked set or

@@ -141,9 +141,10 @@ function selectItems(ans) {
   }
   return out;
 }
-// Which items are in the plan, and which of them start ticked as likely done.
-// A question that changes either one changes the plan, so it is asked.
-const itemSig = (ans) => selectItems(ans).map((it) => keyOf(it) + (it.doneWhen && matches(it.doneWhen, ans) ? "+" : "")).join("|");
+// Which items are in the plan, in which phase, and which of them start ticked
+// as likely done. A question that changes any of these changes the plan, so it
+// is asked.
+const itemSig = (ans) => selectItems(ans).map((it) => `${keyOf(it)}@${it.phase}${it.doneWhen && matches(it.doneWhen, ans) ? "+" : ""}`).join("|");
 
 // A config key entry is a name, or a list of names where any one will do.
 const keyNames = (k) => (Array.isArray(k) ? k : [k]);
@@ -158,6 +159,13 @@ function subsets(ids) {
   return out;
 }
 const choices = (q) => (q.multi ? subsets(q.options.map((o) => o.id)) : q.options.map((o) => o.id));
+// Does this question matter, given the other answers? Remote access, for
+// example, only matters with your own box. PLAN.md lists only the answers
+// that matter.
+const applies = (q, answers) => {
+  const sig = itemSig(answers);
+  return choices(q).some((c) => itemSig({ ...answers, [q.id]: c }) !== sig);
+};
 
 function questionsMode() {
   const detect = loadDetect();
@@ -233,7 +241,8 @@ function render(answers, sources, detect) {
     "Made by `/start:plan` from onebox. Tick items as you go. Add notes anywhere: the next run keeps them.",
     "To change an answer, run `/start:plan` again and say which one.",
   ]);
-  sec("## Your answers", catalog.questions.map((q) => `- ${q.q} **${labelOf(q, answers[q.id])}** (${sources[q.id]})`));
+  sec("## Your answers", catalog.questions.filter((q) => applies(q, answers))
+    .map((q) => `- ${q.q} **${labelOf(q, answers[q.id])}** (${sources[q.id]})`));
 
   const items = selectItems(answers);
   const plugins = [];
@@ -460,7 +469,7 @@ function writeMode() {
 
   const status = flags["dry-run"] ? "dry run, nothing written" : !old ? "written" : old.text === file ? "unchanged" : old.foreign ? "converted" : "updated";
   log(`${rel}: ${status}. ${items.length} items, ${doneCount} done.`);
-  log(`Answers: ${catalog.questions.map((q) => `${q.id}=${Array.isArray(answers[q.id]) ? answers[q.id].join("+") || "none" : answers[q.id]} (${sources[q.id]})`).join(", ")}`);
+  log(`Answers: ${catalog.questions.filter((q) => applies(q, answers)).map((q) => `${q.id}=${Array.isArray(answers[q.id]) ? answers[q.id].join("+") || "none" : answers[q.id]} (${sources[q.id]})`).join(", ")}`);
   log(`Install:${plugins.length ? "" : " nothing"}`);
   for (const p of plugins) log(`  /plugin install ${p}@onebox`);
   const setKeys = new Set([...(detect.config?.user?.keysSet ?? []), ...(detect.config?.project?.keysSet ?? [])]);
@@ -468,7 +477,10 @@ function writeMode() {
   log(`Config keys not set: ${missing.length ? missing.join(", ") : "none"}`);
   for (const q of catalog.questions) {
     const d = detect.answers?.[q.id];
-    if (sources[q.id] === "you" && d?.confidence === "high" && JSON.stringify(normalize(q.id, d.value)) !== JSON.stringify(answers[q.id])) {
+    // An answer can agree with what detection sees: "sign in later" and a
+    // detected Sign in with Apple are not a conflict.
+    const agrees = !!d && q.options.find((o) => o.id === answers[q.id])?.agreesWith === d.value;
+    if (sources[q.id] === "you" && d?.confidence === "high" && !agrees && JSON.stringify(normalize(q.id, d.value)) !== JSON.stringify(answers[q.id])) {
       log(`Check: you answered ${q.id}=${answers[q.id]}, but detection now says ${d.value} (${d.why}).`);
     }
   }
