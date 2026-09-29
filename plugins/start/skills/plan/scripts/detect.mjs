@@ -211,6 +211,18 @@ const isTestPath = (p) => rel(p).split(path.sep).some((seg, i, all) =>
 const AI_HOSTS = ["api.anthropic.com", "api.openai.com", "openrouter.ai", "generativelanguage.googleapis.com"];
 let appleServer = null;
 let pushServer = null; // a backend file that sends pushes: Expo's push API, or APNs directly
+// Account deletion with Apple token revocation (sign-in-with-apple.md, step 6).
+// Grep-level only, in backend files that are not tests:
+// - deletion: a DELETE route (MapDelete, [HttpDelete], @Delete, .delete("...")
+//   or method: "DELETE") in a file that has a route string ending in
+//   /account, /users, /me (or with more after it, like "/api/account/{id}"),
+//   or whose file name has "account" or "user" in it;
+// - revocation: Apple's revoke URL, appleid.apple.com/auth/revoke, or
+//   "auth/revoke" in a file that also names appleid.apple.com.
+let accountDelete = null;
+let appleRevoke = null;
+const DELETE_ROUTE = /\bMapDelete\s*\(|\[HttpDelete\b|@Delete\s*\(|\.delete\s*\(\s*["'`]|method\s*:\s*["'`]DELETE["'`]/i;
+const ACCOUNT_ROUTE = /["'`](?:[^"'`\n]*\/)(?:account|accounts|users?|me)(?:\/[^"'`\n]*)?["'`]/i;
 for (const f of srcFiles) {
   if (isTestPath(f)) continue;
   const t = readText(f, 256 * 1024);
@@ -218,6 +230,8 @@ for (const f of srcFiles) {
   const inBackend = backends.some((b) => f.startsWith(path.join(root, b.dir) + path.sep));
   if (!appleServer && inBackend && /appleid\.apple\.com/.test(t)) appleServer = rel(f);
   if (!pushServer && inBackend && /exp\.host|api(\.sandbox)?\.push\.apple\.com|expo-server-sdk/.test(t)) pushServer = rel(f);
+  if (!accountDelete && inBackend && DELETE_ROUTE.test(t) && (ACCOUNT_ROUTE.test(t) || /account|user/i.test(path.basename(f)))) accountDelete = rel(f);
+  if (!appleRevoke && inBackend && (/appleid\.apple\.com\/auth\/revoke/.test(t) || (/auth\/revoke/.test(t) && /appleid\.apple\.com/.test(t)))) appleRevoke = rel(f);
   for (const h of AI_HOSTS) if (!ai.endpoints[h] && t.includes(h)) ai.endpoints[h] = rel(f);
 }
 
@@ -390,9 +404,15 @@ if (stagingCompose.length) {
   else seen["skill:box/staging-env"] = `${stagingCompose.join(", ")}; no workflow deploys it`;
 }
 
+// App Review wants account deletion in the app (guideline 5.1.1(v)), and Apple
+// wants the tokens revoked then. So the token check alone is not a tick.
 if (expo.appleSignIn?.package) {
-  if (appleServer) done["guide:sign-in-with-apple"] = `Sign in with Apple is wired in the app, and the server checks Apple's token (${appleServer})`;
-  else seen["guide:sign-in-with-apple"] = "Sign in with Apple is wired in the app; no server-side token check found";
+  const lackA = [];
+  if (!accountDelete) lackA.push("an account-deletion endpoint (a DELETE route for the account)");
+  if (!appleRevoke) lackA.push("Apple token revocation on account deletion (a call to appleid.apple.com/auth/revoke)");
+  if (!appleServer) seen["guide:sign-in-with-apple"] = "Sign in with Apple is wired in the app; no server-side token check found";
+  else if (lackA.length) open["guide:sign-in-with-apple"] = `the server checks Apple's token (${appleServer}); for step 6, still missing ${list(lackA)}`;
+  else done["guide:sign-in-with-apple"] = `Sign in with Apple is wired in the app; the server checks Apple's token (${appleServer}), deletes the account (${accountDelete}) and revokes Apple's tokens (${appleRevoke})`;
 }
 if (expo.revenuecat) done["guide:revenuecat"] = "react-native-purchases is in the app";
 if (hasKey("apple.ascKeyId") && hasKey("apple.ascIssuerId")) {
@@ -418,6 +438,27 @@ if (oneCommand && testWorkflows.length) {
   open["guide:agent-test-loop"] = `${testScripts.length ? `scripts: ${testScripts.join(", ")}` : `${list(testWorkflows)} runs tests`}; still missing ${list(lackT)}`;
 }
 
+// The /dev:test-loop skill, run to the end: its block in AGENTS.md or
+// CLAUDE.md (the block names the preflight), a native build marked with
+// `preflight.mjs --mark-built`, and at least one *.flow.md in the app.
+// The marked build is a file in .expo/, which is not committed, so it shows
+// the state of this Mac only.
+if (expo.found) {
+  const appDir = path.join(root, expo.dir);
+  const agentsFile = ["AGENTS.md", "CLAUDE.md"].find((f) => /preflight\.mjs|dev:test-loop/.test(readText(path.join(root, f)) ?? ""));
+  const marked = exists(path.join(appDir, ".expo", "dev-loop-fingerprint.json"));
+  const flows = walk(appDir, { depth: 7, test: (n) => n.endsWith(".flow.md"), limit: 200 });
+  const have = [], lackL = [];
+  if (agentsFile) have.push(`the verify rules in ${agentsFile}`);
+  else lackL.push("the verify rules in AGENTS.md or CLAUDE.md (the skill's AGENTS.snippet.md)");
+  if (marked) have.push("a marked native build");
+  else lackL.push(`a marked native build on this Mac (preflight.mjs --mark-built writes ${path.join(expo.dir, ".expo", "dev-loop-fingerprint.json")})`);
+  if (flows.length) have.push(`${flows.length} *.flow.md ${flows.length > 1 ? "files" : "file"}`);
+  else lackL.push("a *.flow.md file next to a feature");
+  if (!lackL.length) done["skill:dev/test-loop"] = list(have);
+  else if (have.length) seen["skill:dev/test-loop"] = `${list(have)}; still missing ${list(lackL)}`;
+}
+
 const cannotDetect = [
   "whether your Apple Developer membership is active",
   "whether the box passes box-setup's check phase",
@@ -428,7 +469,7 @@ const cannotDetect = [
 
 console.log(JSON.stringify({
   detect: "onebox v1",
-  expo, backends, hosted, ai, appleServer, pushServer, compose, traefikHosts, sites,
+  expo, backends, hosted, ai, appleServer, accountDelete, appleRevoke, pushServer, compose, traefikHosts, sites,
   workflows: { files: workflows.map((w) => w.file), deploy: deployWorkflows, tests: testWorkflows },
   secretsRunIn, config, xcode, plan, testScripts,
   answers, done, seen, open, notes, cannotDetect,

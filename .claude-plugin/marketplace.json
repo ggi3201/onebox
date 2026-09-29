@@ -10,7 +10,7 @@
       "name": "start",
       "source": "./plugins/start",
       "description": "Start here. Run /start:plan in your app's folder: it looks at what the app already has, asks what it cannot see, and writes PLAN.md with only the steps and plugins you need. No app yet: /start:new-app makes the repo first. Runs on your Mac.",
-      "version": "0.1.4",
+      "version": "0.1.5",
       "license": "MIT"
     },
     {

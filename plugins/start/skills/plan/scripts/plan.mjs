@@ -289,16 +289,17 @@ const GEN_RE = [
 
 // Split an old plan into its onebox items and the user's own text.
 // User text is grouped in blocks, each anchored to the generated line before it.
+// A block keeps the blank lines before and after its text: they are the
+// user's too. mergeBlanks() below puts them back without doubling the
+// planner's own blank lines.
 function parseOld(text, staticLines, genHeadings) {
   const lines = text.split("\n").slice(1);
   const items = new Map();
   const blocks = [];
-  let heading = "# Plan", anchor = { type: "heading" }, occ = new Map(), cur = null, curItem = null;
+  let heading = "# Plan", anchor = { type: "heading" }, occ = new Map(), cur = null, curItem = null, blanks = [];
   const flush = () => {
-    if (!cur) return;
-    while (cur.lines.length && !cur.lines.at(-1).trim()) cur.lines.pop();
-    if (cur.lines.length) blocks.push(cur);
-    cur = null;
+    if (cur) blocks.push(cur);
+    cur = null; blanks = [];
   };
   for (const line of lines) {
     const m = line.match(ITEM_RE);
@@ -309,9 +310,10 @@ function parseOld(text, staticLines, genHeadings) {
       anchor = { type: "item", key: m[3] };
       continue;
     }
-    if (!line.trim()) { if (cur) cur.lines.push(line); continue; }
+    if (!line.trim()) { (cur ? cur.lines : blanks).push(line); continue; }
     if (NOTE_RE.test(line) && curItem && anchor.type === "item") {
       if (line.startsWith("  - detected: ") || line.startsWith("  - likely done: ")) curItem.autoTicked = true;
+      blanks = [];
       continue;
     }
     if (genHeadings.has(line)) { flush(); heading = line; anchor = { type: "heading" }; occ = new Map(); curItem = null; continue; }
@@ -321,11 +323,32 @@ function parseOld(text, staticLines, genHeadings) {
       anchor = { type: "line", text: line, n };
       continue;
     }
-    if (!cur) cur = { heading, anchor, lines: [] };
+    if (!cur) cur = { heading, anchor, lines: blanks };
     cur.lines.push(line);
   }
   flush();
   return { items, blocks };
+}
+
+// Join output lines. A string is the planner's line; { user } is the user's.
+// A run of blank lines becomes the user's blank lines, exactly, when the run
+// has any; otherwise one blank line. Blank lines at the start and end go.
+function mergeBlanks(out) {
+  const lines = [];
+  let run = null;
+  for (const x of out) {
+    const user = typeof x !== "string";
+    const t = user ? x.user : x;
+    if (!t.trim()) {
+      run ??= [];
+      if (user) run.push(t);
+      continue;
+    }
+    if (run && lines.length) lines.push(...(run.length ? run : [""]));
+    run = null;
+    lines.push(t);
+  }
+  return lines.join("\n");
 }
 
 // ---------- write mode ----------
@@ -357,11 +380,12 @@ function writeMode() {
   const newKeys = new Set(items.map(keyOf));
   const placed = new Set();
   const blocksFor = (pred) => parsed.blocks.filter((b, i) => !placed.has(i) && pred(b) && placed.add(i));
+  const userLines = (b) => b.lines.map((user) => ({ user }));
   const out = [];
   let doneCount = 0, next = null;
   for (const s of secs) {
     out.push("", s.heading, "");
-    out.push(...blocksFor((b) => b.heading === s.heading && b.anchor.type === "heading").flatMap((b) => b.lines));
+    out.push(...blocksFor((b) => b.heading === s.heading && b.anchor.type === "heading").flatMap(userLines));
     const occ = new Map();
     for (const l of s.lines) {
       if (l.item) {
@@ -378,30 +402,30 @@ function writeMode() {
         if (done) out.push(`  - detected: ${done}`);
         else if (likely) out.push(`  - likely done: ${likely}`);
         else if (found) out.push(`  - found: ${found}`);
-        out.push(...blocksFor((b) => b.anchor.type === "item" && b.anchor.key === key).flatMap((b) => b.lines));
+        out.push(...blocksFor((b) => b.anchor.type === "item" && b.anchor.key === key).flatMap(userLines));
         if (ticked) doneCount++;
         else if (!next) next = { heading: s.heading.replace(/^## /, ""), text: fresh.replace(/ \(raw: [^)]*\)/, "").replace(/ <!--.*$/, "") };
       } else {
         out.push(l.text);
         const n = (occ.get(l.text) ?? 0) + 1; occ.set(l.text, n);
-        out.push(...blocksFor((b) => b.heading === s.heading && b.anchor.type === "line" && b.anchor.text === l.text && b.anchor.n === n).flatMap((b) => b.lines));
+        out.push(...blocksFor((b) => b.heading === s.heading && b.anchor.type === "line" && b.anchor.text === l.text && b.anchor.n === n).flatMap(userLines));
       }
     }
-    out.push(...blocksFor((b) => b.heading === s.heading && b.anchor.type !== "item").flatMap((b) => b.lines));
+    out.push(...blocksFor((b) => b.heading === s.heading && b.anchor.type !== "item").flatMap(userLines));
   }
 
   // Anything left: old items that no longer fit (ticked, edited or with notes), and orphan text.
   const kept = [];
   for (const [key, it] of parsed.items) {
     if (newKeys.has(key)) continue;
-    const notes = blocksFor((b) => b.anchor.type === "item" && b.anchor.key === key).flatMap((b) => b.lines);
+    const notes = blocksFor((b) => b.anchor.type === "item" && b.anchor.key === key).flatMap(userLines);
     if (it.ticked || notes.length || !staticLooksGenerated(it.body)) kept.push(it.line, ...notes);
   }
-  kept.push(...blocksFor(() => true).flatMap((b) => b.lines));
+  kept.push(...blocksFor(() => true).flatMap(userLines));
   if (kept.length) out.push("", KEPT, "", KEPT_INTRO, "", ...kept);
 
   const meta = { answers, sources };
-  const file = `${MARK}${JSON.stringify(meta)} -->\n${out.slice(1).join("\n").replace(/\n{3,}/g, "\n\n")}\n`;
+  const file = `${MARK}${JSON.stringify(meta)} -->\n${mergeBlanks(out)}\n`;
 
   const rel = path.relative(repo, outPath) || "PLAN.md";
   if (flags["dry-run"]) process.stdout.write(file);
