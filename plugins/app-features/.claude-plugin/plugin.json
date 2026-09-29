@@ -1,7 +1,7 @@
 {
   "name": "app-features",
   "description": "Features for an Expo app with its own backend: a streamed AI chat, a server-side agent with tools, cost limits, the AI consent Apple requires, background jobs, and import from a shared link.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": { "name": "Geir-Stian Løkkesveen" },
   "license": "MIT"
 }
