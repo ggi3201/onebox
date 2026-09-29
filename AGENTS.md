@@ -81,6 +81,9 @@ what breaks.
   work around it in the app. Fix the skill or the guide here, merge it,
   update the plugin (`README.md`, "To get fixes later"), then run the step
   again from the fixed version.
+- **A new user.** Now and then, run the kit as a person who is new to it, on a
+  second macOS user: `docs/clean-user-test.md`. It finds what the owner's
+  own Mac hides: missing logins, unclear words, steps that need the owner.
 - **Older apps.** Run `/start:plan` in apps that were made before onebox. A
   wrong tick, a missed item or a needless question is a detection bug.
 - **After a step passes**, run `/start:plan` in the dogfood app to tick it.
