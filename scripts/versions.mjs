@@ -19,7 +19,7 @@ const MARKET = ".claude-plugin/marketplace.json";
 const CHANGELOG = "CHANGELOG.md";
 const pluginFile = (p) => `plugins/${p}/.claude-plugin/plugin.json`;
 
-const git = (...args) => execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
+const git = (...args) => execFileSync("git", args, { cwd: root, encoding: "utf8", stdio: "pipe" }).trim();
 const readJson = (file) => JSON.parse(fs.readFileSync(path.join(root, file), "utf8"));
 const replaceIn = (file, re, version) => {
   const text = fs.readFileSync(path.join(root, file), "utf8");

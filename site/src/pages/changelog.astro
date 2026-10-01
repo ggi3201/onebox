@@ -25,4 +25,6 @@ import { Content } from "../../../CHANGELOG.md";
     box-shadow: 10px 10px 0 var(--paper-3);
   }
   .sheet :global(code) { overflow-wrap: anywhere; }
+  /* The file's own "# Changelog" repeats the page title. */
+  .sheet > :global(h1:first-child) { display: none; }
 </style>
