@@ -64,4 +64,10 @@ jobs:
             echo "::notice::Not deployed. Add the repository secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (site/DEPLOY.md)."
             exit 0
           fi
+          # A pasted secret often has a trailing line break, a space or quotes.
+          # Remove them, and print the lengths (never the values) to help debug.
+          token="$(printf '%s' "$CLOUDFLARE_API_TOKEN" | tr -d "[:space:]\"'" | sed 's/^Bearer//')"
+          account="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d "[:space:]\"'")"
+          echo "token length: ${#token}, account id length: ${#account} (an account id has 32)"
+          export CLOUDFLARE_API_TOKEN="$token" CLOUDFLARE_ACCOUNT_ID="$account"
           npx --yes wrangler@4 pages deploy dist --project-name onebox --branch main --commit-dirty=true
