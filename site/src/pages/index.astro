@@ -2,8 +2,30 @@
 import Base from "../layouts/Base.astro";
 import RouteMap from "../components/RouteMap.astro";
 import Picker from "../components/Picker.astro";
-import { PLUGINS, SKILLS, skillsFor, APPS, REPO_SLUG, SKIPPABLE, OTHERS } from "../data/kit";
+import { PLUGINS, SKILLS, skillsFor, APPS, REPO, REPO_SLUG, SKIPPABLE, OTHERS } from "../data/kit";
 import { GUIDES } from "../data/guides";
+import catalog from "../../../plugins/start/skills/plan/references/catalog.json";
+
+// The example chat uses the plan's real nudge lines, so it says what the agent says.
+const nudge = (id: string) => {
+  const line = (catalog.items as { id: string; nudge?: string }[]).find((i) => i.id === id)?.nudge;
+  if (!line) throw new Error(`catalog.json has no nudge for "${id}"`);
+  return line;
+};
+const chat = { repo: nudge("new-app"), secrets: nudge("secrets"), apple: nudge("sign-in-with-apple") };
+const audience = [
+  { tag: "Yes", yes: true, text: "A developer who has never shipped an iOS app, and wants the whole road in one place: signing, TestFlight, App Review, an API, a landing page." },
+  { tag: "Yes", yes: true, text: "Someone who already ships, and wants the repeatable parts done the same way every time." },
+  { tag: "Not yet", yes: false, text: "Someone who has never used a terminal. The skills explain each step, but they assume you can run a command and read an error." },
+  { tag: "Not covered", yes: false, text: "Android and the Play Store. iOS only for now." },
+];
+const tested = [
+  { tag: "Tested", yes: true, text: "A new app from an empty folder, with the skills and guides only." },
+  { tag: "Tested", yes: true, text: "The three layouts (.NET API, Node API, no server), each end to end in the iOS Simulator." },
+  { tag: "Fixed", yes: true, text: "Every problem those runs found became an issue and a fix." },
+  { tag: "Not yet", yes: false, text: "A clean Mac with nothing installed." },
+  { tag: "Not yet", yes: false, text: "A person who is new to all of it." },
+];
 
 const count = SKILLS.length;
 const skipTotal = SKIPPABLE.reduce((t, x) => t + x.cost, 0);
@@ -35,7 +57,7 @@ const bill = [
       <div class="wrap hero-grid">
         <div class="hero-copy">
           <p class="kicker">Agent skills · Expo · iOS</p>
-          <h1 class="display hero-title"><span>Your app,</span> <span>on the</span> <span>App Store.</span></h1>
+          <h1 class="display hero-title"><span>Get your app</span> <span>on the</span> <span>App Store.</span></h1>
           <p class="lede">
             You built something with Claude Code, Codex or Cursor. It works on your phone. Then come certificates,
             App Review, payments and a backend that is still on <code>localhost</code>.
@@ -67,6 +89,65 @@ const bill = [
           </div>
           <span class="stamp" aria-hidden="true">Free<br />MIT</span>
         </aside>
+      </div>
+    </section>
+
+    <!-- ============ WHAT IT FEELS LIKE: the example chat ============ -->
+    <section id="feel" class="feel">
+      <div class="wrap feel-grid">
+        <div class="feel-copy">
+          <h2 class="display h2">What it feels like</h2>
+          <p class="feel-lede">
+            You tell your coding agent your idea. It makes the repo, checks your Mac, and then walks you
+            through the rest one step at a time. Each step is one question. “Yes” is enough to go on.
+          </p>
+          <p class="muted">
+            No checklist to read first. The agent checks what your Mac and your app already have. It speaks
+            up only when something blocks the next step, and then only about that one thing. The full plan is
+            in <code>PLAN.md</code> if you want it. <a href="/example-plan/">See an example</a>.
+          </p>
+        </div>
+        <figure class="chat" aria-label="An example chat with a coding agent">
+          <figcaption class="chat-head">
+            <span class="kicker">Your coding agent</span>
+            <span class="label">Example</span>
+          </figcaption>
+          <ol class="turns">
+            <li class="you"><span class="who label">You</span><p>I have an idea for an iPhone app: a warranty keeper.</p></li>
+            <li class="agent"><span class="who label">Agent</span><p>Next: <strong class="nudge">{chat.repo}</strong>. Continue?</p></li>
+            <li class="you"><span class="who label">You</span><p>yes</p></li>
+            <li class="agent">
+              <span class="who label">Agent</span>
+              <p><span class="done">Done: your app runs in the Simulator.</span> Next: <strong class="nudge">{chat.secrets}</strong>. Continue?</p>
+            </li>
+            <li class="you"><span class="who label">You</span><p>yes</p></li>
+            <li class="agent">
+              <span class="who label">Agent</span>
+              <p>
+                Next: <strong class="nudge">{chat.apple}</strong>. This part is yours: turn it on for your app in
+                your Apple Developer account (2 minutes, I will show you where). Ready when you are.
+              </p>
+            </li>
+          </ol>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ============ WHO IT IS FOR ============ -->
+    <section id="who" class="who-section">
+      <div class="wrap">
+        <header class="section-head">
+          <h2 class="display h2">Who it is for</h2>
+          <p class="muted">Who gets the most out of it, and who does not yet.</p>
+        </header>
+        <ul class="tag-list">
+          {audience.map((a) => (
+            <li>
+              <span class:list={["tag", { no: !a.yes }]}>{a.tag}</span>
+              <span class="line">{a.text}</span>
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
 
@@ -275,6 +356,28 @@ const bill = [
             </li>
           ))}
         </ul>
+
+        <div id="tested" class="tested">
+          <div class="tested-copy">
+            <h3 class="display h3">How well tested is it</h3>
+            <p>
+              onebox comes from shipping real apps, and I keep testing it on new ones.
+              Not every path has had a real test yet. This is where it stands.
+            </p>
+            <p class="muted">
+              <a href={`${REPO}/blob/main/docs/clean-user-test.md`}>The script for the new-user test ↗</a> is on GitHub.
+              If you try it, <a href={`${REPO}/issues/new?template=dogfood.md`}>tell me where you got stuck ↗</a>.
+            </p>
+          </div>
+          <ul class="tag-list">
+            {tested.map((t) => (
+              <li>
+                <span class:list={["tag", { no: !t.yes }]}>{t.tag}</span>
+                <span class="line">{t.text}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </section>
 
@@ -480,6 +583,38 @@ const bill = [
   .app-status { font-family: var(--mono); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; }
   .app-status.soon { color: var(--ink-3); }
 
+  /* what it feels like */
+  .feel { border-top: 1px solid var(--rule); }
+  .feel-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: clamp(32px, 5vw, 72px); align-items: start; }
+  .feel-lede { font-size: clamp(1.15rem, 1.6vw, 1.32rem); margin: 22px 0 16px; max-width: 34em; }
+  .feel-copy .muted { max-width: 40em; }
+  .feel-copy code { background: var(--code-bg); padding: 1px 6px; }
+  .chat { margin: 0; border: 2px solid var(--ink); background: var(--paper); box-shadow: 10px 10px 0 var(--paper-3); }
+  .chat-head { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--ink); color: var(--paper); }
+  .chat-head .label { color: var(--paper); opacity: 0.7; }
+  .turns { list-style: none; margin: 0; padding: 6px 0; }
+  .turns li { display: grid; grid-template-columns: 64px 1fr; gap: 12px; padding: 10px 16px; align-items: baseline; }
+  .turns li.agent + li.you { border-top: 1px dashed var(--rule); }
+  .turns p { margin: 0; font-size: 1.05rem; line-height: 1.45; }
+  .turns .you p { font-family: var(--mono); font-size: 0.92rem; }
+  .turns .agent .who { color: var(--signal); }
+  .nudge { font-family: var(--display); font-stretch: 112%; font-weight: 700; text-decoration: underline; text-decoration-color: var(--signal); text-decoration-thickness: 2px; text-underline-offset: 0.2em; text-decoration-skip-ink: none; }
+  .done { display: block; color: var(--ink-2); font-style: italic; }
+
+  /* who it is for, how well tested */
+  .who-section { padding-top: 0; }
+  .tag-list { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--ink); }
+  .tag-list li { display: grid; grid-template-columns: 132px 1fr; gap: 6px 20px; align-items: baseline; padding: 14px 0; border-bottom: 1px dashed var(--rule); }
+  .tag {
+    justify-self: start; padding: 3px 8px; border: 2px solid var(--signal); color: var(--signal);
+    font-family: var(--mono); font-size: 0.72rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap;
+  }
+  .tag.no { border-color: var(--ink-3); color: var(--ink-3); border-style: dashed; }
+  .tag-list .line { font-size: 1.08rem; }
+  .tested { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 24px clamp(32px, 6vw, 80px); margin-top: clamp(40px, 6vw, 72px); align-items: start; }
+  .h3 { font-size: clamp(1.6rem, 3vw, 2.3rem); margin-bottom: 18px; }
+  .tested-copy p { margin: 0 0 14px; max-width: 42ch; font-size: 1.12rem; }
+
   /* help */
   .help { background: var(--paper-2); border-block: 1px solid var(--rule); }
   .help-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px clamp(32px, 6vw, 80px); align-items: end; }
@@ -503,8 +638,8 @@ const bill = [
 
   /* phone */
   @media (max-width: 860px) {
-    .hero-grid, .bill-grid, .help-grid, .steps, .about, .care-grid { grid-template-columns: 1fr; }
-    .label-card { box-shadow: 6px 6px 0 var(--paper-3); }
+    .hero-grid, .bill-grid, .help-grid, .steps, .about, .care-grid, .feel-grid, .tested { grid-template-columns: 1fr; }
+    .label-card, .chat { box-shadow: 6px 6px 0 var(--paper-3); }
     .receipt { transform: none; }
   }
   @media (max-width: 640px) {
@@ -519,5 +654,7 @@ const bill = [
     .other-list .line { grid-column: 1 / -1; }
     .app-what { grid-column: 1 / -1; grid-row: 2; }
     .label-rows > div { grid-template-columns: 76px 1fr; }
+    .tag-list li { grid-template-columns: 1fr; }
+    .turns li { grid-template-columns: 1fr; gap: 2px; }
   }
 </style>
