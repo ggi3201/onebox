@@ -145,7 +145,9 @@ Make each `<…>` true:
 - The Settings screen, the privacy policy and the support page describe
   account deletion in the same words. Delete a test account and check that the
   list in the policy is true.
-- `ship-ios:app-store-ready` reports the privacy and support URLs as OK.
+- `ship-ios:app-store-ready` reports `privacy-deletion` and
+  `support-deletion` as OK. It reads the pages from your site folder, or from
+  `app.privacyUrl` and `app.supportUrl` in `.onebox.json`.
 
 ## Common errors
 

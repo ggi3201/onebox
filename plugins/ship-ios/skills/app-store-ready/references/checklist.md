@@ -158,6 +158,12 @@ expect, learned from real apps:
 - Revoke every session and device credential, so no phone can still sign in
   as the deleted account.
 
+**privacy-deletion**, **support-deletion** (5.1.1(v)). The privacy policy and
+the support page say how to delete the account: where in the app, what gets
+deleted, and that a subscription is not cancelled. Use the same words as the
+Settings screen. Sample wording: "Deleting the account: the wording" in
+`https://onebox.lokkesveen.com/guides/privacy-and-support-pages.md`.
+
 **sign-in-with-apple** (4.8). If the app offers a third-party or social login
 (Google, Facebook), it must also offer an equivalent login that limits data
 collection. Sign in with Apple is the usual answer. With
