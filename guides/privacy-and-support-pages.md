@@ -67,7 +67,8 @@ sentences:
       agreed to it in the app (see `app-features:ai-consent` if you have AI).
 - [ ] **Where it is stored** and **how long**.
 - [ ] **Deleting the account**: where in the app, and what gets deleted.
-      Apple requires in-app account deletion when the app has sign-up.
+      Apple requires in-app account deletion when the app has sign-up. Use
+      the wording below.
 - [ ] **Children**: say the app is not made for children under 13 (or your
       country's age), unless it is.
 - [ ] **Changes**: the date of this version, and that you will update the page.
@@ -75,6 +76,50 @@ sentences:
 If users are in the EU or the UK, also name the legal basis (usually
 "to provide the service you asked for") and the right to see, correct and
 delete their data. This checklist is a starting point, not legal advice.
+
+## Deleting the account: the wording
+
+An app with sign-up needs account deletion inside the app (App Review
+Guideline 5.1.1(v)). Say it in three places, in the same words: the Settings
+screen, the privacy policy and the support page. Copy these and fill in the
+`<…>` parts with what your app really does.
+
+**In the app, on the Settings screen** (the button, and the line under it):
+
+> **Delete account**
+> Delete your account and everything in it. This cannot be undone.
+
+Ask once before you do it ("Delete your account and everything in it?").
+
+**In the privacy policy:**
+
+> **Deleting your account.** Open Settings in the app and tap Delete account.
+> We delete your account and everything in it: <your list, for example your
+> receipts, your settings and your sign-in tokens>. This happens at once.
+> Backups that still hold a copy are deleted within <30> days. Deleting your
+> account does not cancel a subscription. Cancel it in your Apple Account
+> settings. If you cannot open the app, write to <your email> and we delete
+> it for you.
+
+**On the support page, as one question:**
+
+> **How do I delete my account?** Open Settings in the app and tap Delete
+> account. Your account and everything in it are deleted. If you cannot open
+> the app, write to <your email>.
+
+Make each `<…>` true:
+
+- **The list** is what the delete code really removes. Read the code, and
+  include every table and file that holds the user's data (also AI consent
+  records and push tokens).
+- **The backup time** is your backup retention (`box:box-setup`, the backup
+  timer), not a number you like.
+- **Sign in with Apple:** if the app also revokes the user's Apple token on
+  deletion ([sign-in-with-apple.md](sign-in-with-apple.md), step 6), you may add
+  "We also disconnect the app from your Apple Account." Say it only when the
+  code does it.
+- **A subscription** is not cancelled by deleting the account. Keep that
+  sentence. Reviewers and users both look for it.
 
 ## What the support page says
 
@@ -97,6 +142,9 @@ delete their data. This checklist is a starting point, not legal advice.
 - Both URLs open in a private browser window, on your phone, on mobile data.
 - The privacy policy lists every service that
   [App Privacy](app-store-connect-setup.md) says receives data.
+- The Settings screen, the privacy policy and the support page describe
+  account deletion in the same words. Delete a test account and check that the
+  list in the policy is true.
 - `ship-ios:app-store-ready` reports the privacy and support URLs as OK.
 
 ## Common errors

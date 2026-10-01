@@ -71,8 +71,11 @@ policy and a support page. A paywall also needs terms. Add them as routes:
   fine if the user has no terms of their own.
 
 The full checklist for each page:
-`https://onebox.lokkesveen.com/guides/privacy-and-support-pages.md`. Read the
-app's code for what it really sends where. Do not copy another app's policy.
+`https://onebox.lokkesveen.com/guides/privacy-and-support-pages.md`. It has
+sample wording for deleting the account: use it in `/privacy` and `/support`,
+and make the app's Settings text say the same. Read the app's code for what it
+really sends where, and for what the delete code removes. Do not copy another
+app's policy.
 Put the URLs in the footer, so App Review can find them from the home page.
 
 ### 4. Add the four files
