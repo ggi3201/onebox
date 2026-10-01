@@ -134,6 +134,15 @@ update.
 
 ## ship-ios
 
+### 0.1.3 (2026-10-01)
+
+- `/ship-ios:app-store-ready` checks that your privacy policy and support
+  page mention deleting the account. It reads the pages from the repo, or
+  from their live URLs.
+- New `--offline` flag: it skips fetching the live pages.
+- New config keys `app.privacyUrl` and `app.supportUrl` tell it where the
+  pages are.
+
 ### 0.1.2 (2026-10-01)
 
 - `/ship-ios:appstore-connect` can submit for App Review: `review-status`
