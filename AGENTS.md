@@ -21,7 +21,7 @@ never shows it.
 ## Checks before a PR
 
 ```bash
-node scripts/versions.mjs check          # a changed plugin needs a new version (CONTRIBUTING.md, rule 10)
+node scripts/versions.mjs check          # a changed plugin needs a new version and a CHANGELOG.md entry (CONTRIBUTING.md, rule 10)
 (cd site && npm ci && npm run build)
 bash site/scripts/example-plan.sh && git diff --stat site/src/data/example-plan.md
 node plugins/start/skills/plan/scripts/plan.mjs write --answers '{"stage":"idea"}' --repo "$(mktemp -d)" --dry-run
