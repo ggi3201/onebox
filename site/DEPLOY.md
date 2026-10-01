@@ -30,8 +30,34 @@ done
 Every line must be 200. The `.md` and `llms` files are `text/plain`, set in
 `public/_headers`.
 
-## Not done yet
+## Deploy on merge
 
-A GitHub Actions workflow that deploys on every merge to `main` that touches
-`site/` or `guides/`. It needs a token with only the Pages permission, kept as a
-repository secret. Use a new one, not a temporary token.
+`.github/workflows/deploy-site.yml` builds the site on every PR that changes
+the guides, a `SKILL.md`, the plan catalog or `site/`. After a merge to `main`
+it also deploys. A skill's description is on the site too, so those changes
+count.
+
+It deploys only when two repository secrets exist. Without them it still
+builds, prints a notice and does not fail.
+
+### Set it up once
+
+1. In Cloudflare, make a new API token (My Profile, API Tokens, Create Token,
+   Create Custom Token) with one permission: **Account, Cloudflare Pages,
+   Edit**. Limit it to your account. Give it a name like `onebox-pages-deploy`.
+   Do not use a temporary token.
+2. Copy your account ID from the Cloudflare dashboard (the right side of the
+   account home page, or the number in the dashboard address).
+3. Add both as repository secrets, from the repository folder:
+
+   ```bash
+   gh secret set CLOUDFLARE_API_TOKEN --repo ggi3201/onebox
+   gh secret set CLOUDFLARE_ACCOUNT_ID --repo ggi3201/onebox
+   ```
+
+   Each command asks for the value. Paste it, and press Enter.
+4. Run the workflow once to prove it: Actions, Deploy site, Run workflow, or
+   `gh workflow run deploy-site.yml --repo ggi3201/onebox`.
+5. Check the live site (above).
+
+Rotate the token if it ever shows up in a log or a message.
