@@ -14,6 +14,14 @@ update.
 
 ## start
 
+### 0.1.16 (2026-10-01)
+
+- Two new plan steps, each with a guide. "Ship an update" covers version 1.1
+  and later: build or EAS Update, backend first, phased release, and what to
+  do when a release goes wrong. It is a now-and-then step, never "Next".
+- "Ask for a rating" uses `expo-store-review`. `/start:plan` ticks it when
+  the app calls `requestReview()`.
+
 ### 0.1.15 (2026-09-30)
 
 - `/start:new-app` asks the app name, bundle identifier, server and sign-in in
