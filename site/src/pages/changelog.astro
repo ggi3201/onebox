@@ -1,0 +1,30 @@
+---
+// CHANGELOG.md at the repo root. scripts/versions.mjs check makes every
+// version bump add an entry to it.
+import Base from "../layouts/Base.astro";
+import "../styles/prose.css";
+import { Content } from "../../../CHANGELOG.md";
+---
+
+<Base title="Changelog — onebox" description="What changed in each onebox plugin, version by version, and how to update.">
+  <main class="wrap page">
+    <p class="kicker">Updates</p>
+    <h1 class="display title">What changed.</h1>
+    <article class="sheet prose">
+      <Content />
+    </article>
+  </main>
+</Base>
+
+<style>
+  .page { padding-top: clamp(40px, 7vw, 88px); padding-bottom: clamp(56px, 9vw, 112px); }
+  .title { font-size: clamp(2.3rem, 6vw, 4.8rem); margin: 14px 0 32px; max-width: 16ch; }
+  .sheet {
+    max-width: 860px; padding: clamp(20px, 4vw, 44px);
+    border: 2px solid var(--ink); background: var(--paper);
+    box-shadow: 10px 10px 0 var(--paper-3);
+  }
+  .sheet :global(code) { overflow-wrap: anywhere; }
+  /* The file's own "# Changelog" repeats the page title. */
+  .sheet > :global(h1:first-child) { display: none; }
+</style>

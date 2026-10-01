@@ -85,6 +85,7 @@ To get fixes later:
 ```
 
 Then restart Claude Code. A plugin updates only when its version went up.
+[CHANGELOG.md](CHANGELOG.md) says what changed in each version.
 
 ## The route
 
