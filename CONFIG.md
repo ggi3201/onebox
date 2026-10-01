@@ -52,6 +52,11 @@ it to a file other than the one the user asked for, and never put it in a URL.
     "buildMode": "local"                   // local (on this Mac, free) | cloud (EAS servers)
   },
 
+  "app": {                                 // per app: put these in .onebox.json
+    "privacyUrl": "",                      // the privacy policy URL, e.g. https://example.com/privacy
+    "supportUrl": ""                       // the support page URL, e.g. https://example.com/support
+  },
+
   "revenuecat": {
     "apiKeyRef": "REVENUECAT_API_KEY"       // secret reference (v2 secret key)
   },

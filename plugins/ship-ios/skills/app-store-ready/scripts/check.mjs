@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Static App Store readiness check for an Expo / React Native app.
 //
-//   node check.mjs [app-dir] [--json] [--no-expo]
+//   node check.mjs [app-dir] [--json] [--no-expo] [--offline]
 //
 // Reads the resolved app config (`npx expo config --type introspect --json`,
 // falling back to app.json), eas.json, package.json and the source tree.
@@ -9,12 +9,14 @@
 // upload, TestFlight or review), or CHECK (cannot be seen from the repo; check
 // by hand). The ids match references/checklist.md.
 //
-// It changes nothing and sends nothing anywhere. Node 18+, no dependencies.
-import fs from 'fs'; import path from 'path'; import { execFileSync } from 'child_process';
+// It changes nothing and sends nothing anywhere. Its one network use is a plain
+// GET of the app's privacy and support pages, when it knows their URLs and the
+// repo has no source for them. --offline skips that. Node 18+, no dependencies.
+import fs from 'fs'; import os from 'os'; import path from 'path'; import { execFileSync } from 'child_process';
 
 const argv = process.argv.slice(2);
 const DIR = path.resolve(argv.find(a => !a.startsWith('--')) || '.');
-const JSON_OUT = argv.includes('--json'), NO_EXPO = argv.includes('--no-expo');
+const JSON_OUT = argv.includes('--json'), NO_EXPO = argv.includes('--no-expo'), OFFLINE = argv.includes('--offline');
 const results = [];
 const add = (id, status, msg, fix) => results.push({ id, status, msg, fix });
 const exists = f => fs.existsSync(path.join(DIR, f));
@@ -203,6 +205,112 @@ const accountLike = apple || googleUse || fbUse || anySrc(/sign ?up|signUp|regis
 const deletion = anySrc(/delete ?(my )?(account|data|profile)|deleteAccount|deleteUser|removeAccount|account.?deletion/i);
 if (accountLike && !deletion) add('account-deletion', 'BLOCKED', 'The app creates accounts but no account deletion was found in the code.', 'Guideline 5.1.1(v): offer "Delete account" inside the app, two taps or so from settings. It must really delete the data. See references/checklist.md.');
 else if (accountLike) add('account-deletion', 'OK', 'Account deletion found. Check it really deletes server data, revokes Apple tokens, and covers guest accounts too.');
+
+// The privacy policy and the support page must say how to delete the account (5.1.1(v)).
+// Each page is read from its source in a site folder of this repo, else from its live URL.
+if (accountLike && deletion) await checkDeletionPages();
+async function checkDeletionPages() {
+  const WORDING = 'https://onebox.lokkesveen.com/guides/privacy-and-support-pages.md';
+  const mentions = t => /\b(delet|remov|eras)\w*\b[^.!?\n]{0,60}\baccount|\baccount\b[^.!?\n]{0,60}\b(delet|remov|eras)\w*/i.test(t);
+  const toText = t => t.replace(/<(script|style)\b[\s\S]*?<\/\1>/gi, ' ').replace(/<[^>]*>/g, ' ')
+    .replace(/\{\s*['"`]\s*['"`]\s*\}/g, ' ').replace(/&nbsp;|&#160;/g, ' ').replace(/\s+/g, ' ');
+
+  // URLs: the app config's extra, the onebox config (app.privacyUrl, app.supportUrl),
+  // listing.json for the appstore-connect skill, then a link in the app code.
+  const urls = { privacy: [], support: [] };
+  const isUrl = v => typeof v === 'string' && /^https?:\/\/[^\s]+$/.test(v);
+  (function flat(o) {
+    for (const [k, v] of Object.entries(o || {})) {
+      if (v && typeof v === 'object') flat(v);
+      else if (isUrl(v) && /privacy/i.test(k)) urls.privacy.push(v);
+      else if (isUrl(v) && /support/i.test(k)) urls.support.push(v);
+    }
+  })(expo.extra);
+  const readAny = f => { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch { return {}; } };
+  let projectCfg = {};
+  for (let d = DIR; ; d = path.dirname(d)) {
+    if (fs.existsSync(path.join(d, '.onebox.json'))) { projectCfg = readAny(path.join(d, '.onebox.json')); break; }
+    if (fs.existsSync(path.join(d, '.git')) || path.dirname(d) === d) break;
+  }
+  const userCfg = readAny(path.join(os.homedir(), '.config', 'onebox', 'config.json'));
+  for (const c of [projectCfg, userCfg]) {
+    if (isUrl(c.app?.privacyUrl)) urls.privacy.push(c.app.privacyUrl);
+    if (isUrl(c.app?.supportUrl)) urls.support.push(c.app.supportUrl);
+  }
+  const listing = readJson('listing.json') || {};
+  if (isUrl(listing.privacyPolicyUrl)) urls.privacy.push(listing.privacyPolicyUrl);
+  if (isUrl(listing.supportUrl)) urls.support.push(listing.supportUrl);
+  for (const s of src) for (const m of s.t.matchAll(/['"`](https:\/\/[^\s'"`$]+)['"`]/g)) {
+    if (/privacy/i.test(m[1])) urls.privacy.push(m[1]);
+    else if (/\/(support|help)\b/i.test(m[1])) urls.support.push(m[1]);
+  }
+
+  // Page sources: a site folder in the repo (the same names /start:plan looks for).
+  let root = DIR;
+  for (let d = DIR, i = 0; i < 6; d = path.dirname(d), i++) {
+    if (fs.existsSync(path.join(d, '.git'))) { root = d; break; }
+    if (path.dirname(d) === d) break;
+  }
+  const SITE_NAMES = /^(site|web|www|website|landing|landing-page|marketing|homepage)$/;
+  const SITE_CONFIGS = ['astro.config.mjs', 'astro.config.ts', 'next.config.js', 'next.config.mjs', 'next.config.ts'];
+  const NOT_SITE = new Set([...SKIP, '.next', 'out', '.astro', 'public', 'static', 'assets']);
+  const sites = [];
+  (function findSites(d, depth) {
+    if (depth > 3) return;
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      if (!e.isDirectory() || e.name.startsWith('.') || NOT_SITE.has(e.name)) continue;
+      const p = path.join(d, e.name);
+      if (p === DIR) continue;
+      const isSite = SITE_CONFIGS.some(f => fs.existsSync(path.join(p, f)))
+        || (SITE_NAMES.test(e.name) && ['package.json', 'index.html'].some(f => fs.existsSync(path.join(p, f))));
+      if (isSite) sites.push(p); else findSites(p, depth + 1);
+    }
+  })(root, 0);
+  const pageFiles = (site, re) => {
+    const out = [];
+    (function walkSite(d, depth) {
+      if (depth > 6) return;
+      for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+        if (e.name.startsWith('.') || NOT_SITE.has(e.name)) continue;
+        const p = path.join(d, e.name);
+        if (e.isDirectory()) walkSite(p, depth + 1);
+        else if (/\.(tsx?|jsx?|mdx?|astro|html?|vue|svelte)$/.test(e.name) && re.test(path.relative(site, p))) out.push(p);
+      }
+    })(site, 0);
+    return out;
+  };
+
+  const pages = [
+    { id: 'privacy-deletion', name: 'privacy policy', re: /privacy/i, urls: urls.privacy, part: 'the privacy paragraph' },
+    { id: 'support-deletion', name: 'support page', re: /support|faq/i, urls: urls.support, part: 'the support answer' },
+  ];
+  const fixFor = p => `Guideline 5.1.1(v): say where in the app to delete the account, and what gets deleted. Copy ${p.part} from "Deleting the account: the wording" in ${WORDING}. Use the same words in the app's Settings and on the other page.`;
+  // Fetched in parallel, reported in a fixed order.
+  const row = (...a) => a;
+  const rows = await Promise.all(pages.map(async p => {
+    const found = sites.flatMap(s => pageFiles(s, p.re));
+    if (found.length) {
+      const where = first(found.map(f => path.relative(DIR, f)), 2);
+      const ok = mentions(found.map(f => toText(fs.readFileSync(f, 'utf8'))).join(' '));
+      return row(p.id, ok ? 'OK' : 'FIX', ok ? `The ${p.name} mentions deleting the account (${where})` : `The ${p.name} does not mention deleting the account (${where})`, ok ? undefined : fixFor(p));
+    }
+    const url = [...new Set(p.urls)][0];
+    if (!url) return row(p.id, 'CHECK', `Account deletion is in the app, but no ${p.name} was found in the repo or the config to check.`,
+      `Check by hand that the ${p.name} says how to delete the account (${WORDING}, "Deleting the account: the wording"). To check it here, set app.${p.id.split('-')[0]}Url in .onebox.json.`);
+    if (OFFLINE) return row(p.id, 'CHECK', `The ${p.name} (${url}) was not fetched (--offline). Check it mentions deleting the account.`);
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(6000), redirect: 'follow', headers: { 'user-agent': 'onebox-app-store-ready' } });
+      if (!res.ok) return row(p.id, 'CHECK', `The ${p.name} ${url} returned HTTP ${res.status}. App Review needs it to load without a login.`);
+      const text = toText(await res.text());
+      if (mentions(text)) return row(p.id, 'OK', `The ${p.name} mentions deleting the account (${url})`);
+      if (text.length < 300) return row(p.id, 'CHECK', `The ${p.name} ${url} has almost no text in its HTML. It may render in the browser only. Check it mentions deleting the account.`);
+      return row(p.id, 'FIX', `The ${p.name} ${url} does not mention deleting the account.`, fixFor(p));
+    } catch (e) {
+      return row(p.id, 'CHECK', `Could not load the ${p.name} ${url} (${e.name === 'TimeoutError' ? 'timed out' : e.cause?.code || e.message}). Check it mentions deleting the account.`);
+    }
+  }));
+  for (const r of rows) add(...r);
+}
 
 // ---- Payments -----------------------------------------------------------------------
 const iap = has('react-native-purchases', 'react-native-iap', 'expo-iap', 'expo-in-app-purchases');

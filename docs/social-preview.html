@@ -1,0 +1,88 @@
+<!doctype html>
+<!--
+  The social preview: the image a shared link shows (GitHub, Slack, X).
+  1280 x 640, in the same look as docs/route-light.png.
+
+  Render it again from the repo root, after a change:
+
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless \
+      --hide-scrollbars --force-device-scale-factor=1 --window-size=1280,640 \
+      --virtual-time-budget=8000 --screenshot=docs/social-preview.png \
+      "file://$PWD/docs/social-preview.html"
+    cp docs/social-preview.png site/public/social-preview.png
+
+  Keep the PNG under 1 MB (GitHub's limit). The fonts come from Google Fonts,
+  so the render needs the network.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>onebox social preview</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&display=block" />
+<style>
+  :root {
+    --paper: #f2eee4; --paper-3: #ddd5c3; --ink: #171614; --ink-2: #4b4740; --ink-3: #7a7468;
+    --signal: #c8361b;
+    --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    --text: "Newsreader", Georgia, serif;
+    --mono: "IBM Plex Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 1280px; height: 640px; overflow: hidden; }
+  body { background: var(--paper); color: var(--ink); font-family: var(--text); position: relative; }
+  .frame { position: absolute; inset: 64px 64px 56px; display: flex; flex-direction: column; }
+
+  .top { display: flex; justify-content: space-between; align-items: center; }
+  .brand { display: flex; align-items: center; gap: 14px; font-family: var(--display); font-stretch: 125%; font-weight: 800; font-size: 34px; letter-spacing: -0.01em; }
+  .brand svg { width: 38px; height: 38px; }
+  .tags { font-family: var(--mono); font-size: 17px; font-weight: 500; letter-spacing: 0.04em; color: var(--ink-3); }
+
+  h1 { margin: 40px 0 0; font-family: var(--display); font-stretch: 125%; font-weight: 800; font-size: 88px; line-height: 0.95; letter-spacing: -0.025em; }
+  h1 .hl { text-decoration: underline; text-decoration-color: var(--signal); text-decoration-thickness: 8px; text-underline-offset: 12px; text-decoration-skip-ink: none; }
+  .sub { margin: 26px 0 0; font-style: italic; font-size: 30px; color: var(--ink-2); max-width: 30em; }
+
+  .route { margin-top: auto; display: grid; grid-template-columns: 1fr 140px 1fr 140px 1fr; align-items: stretch; }
+  .stop { border: 2.5px solid var(--ink); background: var(--paper); }
+  .stop .head { background: var(--ink); color: var(--paper); font-family: var(--display); font-stretch: 112%; font-weight: 700; font-size: 15px; letter-spacing: 0.14em; text-transform: uppercase; padding: 9px 16px; }
+  .stop .name { font-family: var(--display); font-stretch: 125%; font-weight: 800; font-size: 32px; letter-spacing: -0.02em; padding: 10px 16px 0; }
+  .stop .what { font-style: italic; font-size: 20px; color: var(--ink-2); padding: 2px 16px 12px; }
+  .leg { position: relative; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+  .leg .verb { font-family: var(--mono); font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 8px; text-align: center; white-space: nowrap; }
+  .leg svg { width: calc(100% - 16px); height: 14px; overflow: visible; }
+
+  .stamp {
+    position: absolute; right: 70px; top: 168px;
+    border: 3.5px solid var(--signal); color: var(--signal); background: var(--paper);
+    font-family: var(--display); font-stretch: 125%; font-weight: 800; font-size: 22px; line-height: 1.05;
+    letter-spacing: 0.08em; text-transform: uppercase; text-align: center; padding: 10px 16px;
+    transform: rotate(-8deg);
+  }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <div class="top">
+      <div class="brand">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+          <path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5v-9Z" stroke-linejoin="round" />
+          <path d="M3 7.5 12 12l9-4.5M12 12v9" stroke-linejoin="round" />
+        </svg>
+        onebox
+      </div>
+      <div class="tags">Agent skills · Expo · iOS</div>
+    </div>
+
+    <h1>Get your app on<br />the <span class="hl">App Store.</span></h1>
+    <p class="sub">Agent skills and plain guides, from idea to the App Store.</p>
+
+    <div class="route">
+      <div class="stop"><div class="head">01 · The workbench</div><div class="name">Your Mac</div><div class="what">Your agent runs every skill.</div></div>
+      <div class="leg"><div class="verb">Build + submit</div><svg viewBox="0 0 100 14" preserveAspectRatio="none"><line x1="4" y1="7" x2="90" y2="7" stroke="#171614" stroke-width="2.5" stroke-dasharray="7 6" /><path d="M88 1 L99 7 L88 13 Z" fill="#171614" /></svg></div>
+      <div class="stop"><div class="head">02 · The gate</div><div class="name">Apple</div><div class="what">TestFlight and App Review.</div></div>
+      <div class="leg"><div class="verb">Installs</div><svg viewBox="0 0 100 14" preserveAspectRatio="none"><line x1="4" y1="7" x2="90" y2="7" stroke="#171614" stroke-width="2.5" stroke-dasharray="7 6" /><path d="M88 1 L99 7 L88 13 Z" fill="#171614" /></svg></div>
+      <div class="stop"><div class="head">03 · Delivered</div><div class="name">The phone</div><div class="what">Where your users are.</div></div>
+    </div>
+  </div>
+  <div class="stamp">Free<br />MIT</div>
+</body>
+</html>

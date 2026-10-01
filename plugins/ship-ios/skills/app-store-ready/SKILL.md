@@ -17,7 +17,16 @@ From the Expo app folder (the one with `app.json` or `app.config.*`):
 ```bash
 node <skill-dir>/scripts/check.mjs .            # text report, exit 1 if anything is BLOCKED
 node <skill-dir>/scripts/check.mjs . --json     # for further processing
+node <skill-dir>/scripts/check.mjs . --offline  # never fetch a page
 ```
+
+When the app has account deletion, the script also checks that the privacy
+policy and the support page say how to delete the account. It reads each page
+from a site folder in the repo (`site/`, `web/`, `landing/`, or a Next.js or
+Astro project). With no site folder, it fetches the live URL with one GET and
+a short timeout. It finds the URL in the app config's `extra`, in
+`app.privacyUrl` and `app.supportUrl` of the onebox config, in `listing.json`,
+or in a link in the app code. A page it cannot load is CHECK, not FIX.
 
 It resolves the full config with the project's own `expo config --type
 introspect`, so it sees permission strings that plugins add. Without Expo
