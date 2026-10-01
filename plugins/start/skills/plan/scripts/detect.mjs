@@ -157,6 +157,7 @@ if (expoPick) {
     secureStore: !!dp["expo-secure-store"],
     updates,
     notifications: !!dp["expo-notifications"],
+    storeReview: !!dp["expo-store-review"],
   };
 }
 
@@ -229,6 +230,9 @@ let pushServer = null; // a backend file that sends pushes: Expo's push API, or 
 //   "auth/revoke" in a file that also names appleid.apple.com.
 let accountDelete = null;
 let appleRevoke = null;
+// The rating prompt (ask-for-a-rating.md): a requestReview( call in the app's
+// own code, not in tests.
+let reviewCall = null;
 const DELETE_ROUTE = /\bMapDelete\s*\(|\[HttpDelete\b|@Delete\s*\(|\.delete\s*\(\s*["'`]|method\s*:\s*["'`]DELETE["'`]/i;
 const ACCOUNT_ROUTE = /["'`](?:[^"'`\n]*\/)(?:account|accounts|users?|me)(?:\/[^"'`\n]*)?["'`]/i;
 for (const f of srcFiles) {
@@ -239,6 +243,7 @@ for (const f of srcFiles) {
   if (!appleServer && inBackend && /appleid\.apple\.com/.test(t)) appleServer = rel(f);
   if (!pushServer && inBackend && /exp\.host|api(\.sandbox)?\.push\.apple\.com|expo-server-sdk/.test(t)) pushServer = rel(f);
   if (!accountDelete && inBackend && DELETE_ROUTE.test(t) && (ACCOUNT_ROUTE.test(t) || /account|user/i.test(path.basename(f)))) accountDelete = rel(f);
+  if (!reviewCall && expoPick && f.startsWith(expoPick.dir + path.sep) && /\brequestReview\s*\(/.test(t)) reviewCall = rel(f);
   if (!appleRevoke && inBackend && (/appleid\.apple\.com\/auth\/revoke/.test(t) || (/auth\/revoke/.test(t) && /appleid\.apple\.com/.test(t)))) appleRevoke = rel(f);
   for (const h of AI_HOSTS) if (!ai.endpoints[h] && t.includes(h)) ai.endpoints[h] = rel(f);
 }
@@ -386,6 +391,11 @@ if (expo.found) {
     if (pushServer) done["guide:push-notifications"] = `expo-notifications is in the app, and the server sends pushes (${pushServer})`;
     else seen["guide:push-notifications"] = "expo-notifications is in the app; no server code that sends a push found";
   }
+
+  if (expo.storeReview) {
+    if (reviewCall) done["guide:ask-for-a-rating"] = `expo-store-review is in the app, and ${reviewCall} calls requestReview()`;
+    else seen["guide:ask-for-a-rating"] = "expo-store-review is in the app; no requestReview() call found";
+  }
 }
 
 // Backend on the box: a Traefik router with a Host rule means the API has its
@@ -501,7 +511,7 @@ const cannotDetect = [
 
 console.log(JSON.stringify({
   detect: "onebox v1",
-  expo, backends, hosted, ai, appleServer, accountDelete, appleRevoke, pushServer, compose, traefikHosts, sites,
+  expo, backends, hosted, ai, appleServer, accountDelete, appleRevoke, pushServer, reviewCall, compose, traefikHosts, sites,
   workflows: { files: workflows.map((w) => w.file), deploy: deployWorkflows, tests: testWorkflows },
   secretsRunIn, config, xcode, tools, plan, testScripts,
   answers, done, seen, open, notes, cannotDetect,

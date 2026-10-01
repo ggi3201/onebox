@@ -19,6 +19,7 @@ const ORDER = [
   "sign-in-with-apple",
   "revenuecat",
   "push-notifications",
+  "ask-for-a-rating",
   "app-store-connect-setup",
   "app-store-connect-api-key",
   "expo-eas",
@@ -28,6 +29,7 @@ const ORDER = [
   "llm-api-key",
   "langfuse",
   "crash-reports",
+  "ship-an-update",
   "when-you-are-stuck",
   "glossary",
 ];

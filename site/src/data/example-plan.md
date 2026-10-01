@@ -96,6 +96,7 @@ Skills read these from `~/.config/onebox/config.json`, or `.onebox.json` for thi
 - [ ] The AI consent Apple asks for — skill: /app-features:ai-consent <!-- skill:app-features/ai-consent -->
 - [ ] Slow AI work as background jobs — skill: /app-features:durable-jobs <!-- skill:app-features/durable-jobs -->
 - [ ] Trace and cost every AI call — guide: https://onebox.lokkesveen.com/guides/langfuse/ (raw: https://onebox.lokkesveen.com/guides/langfuse.md) <!-- guide:langfuse -->
+- [ ] Ask for a rating at a good moment — guide: https://onebox.lokkesveen.com/guides/ask-for-a-rating/ (raw: https://onebox.lokkesveen.com/guides/ask-for-a-rating.md) <!-- guide:ask-for-a-rating -->
 
 ## App Store Connect and builds
 
@@ -114,6 +115,7 @@ Skills read these from `~/.config/onebox/config.json`, or `.onebox.json` for thi
 - [ ] Store page text that search finds — skill: /ship-ios:store-listing <!-- skill:ship-ios/store-listing -->
 - [ ] Find what Apple will reject, before Apple does — skill: /ship-ios:app-store-ready <!-- skill:ship-ios/app-store-ready -->
 - [ ] See crashes and errors after launch — guide: https://onebox.lokkesveen.com/guides/crash-reports/ (raw: https://onebox.lokkesveen.com/guides/crash-reports.md) <!-- guide:crash-reports -->
+- [ ] Ship an update: version 1.1 and every release after it — guide: https://onebox.lokkesveen.com/guides/ship-an-update/ (raw: https://onebox.lokkesveen.com/guides/ship-an-update.md) <!-- guide:ship-an-update -->
 
 ## Notes
 

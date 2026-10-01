@@ -33,6 +33,9 @@ sentences. When a word has its own guide, the entry links to it.
 - **App Review.** The check Apple runs before an app or an update goes live.
   It can take hours or days, and it can reject the app with a guideline
   number.
+- **Phased release.** An update that reaches users with automatic updates
+  over seven days, from 1% to 100%. You can pause it. See
+  [ship-an-update.md](ship-an-update.md).
 - **Version and build number.** The version (`1.2.0`) is what users see. The
   build number must go up with every upload, even for the same version.
 - **App Privacy.** Your answers in App Store Connect about the data the app
@@ -62,6 +65,11 @@ sentences. When a word has its own guide, the entry links to it.
 - **Native rebuild.** A new build of the app itself, needed after you add a
   native module or change the app config. A JavaScript change does not need
   one.
+- **EAS Update.** New JavaScript for a build that is already on phones,
+  without App Review. It cannot change native code. The skill is
+  `ship-ios:eas-update`.
+- **Runtime version.** A label that says which native build an EAS Update
+  fits. An update reaches only builds with the same runtime version.
 - **Metro.** The server on your Mac that sends your JavaScript to the app
   while you develop.
 - **Simulator.** An iPhone that runs on your Mac, part of Xcode. See
