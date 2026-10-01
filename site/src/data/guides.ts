@@ -24,6 +24,7 @@ const ORDER = [
   "app-store-connect-api-key",
   "expo-eas",
   "privacy-and-support-pages",
+  "submit-for-review",
   "kie-ai",
   "media-providers",
   "llm-api-key",

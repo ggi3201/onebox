@@ -66,8 +66,8 @@ Group items under: Build and upload, Privacy, Accounts, Payments, Content,
 Security, App Store Connect. Keep each fix to what the user does next. Cite the
 guideline number when there is one.
 
-End the report with the next steps from the rest of this plugin, only the ones
-that apply:
+When the user asks what else can help, name the skills from the rest of this
+plugin, only the ones that apply:
 
 - Fix the icon: `draw-app-icon`.
 - Store screenshots: `app-store-screenshots`.
@@ -76,6 +76,17 @@ that apply:
 - Builds, testers, subscriptions in App Store Connect: `appstore-connect`.
 - Accounts and keys: the guides at https://onebox.lokkesveen.com/guides/ (start with
   https://onebox.lokkesveen.com/guides/apple-developer.md).
+
+## 4. Hand off: one nudge
+
+End with one line, after the report:
+
+- **Nothing BLOCKED or FIX:** "Next: Submit for review. Continue?". On yes,
+  go through https://onebox.lokkesveen.com/guides/submit-for-review.md with
+  the user. The `appstore-connect` skill fills what the API allows.
+- **Something BLOCKED or FIX:** name only the worst one, in plain words, and
+  offer to fix it: "One thing first: the app has no way to delete an
+  account. Should I add it?".
 
 ## Rules
 
