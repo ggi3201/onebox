@@ -38,7 +38,8 @@ check passes; a check that cannot run never ticks it. It prints JSON:
 
 - `expo`: the app folder, bundle id, EAS profiles, dev client or Expo Go,
   Sign in with Apple, RevenueCat, `expo-secure-store`, `expo-updates`,
-  `expo-notifications`.
+  `expo-notifications`, `expo-store-review`. `reviewCall`: the first app
+  file that calls `requestReview()`.
 - `backends`: ASP.NET projects and Node servers (express, fastify, hono and
   others). `hosted`: Supabase, Convex or Firebase SDKs. `compose`, `sites`.
 - `ai`: AI SDKs and AI API hosts named in the code.

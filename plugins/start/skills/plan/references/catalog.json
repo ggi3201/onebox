@@ -828,6 +828,14 @@
       }
     },
     {
+      "id": "ask-for-a-rating",
+      "kind": "guide",
+      "phase": "features",
+      "title": "Ask for a rating at a good moment",
+      "nudge": "Ask for a rating",
+      "needs": []
+    },
+    {
       "id": "app-store-connect-setup",
       "kind": "guide",
       "phase": "store",
@@ -1051,6 +1059,19 @@
       "title": "See crashes and errors after launch",
       "nudge": "Crash reports",
       "needs": []
+    },
+    {
+      "id": "ship-an-update",
+      "kind": "guide",
+      "phase": "launch",
+      "title": "Ship an update: version 1.1 and every release after it",
+      "nudge": "Ship an update",
+      "needs": [
+        "plugin-ship-ios",
+        "eas-login",
+        "asc-key"
+      ],
+      "repeat": true
     }
   ]
 }

@@ -284,7 +284,12 @@ Done when: the app is approved and released.
   [crash-reports.md](crash-reports.md) and [uptime-alerts.md](uptime-alerts.md).
 - **Push notifications,** when the app needs them. Guide:
   [push-notifications.md](push-notifications.md).
-- **Ship JavaScript fixes without a new build.** Skill: `ship-ios:eas-update`.
+- **Ship an update.** Version 1.1 and every release after it: a build or an
+  EAS Update, the backend first, What's New, a phased release, and what to do
+  when it goes wrong. Guide: [ship-an-update.md](ship-an-update.md). For
+  JavaScript fixes without a new build: skill `ship-ios:eas-update`.
+- **Ask for a rating** at a good moment, within Apple's limits. Guide:
+  [ask-for-a-rating.md](ask-for-a-rating.md).
 - **Know when to go further.** One box is one point of failure. If it dies,
   the app is down until you restore it. At home, a power cut or an internet
   outage takes it down too. Move on when downtime costs you money or trust: a
