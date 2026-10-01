@@ -14,6 +14,13 @@ update.
 
 ## start
 
+### 0.1.17 (2026-10-01)
+
+- New plan step "Submit for review", the last launch step, with a guide that
+  walks the version page field by field.
+- Its nudge says the App Privacy answers are your part: the API cannot fill
+  them in.
+
 ### 0.1.16 (2026-10-01)
 
 - Two new plan steps, each with a guide. "Ship an update" covers version 1.1
@@ -126,6 +133,15 @@ update.
   `/start:new-app` makes a new app repo in the layout the kit expects.
 
 ## ship-ios
+
+### 0.1.2 (2026-10-01)
+
+- `/ship-ios:appstore-connect` can submit for App Review: `review-status`
+  shows what the version page still misses, and `version-set`,
+  `age-rating-set`, `attach-build`, `submit` and `release` fill it in. Each
+  write command has `--dry-run`.
+- `/ship-ios:app-store-ready` ends with "Next: Submit for review" when
+  nothing blocks.
 
 ### 0.1.1 (2026-09-29)
 
