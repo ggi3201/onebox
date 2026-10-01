@@ -1,6 +1,6 @@
 ---
 name: appstore-connect
-description: Talk to Apple App Store Connect through its API with an API key, for any iOS app. Lists apps and TestFlight builds, waits for a build to finish processing, answers export compliance, expires old builds, manages beta groups and testers, and creates subscription groups and products. Use when the user asks "is my build on TestFlight yet", "why is my build stuck processing", "Missing Compliance", "expire a build", "add a tester", "invite someone to TestFlight", "create my subscriptions", "set up in-app purchase products", or mentions App Store Connect, ASC, TestFlight builds, beta groups or processing state.
+description: Talk to Apple App Store Connect through its API with an API key, for any iOS app. Lists apps and TestFlight builds, waits for a build to finish processing, answers export compliance, expires old builds, manages beta groups and testers, and creates subscription groups and products. For App Review it shows what the version page still misses, sets the age rating, copyright, categories, review notes and contact, picks the build and the release type, submits the version and releases it after approval. Use when the user asks "is my build on TestFlight yet", "why is my build stuck processing", "Missing Compliance", "expire a build", "add a tester", "invite someone to TestFlight", "create my subscriptions", "set up in-app purchase products", "submit for review", "send it to App Review", "what is missing on the version page", "age rating", "review notes", "is my app in review", "release my app", or mentions App Store Connect, ASC, TestFlight builds, beta groups or processing state.
 ---
 
 # App Store Connect
@@ -83,6 +83,42 @@ price step fails, set the price in the web UI instead of retrying blindly.
 For offerings, entitlements and the paywall itself, use RevenueCat's own plugin
 (see `https://onebox.lokkesveen.com/guides/revenuecat.md`).
 
+## Submit for review
+
+The guide is `https://onebox.lokkesveen.com/guides/submit-for-review.md`. It
+says what each field on the version page means and what to answer. Go through
+it with the user. This skill fills the fields the API allows.
+
+1. Read the page: `node $A review-status --app com.example.myapp`. Each line
+   is OK, MISSING or CHECK. CHECK means the API cannot see it.
+2. Fill what is missing, one command at a time. Each takes `--dry-run`. Show
+   the user the dry run, then run it for real when they say yes.
+
+   ```bash
+   node $A age-rating-set age.json --app com.example.myapp --dry-run
+   node $A version-set version.json --app com.example.myapp --dry-run   # copyright, categories, content rights,
+                                                                        # review contact and notes, release type, phased
+   node $A attach-build --app com.example.myapp --build <buildId> --dry-run
+   ```
+
+   The file formats are in `references/api.md`. A demo account password goes
+   in the user's secrets. The file holds only its reference
+   (`demoAccountPasswordRef`). The script never prints it.
+3. Run `review-status` again. Then submit, again dry run first:
+   `node $A submit --app com.example.myapp --dry-run`.
+4. After approval, a manual release waits for the user:
+   `node $A release --app com.example.myapp --dry-run`.
+
+The API cannot read or set these. The user does them on the web, with the
+guide: the **App Privacy** answers, the **EU trader status**, the **price**
+(Free is fine) and the countries, the Paid Apps agreement, and adding a first
+subscription to the version. Never guess the App Privacy answers. Read the
+app's code and SDKs with the user, and follow the guide.
+
+Write the answers from the app, not from habit. The age rating answers, the
+review notes and the content rights must be true for this app. Ask the user
+when the code does not show it.
+
 ## Rules
 
 - Apps cannot be created through the API (`POST /v1/apps` answers 403). The
@@ -94,3 +130,13 @@ For offerings, entitlements and the paywall itself, use RevenueCat's own plugin
   your own. Ask whether they want a TestFlight build now or want to batch more
   changes first.
 - `expire` cannot be undone. Deleting screenshots cannot be undone. Confirm.
+- `submit` and `release` act at once and are seen by Apple or by users. Run
+  each only after the user's clear yes to its dry run. A yes to one command is
+  not a yes to the next.
+
+## End with a nudge
+
+After a submit, end with one line: "Sent to App Review. Apple usually answers
+within a day or two. Should I check the state tomorrow?". After `release`, or
+any other job, say the next step from the user's plan as one question
+(`/start:plan` finds it).

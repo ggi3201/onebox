@@ -505,6 +505,7 @@ const cannotDetect = [
   "whether your Apple Developer membership is active",
   "whether the box passes box-setup's check phase",
   "whether the app record, agreements and products exist in App Store Connect",
+  "whether the app is submitted for review, in review or approved",
   "whether a landing page or privacy policy is live",
   "whether a secret a config key points at really exists",
 ];

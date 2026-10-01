@@ -273,6 +273,16 @@
       "yours": true
     },
     {
+      "id": "app-privacy-answers",
+      "label": "The App Privacy answers",
+      "kind": "account",
+      "check": { "manual": "only App Store Connect shows them; the API cannot read them" },
+      "fix": "answer the App Privacy questions in App Store Connect, from what the app really sends",
+      "hint": "about an hour, I will go through the whole version page with you",
+      "guide": "https://onebox.lokkesveen.com/guides/submit-for-review/#1-app-privacy",
+      "yours": true
+    },
+    {
       "id": "siwa-capability",
       "label": "Sign in with Apple on your App ID",
       "kind": "account",

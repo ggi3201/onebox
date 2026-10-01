@@ -10,6 +10,9 @@
 //   node asc.mjs testers --group <groupId>
 //   node asc.mjs subs    --app <bundleId|appId>         subscription groups and products
 //   node asc.mjs listing --app <bundleId|appId> [--locale en-US]   store page text, with length checks
+//   node asc.mjs versions --app <bundleId|appId>        App Store versions and their states
+//   node asc.mjs review-status --app <bundleId|appId>   the version page: what is filled, what is missing
+//   node asc.mjs categories                             category ids for version-set
 //   node asc.mjs get     <path>                         any GET, e.g. '/v1/apps?limit=5'
 //
 // Write commands (all take --dry-run, which prints the request and changes nothing):
@@ -19,6 +22,12 @@
 //   node asc.mjs add-tester  --group <groupId> --email <email> [--first A --last B]
 //   node asc.mjs subs-create <plan.json> [--equalize]  subscription group + products, see api.md
 //   node asc.mjs listing-set <listing.json> --app <bundleId|appId>  store page text, see api.md
+//   node asc.mjs age-rating-set <age.json> --app <bundleId|appId>   the age rating answers, see api.md
+//   node asc.mjs version-set <version.json> --app <bundleId|appId>  copyright, categories, content rights,
+//                                                       review details, release type, phased release; see api.md
+//   node asc.mjs attach-build --app <bundleId|appId> --build <buildId>   the build on the version page
+//   node asc.mjs submit      --app <bundleId|appId>     send the version to App Review
+//   node asc.mjs release     --app <bundleId|appId>     release an approved version (manual release)
 //   node asc.mjs call        <METHOD> <path> [body.json]
 //
 // Output is plain text. Add --json to any read command for the raw API answer.
@@ -123,8 +132,10 @@ const DRY = !!args['dry-run'], JSON_OUT = !!args.json;
 const q = o => '?' + new URLSearchParams(o).toString(); // encodes [ and ] for us
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
+// A dry run prints the request. It never prints a password, not even a demo one.
+const hide = (k, v) => /password/i.test(k) && typeof v === 'string' ? '(hidden)' : v;
 async function write(method, p, body) {
-  if (DRY) { console.log(`dry run: ${method} ${p}` + (body ? '\n' + JSON.stringify(body, null, 2) : '')); return { data: { id: '(dry-run)' } }; }
+  if (DRY) { console.log(`dry run: ${method} ${p}` + (body ? '\n' + JSON.stringify(body, hide, 2) : '')); return { data: { id: '(dry-run)' } }; }
   return api(method, p, body);
 }
 async function all(p) { // follow pagination
@@ -184,6 +195,65 @@ function keywordNotes(kw, name, subtitle) {
   const plural = words.filter(w => w.length > 3 && w.endsWith('s') && all.has(w.slice(0, -1)));
   if (plural.length) notes.push(`Apple counts plurals as duplicates: ${plural.join(', ')}`);
   return notes;
+}
+
+// ---- the version page and the review submission ---------------------------
+// What the API can fill: copyright, release type, phased release, the build,
+// review details, categories, content rights, the age rating, and the
+// submission itself. What it cannot: the App Privacy answers and the EU trader
+// status. Those stay on their pages in App Store Connect.
+const LEVEL = ['NONE', 'INFREQUENT_OR_MILD', 'FREQUENT_OR_INTENSE', 'INFREQUENT', 'FREQUENT'];
+const AGE_LEVEL_FIELDS = ['alcoholTobaccoOrDrugUseOrReferences', 'contests', 'gamblingSimulated', 'gunsOrOtherWeapons',
+  'horrorOrFearThemes', 'matureOrSuggestiveThemes', 'medicalOrTreatmentInformation', 'profanityOrCrudeHumor',
+  'sexualContentGraphicAndNudity', 'sexualContentOrNudity', 'violenceCartoonOrFantasy', 'violenceRealistic',
+  'violenceRealisticProlongedGraphicOrSadistic'];
+const AGE_BOOL_FIELDS = ['advertising', 'ageAssurance', 'gambling', 'healthOrWellnessTopics', 'lootBox', 'messagingAndChat',
+  'parentalControls', 'socialMedia', 'socialMediaAgeRestricted', 'unrestrictedWebAccess', 'userGeneratedContent'];
+const AGE_ENUM_FIELDS = {
+  kidsAgeBand: ['FIVE_AND_UNDER', 'SIX_TO_EIGHT', 'NINE_TO_ELEVEN'],
+  ageRatingOverrideV2: ['NONE', 'NINE_PLUS', 'THIRTEEN_PLUS', 'SIXTEEN_PLUS', 'EIGHTEEN_PLUS', 'UNRATED'],
+  koreaAgeRatingOverride: ['NONE', 'ALL', 'TWELVE_PLUS', 'FIFTEEN_PLUS', 'NINETEEN_PLUS'],
+};
+// The questions a declaration must answer. socialMediaAgeRestricted only matters with socialMedia.
+const ageUnanswered = a => [...AGE_LEVEL_FIELDS, ...AGE_BOOL_FIELDS]
+  .filter(k => a?.[k] == null && !(k === 'socialMediaAgeRestricted' && a?.socialMedia !== true));
+const RELEASE_TYPES = ['MANUAL', 'AFTER_APPROVAL', 'SCHEDULED'];
+const CONTENT_RIGHTS = ['DOES_NOT_USE_THIRD_PARTY_CONTENT', 'USES_THIRD_PARTY_CONTENT'];
+const REVIEW_FIELDS = ['contactFirstName', 'contactLastName', 'contactEmail', 'contactPhone', 'notes',
+  'demoAccountRequired', 'demoAccountName', 'demoAccountPasswordRef'];
+const VERSION_SET_FIELDS = ['app', 'copyright', 'primaryCategory', 'secondaryCategory', 'contentRights',
+  'releaseType', 'earliestReleaseDate', 'phasedRelease', 'review'];
+const OPEN_SUBMISSION = ['READY_FOR_REVIEW', 'WAITING_FOR_REVIEW', 'IN_REVIEW', 'UNRESOLVED_ISSUES', 'CANCELING', 'COMPLETING'];
+const incOf = r => Object.fromEntries((r.included || []).map(x => [x.type + ':' + x.id, x]));
+const relOf = (r, inc, name) => { const d = r.data.relationships?.[name]?.data; return d ? inc[d.type + ':' + d.id] || { id: d.id, type: d.type } : null; };
+const tryApi = async (method, p) => { try { return { r: await api(method, p) }; } catch (e) { return { err: e.message.match(/-> (\d+)/)?.[1] || e.message.slice(0, 120) }; } };
+
+// The version the page shows: the one being prepared, else the newest.
+async function versionPage(app) {
+  const versions = (await all(`/v1/apps/${app.id}/appStoreVersions` + q({ 'filter[platform]': 'IOS', limit: 20 })))
+    .sort((a, b) => String(b.attributes.createdDate).localeCompare(String(a.attributes.createdDate)));
+  const v = versions.find(x => EDITABLE.includes(stateOf(x.attributes))) || versions[0];
+  if (!v) throw new Error('This app has no App Store version yet. Make one in App Store Connect (the add button next to iOS App), then run this again.');
+  const r = await api('GET', `/v1/appStoreVersions/${v.id}` + q({ include: 'build,appStoreReviewDetail,appStoreVersionPhasedRelease' }));
+  const inc = incOf(r);
+  return { versions, version: r.data, editable: EDITABLE.includes(stateOf(r.data.attributes)), live: versions.find(x => LIVE.includes(stateOf(x.attributes))),
+    build: relOf(r, inc, 'build'), review: relOf(r, inc, 'appStoreReviewDetail'), phased: relOf(r, inc, 'appStoreVersionPhasedRelease') };
+}
+async function infoPage(app) {
+  const infos = await all(`/v1/apps/${app.id}/appInfos` + q({ limit: 10 }));
+  const info = infos.find(i => EDITABLE.includes(stateOf(i.attributes))) || infos.find(i => !LIVE.includes(stateOf(i.attributes))) || null;
+  if (!info) return { info: null };
+  const r = await api('GET', `/v1/appInfos/${info.id}` + q({ include: 'ageRatingDeclaration,primaryCategory,secondaryCategory' }));
+  const inc = incOf(r);
+  return { info: r.data, age: relOf(r, inc, 'ageRatingDeclaration'), primary: relOf(r, inc, 'primaryCategory'), secondary: relOf(r, inc, 'secondaryCategory') };
+}
+async function openSubmissions(app) {
+  const subs = await all('/v1/reviewSubmissions' + q({ 'filter[app]': app.id, 'filter[platform]': 'IOS', limit: 20 }));
+  return subs.filter(s => OPEN_SUBMISSION.includes(s.attributes.state));
+}
+function editableOrStop(p) {
+  if (!p.editable) throw new Error(`Version ${p.version.attributes.versionString} is ${stateOf(p.version.attributes)}, so it cannot change. `
+    + 'Make a new version in App Store Connect first. Nothing sent.');
 }
 
 const commands = {
@@ -338,6 +408,230 @@ const commands = {
       if (!DRY) console.log(`version ${target.v.attributes.versionString} ${locale}: set ${Object.keys(version).join(', ')}`);
     }
     if (DRY) console.log('dry run, nothing changed');
+  },
+
+  async versions() {
+    const app = await appOf(args.app);
+    const vs = (await all(`/v1/apps/${app.id}/appStoreVersions` + q({ 'filter[platform]': 'IOS', limit: 20 })))
+      .sort((a, b) => String(b.attributes.createdDate).localeCompare(String(a.attributes.createdDate)));
+    if (JSON_OUT) return console.log(JSON.stringify(vs, null, 2));
+    if (!vs.length) return console.log('No App Store versions yet. Make one in App Store Connect.');
+    for (const v of vs) {
+      const a = v.attributes;
+      console.log(`${a.versionString}  ${stateOf(a)}  release ${a.releaseType || '?'}${a.earliestReleaseDate ? ' ' + a.earliestReleaseDate : ''}  created ${String(a.createdDate || '').slice(0, 10)}  id=${v.id}`);
+    }
+  },
+
+  async categories() {
+    const cs = await all('/v1/appCategories' + q({ 'filter[platforms]': 'IOS', 'exists[parent]': 'false', limit: 200 }));
+    if (JSON_OUT) return console.log(JSON.stringify(cs, null, 2));
+    for (const c of cs) console.log(c.id);
+  },
+
+  // Read-only. One line per field on the version page, then what is missing.
+  async 'review-status'() {
+    const app = await appOf(args.app);
+    const locale = args.locale || app.attributes.primaryLocale || 'en-US';
+    const p = await versionPage(app), ip = await infoPage(app);
+    const v = p.version.attributes, rows = [];
+    const row = (status, what, detail = '') => rows.push({ status, what, detail });
+    const has = x => x != null && String(x).trim() !== '';
+
+    // The build, and the export question.
+    if (!p.build) row('MISSING', 'build', `pick a processed TestFlight build: attach-build --app ${app.attributes.bundleId} --build <buildId>`);
+    else {
+      const b = await api('GET', `/v1/builds/${p.build.id}` + q({ include: 'preReleaseVersion' }));
+      const ba = b.data.attributes, pre = b.included?.find(x => x.type === 'preReleaseVersions')?.attributes.version;
+      const issues = [];
+      if (ba.processingState !== 'VALID') issues.push(`processing state ${ba.processingState}`);
+      if (ba.usesNonExemptEncryption == null) issues.push(`export compliance not answered (compliance ${p.build.id} --no-encryption)`);
+      if (pre && pre !== v.versionString) issues.push(`the build is version ${pre}, the page is ${v.versionString}`);
+      row(issues.length ? 'MISSING' : 'OK', 'build', `${pre || '?'} (${ba.version})` + (issues.length ? ': ' + issues.join('; ') : ', processed, export compliance answered'));
+    }
+    row(has(v.copyright) ? 'OK' : 'MISSING', 'copyright', v.copyright || 'for example "2026 Example Ltd"');
+    row('OK', 'release', `${v.releaseType || '?'}${v.earliestReleaseDate ? ' after ' + v.earliestReleaseDate : ''}; phased release ${p.phased ? p.phased.attributes?.phasedReleaseState || 'on' : 'off'}`);
+
+    // App Review information. Never print the demo password.
+    const rd = p.review?.attributes;
+    if (!rd) row('MISSING', 'review details', 'contact, notes and the demo account: version-set');
+    else {
+      const contact = ['contactFirstName', 'contactLastName', 'contactEmail', 'contactPhone'].filter(k => !has(rd[k]));
+      row(contact.length ? 'MISSING' : 'OK', 'review contact', contact.length ? 'not set: ' + contact.join(', ') : `${rd.contactFirstName} ${rd.contactLastName}, ${rd.contactEmail}`);
+      row(has(rd.notes) ? 'OK' : 'MISSING', 'review notes', has(rd.notes) ? `${[...rd.notes].length} characters` : 'how to reach every feature');
+      if (rd.demoAccountRequired) row(has(rd.demoAccountName) && has(rd.demoAccountPassword) ? 'OK' : 'MISSING', 'demo account', `required; name ${has(rd.demoAccountName) ? 'set' : 'not set'}, password ${has(rd.demoAccountPassword) ? 'set' : 'not set'}`);
+      else row('OK', 'demo account', 'not required (right when Sign in with Apple is the only sign-in, or there is none)');
+    }
+
+    // The store page text for one locale, and the screenshots.
+    const locs = await all(`/v1/appStoreVersions/${p.version.id}/appStoreVersionLocalizations` + q({ limit: 50 }));
+    const loc = locs.find(l => l.attributes.locale === locale);
+    if (!loc) row('MISSING', `${locale} text`, `no ${locale} localization; has: ${locs.map(l => l.attributes.locale).join(', ') || 'none'}`);
+    else {
+      for (const k of ['description', 'keywords', 'supportUrl']) row(has(loc.attributes[k]) ? 'OK' : 'MISSING', k, has(loc.attributes[k]) ? '' : 'the store-listing skill writes it');
+      const sets = (await api('GET', `/v1/appStoreVersionLocalizations/${loc.id}/appScreenshotSets` + q({ limit: 50, include: 'appScreenshots' }))).data;
+      const filled = sets.filter(s => s.relationships?.appScreenshots?.data?.length);
+      row(filled.length ? 'OK' : 'MISSING', 'screenshots', filled.length ? filled.map(s => `${s.attributes.screenshotDisplayType}=${s.relationships.appScreenshots.data.length}`).join(' ') : 'the app-store-screenshots skill makes them');
+    }
+
+    // App information: categories, age rating, privacy policy URL, content rights.
+    if (!ip.info) row('CHECK', 'app information', 'not editable now (in review or live)');
+    else {
+      row(ip.primary ? 'OK' : 'MISSING', 'primary category', ip.primary?.id || 'version-set; ids from: categories');
+      row('OK', 'secondary category', ip.secondary?.id || 'none (optional)');
+      const un = ageUnanswered(ip.age?.attributes);
+      row(ip.age && !un.length ? 'OK' : 'MISSING', 'age rating', un.length ? `${un.length} questions not answered: ${un.slice(0, 5).join(', ')}${un.length > 5 ? ', ...' : ''} (age-rating-set)` : 'all questions answered');
+      const il = (await all(`/v1/appInfos/${ip.info.id}/appInfoLocalizations` + q({ limit: 50 }))).find(l => l.attributes.locale === locale);
+      row(has(il?.attributes.privacyPolicyUrl) ? 'OK' : 'MISSING', 'privacy policy URL', il?.attributes.privacyPolicyUrl || 'listing-set privacyPolicyUrl');
+    }
+    row(app.attributes.contentRightsDeclaration ? 'OK' : 'MISSING', 'content rights', app.attributes.contentRightsDeclaration || 'version-set contentRights');
+
+    // Price and availability: read only. A failed read is a CHECK, not a MISSING.
+    for (const [what, path_, fix] of [['price', 'appPriceSchedule', 'set a price on the page for pricing and availability (Free is fine)'],
+      ['availability', 'appAvailabilityV2', 'pick the countries on the page for pricing and availability']]) {
+      const { r, err } = await tryApi('GET', `/v1/apps/${app.id}/${path_}`);
+      if (r?.data) row('OK', what, 'set');
+      else row(err === '404' || (r && !r.data) ? 'MISSING' : 'CHECK', what, err && err !== '404' ? `could not read it (${err}); ${fix}` : fix);
+    }
+    const groups = await all(`/v1/apps/${app.id}/subscriptionGroups` + q({ limit: 50 }));
+    if (groups.length) row('CHECK', 'subscriptions', 'a first subscription goes to review with this version: select it on the version page');
+
+    // What the API cannot see.
+    row('CHECK', 'App Privacy', 'the API cannot read or set it: answer it on the App Privacy page');
+    row('CHECK', 'EU trader status', 'the API cannot read or set it: see the app-store-connect-setup guide, step 8');
+
+    const subs = await openSubmissions(app);
+    if (JSON_OUT) return console.log(JSON.stringify({ app: app.attributes.bundleId, version: v.versionString, state: stateOf(v), rows, submissions: subs }, hide, 2));
+    console.log(`${app.attributes.name}  ${app.attributes.bundleId}  locale ${locale}`);
+    console.log(`version ${v.versionString}  ${stateOf(v)}${p.editable ? '' : '  (cannot change now)'}\n`);
+    const w = Math.max(...rows.map(r => r.what.length));
+    for (const r of rows) console.log(`${r.status.padEnd(8)} ${r.what.padEnd(w)}  ${r.detail}`);
+    for (const s of subs) console.log(`\nreview submission ${s.attributes.state}${s.attributes.submittedDate ? ' since ' + s.attributes.submittedDate.slice(0, 16) : ''}  id=${s.id}`);
+    const miss = rows.filter(r => r.status === 'MISSING').map(r => r.what), check = rows.filter(r => r.status === 'CHECK').map(r => r.what);
+    console.log(`\n${miss.length ? 'Missing: ' + miss.join(', ') + '.' : 'Nothing missing that the API can see.'} Check by hand: ${check.join(', ')}.`);
+  },
+
+  async 'age-rating-set'() {
+    const want = JSON.parse(fs.readFileSync(need(pos[0], '<age.json>'), 'utf8'));
+    const app = await appOf(want.app || args.app);
+    const attrs = { ...want }; delete attrs.app;
+    const bad = [];
+    for (const [k, val] of Object.entries(attrs)) {
+      if (AGE_LEVEL_FIELDS.includes(k)) { if (!LEVEL.includes(val)) bad.push(`${k}: one of ${LEVEL.join(', ')}`); }
+      else if (AGE_BOOL_FIELDS.includes(k)) { if (typeof val !== 'boolean') bad.push(`${k}: true or false`); }
+      else if (AGE_ENUM_FIELDS[k]) { if (val !== null && !AGE_ENUM_FIELDS[k].includes(val)) bad.push(`${k}: one of ${AGE_ENUM_FIELDS[k].join(', ')}, or null`); }
+      else if (k === 'developerAgeRatingInfoUrl') { if (val !== null && !/^https:\/\//.test(val)) bad.push(`${k}: an https URL`); }
+      else bad.push(`${k}: not an age rating field`);
+    }
+    if (bad.length) throw new Error('age rating file: ' + bad.join('; ') + '. Nothing sent.');
+    const ip = await infoPage(app);
+    if (!ip.info) throw new Error('the app information is not editable now (in review or live). Make a new version first. Nothing sent.');
+    if (!ip.age) throw new Error('no age rating declaration on the app information. Open the age rating page in App Store Connect once. Nothing sent.');
+    const left = ageUnanswered({ ...ip.age.attributes, ...attrs });
+    await write('PATCH', `/v1/ageRatingDeclarations/${ip.age.id}`, { data: { type: 'ageRatingDeclarations', id: ip.age.id, attributes: attrs } });
+    console.log(DRY ? 'dry run, nothing changed' : `age rating: set ${Object.keys(attrs).length} answers.`);
+    if (left.length) console.log(`still not answered: ${left.join(', ')}`);
+  },
+
+  async 'version-set'() {
+    const want = JSON.parse(fs.readFileSync(need(pos[0], '<version.json>'), 'utf8'));
+    const app = await appOf(want.app || args.app);
+    const bad = Object.keys(want).filter(k => !VERSION_SET_FIELDS.includes(k)).map(k => `${k}: unknown field`);
+    if (want.releaseType != null && !RELEASE_TYPES.includes(want.releaseType)) bad.push(`releaseType: one of ${RELEASE_TYPES.join(', ')}`);
+    if (want.releaseType === 'SCHEDULED' && !want.earliestReleaseDate) bad.push('earliestReleaseDate: needed with SCHEDULED');
+    if (want.contentRights != null && !CONTENT_RIGHTS.includes(want.contentRights)) bad.push(`contentRights: one of ${CONTENT_RIGHTS.join(', ')}`);
+    if (want.phasedRelease != null && typeof want.phasedRelease !== 'boolean') bad.push('phasedRelease: true or false');
+    const rv = want.review || {};
+    for (const k of Object.keys(rv)) if (!REVIEW_FIELDS.includes(k)) bad.push(`review.${k}: unknown field${k === 'demoAccountPassword' ? ' (put the password in your secrets and give demoAccountPasswordRef)' : ''}`);
+    if (rv.demoAccountRequired && !(rv.demoAccountName && rv.demoAccountPasswordRef)) bad.push('review: a required demo account needs demoAccountName and demoAccountPasswordRef');
+    if (bad.length) throw new Error('version file: ' + bad.join('; ') + '. Nothing sent.');
+    // Read the demo password before any write, so a bad reference changes nothing.
+    let demoPassword;
+    if (rv.demoAccountPasswordRef) {
+      try { demoPassword = String(readSecret(rv.demoAccountPasswordRef, oneboxConfig()) ?? '').trim(); } catch { demoPassword = ''; }
+      if (!demoPassword) throw new Error(`review.demoAccountPasswordRef "${rv.demoAccountPasswordRef}" did not resolve to a value (secrets.tool=${oneboxConfig().secrets?.tool || 'env'}). Nothing sent.`);
+    }
+
+    const p = await versionPage(app);
+    editableOrStop(p);
+    const vid = p.version.id, vs = p.version.attributes.versionString;
+    const vattrs = Object.fromEntries(['copyright', 'releaseType', 'earliestReleaseDate'].filter(k => want[k] != null).map(k => [k, want[k]]));
+    if (Object.keys(vattrs).length)
+      await write('PATCH', `/v1/appStoreVersions/${vid}`, { data: { type: 'appStoreVersions', id: vid, attributes: vattrs } });
+
+    if (want.primaryCategory || want.secondaryCategory !== undefined) {
+      const ip = await infoPage(app);
+      if (!ip.info) throw new Error('the app information is not editable now. Nothing more sent.');
+      const rel = {};
+      if (want.primaryCategory) rel.primaryCategory = { data: { type: 'appCategories', id: want.primaryCategory } };
+      if (want.secondaryCategory !== undefined) rel.secondaryCategory = { data: want.secondaryCategory ? { type: 'appCategories', id: want.secondaryCategory } : null };
+      await write('PATCH', `/v1/appInfos/${ip.info.id}`, { data: { type: 'appInfos', id: ip.info.id, relationships: rel } });
+    }
+    if (want.contentRights)
+      await write('PATCH', `/v1/apps/${app.id}`, { data: { type: 'apps', id: app.id, attributes: { contentRightsDeclaration: want.contentRights } } });
+
+    if (want.review) {
+      const attributes = Object.fromEntries(REVIEW_FIELDS.filter(k => k !== 'demoAccountPasswordRef' && rv[k] != null).map(k => [k, rv[k]]));
+      if (demoPassword) attributes.demoAccountPassword = demoPassword;
+      if (p.review) await write('PATCH', `/v1/appStoreReviewDetails/${p.review.id}`, { data: { type: 'appStoreReviewDetails', id: p.review.id, attributes } });
+      else await write('POST', '/v1/appStoreReviewDetails', { data: { type: 'appStoreReviewDetails', attributes,
+        relationships: { appStoreVersion: { data: { type: 'appStoreVersions', id: vid } } } } });
+    }
+
+    if (want.phasedRelease === true && !p.phased) {
+      if (!p.live) console.log('note: phased release is for updates. On a first version Apple may refuse it.');
+      await write('POST', '/v1/appStoreVersionPhasedReleases', { data: { type: 'appStoreVersionPhasedReleases',
+        relationships: { appStoreVersion: { data: { type: 'appStoreVersions', id: vid } } } } });
+    }
+    if (want.phasedRelease === false && p.phased) await write('DELETE', `/v1/appStoreVersionPhasedReleases/${p.phased.id}`);
+    console.log(DRY ? 'dry run, nothing changed' : `version ${vs}: done. Read it back with review-status.`);
+  },
+
+  async 'attach-build'() {
+    const app = await appOf(args.app), bid = need(args.build, '--build <buildId>');
+    const p = await versionPage(app);
+    editableOrStop(p);
+    const b = await api('GET', `/v1/builds/${bid}` + q({ include: 'preReleaseVersion' }));
+    const ba = b.data.attributes, pre = b.included?.find(x => x.type === 'preReleaseVersions')?.attributes.version;
+    const vs = p.version.attributes.versionString;
+    if (ba.processingState !== 'VALID' || ba.expired) throw new Error(`build ${bid} is ${ba.expired ? 'expired' : ba.processingState}. Pick a processed build (builds --app ...). Nothing sent.`);
+    if (pre && pre !== vs) throw new Error(`build ${bid} is version ${pre}, but the version page is ${vs}. Build the app as version ${vs}, or change the version on the page. Nothing sent.`);
+    if (ba.usesNonExemptEncryption == null) console.log(`note: build ${bid} has no export compliance answer yet. Answer it before you submit: compliance ${bid} --no-encryption (if true).`);
+    await write('PATCH', `/v1/appStoreVersions/${p.version.id}/relationships/build`, { data: { type: 'builds', id: bid } });
+    console.log(DRY ? 'dry run, nothing changed' : `version ${vs}: build ${pre || '?'} (${ba.version}) attached.`);
+  },
+
+  async submit() {
+    const app = await appOf(args.app);
+    const p = await versionPage(app);
+    const vs = p.version.attributes.versionString;
+    editableOrStop(p);
+    if (!p.build) throw new Error(`version ${vs} has no build. Run attach-build first. Nothing sent.`);
+    if (p.build.attributes && p.build.attributes.usesNonExemptEncryption == null)
+      throw new Error(`the build on version ${vs} has no export compliance answer. Run compliance ${p.build.id} --no-encryption (if true) first. Nothing sent.`);
+    const subs = await openSubmissions(app);
+    const busy = subs.find(s => ['WAITING_FOR_REVIEW', 'IN_REVIEW', 'CANCELING', 'COMPLETING'].includes(s.attributes.state));
+    if (busy) throw new Error(`a review submission is already ${busy.attributes.state} (id=${busy.id}). Wait for it, or cancel it in App Store Connect. Nothing sent.`);
+    // Reuse a draft (READY_FOR_REVIEW) or a rejected one (UNRESOLVED_ISSUES). Otherwise make one.
+    let sub = subs.find(s => ['READY_FOR_REVIEW', 'UNRESOLVED_ISSUES'].includes(s.attributes.state));
+    if (sub) console.log(`using review submission ${sub.id} (${sub.attributes.state})`);
+    else sub = (await write('POST', '/v1/reviewSubmissions', { data: { type: 'reviewSubmissions', attributes: { platform: 'IOS' },
+      relationships: { app: { data: { type: 'apps', id: app.id } } } } })).data;
+    const items = sub.id === '(dry-run)' ? [] : (await api('GET', `/v1/reviewSubmissions/${sub.id}/items` + q({ include: 'appStoreVersion', limit: 50 }))).data;
+    if (!items.some(i => i.relationships?.appStoreVersion?.data?.id === p.version.id))
+      await write('POST', '/v1/reviewSubmissionItems', { data: { type: 'reviewSubmissionItems', relationships: {
+        reviewSubmission: { data: { type: 'reviewSubmissions', id: sub.id } }, appStoreVersion: { data: { type: 'appStoreVersions', id: p.version.id } } } } });
+    await write('PATCH', `/v1/reviewSubmissions/${sub.id}`, { data: { type: 'reviewSubmissions', id: sub.id, attributes: { submitted: true } } });
+    console.log(DRY ? 'dry run, nothing changed' : `Version ${vs} is sent to App Review. Apple emails you when the state changes. Check it with review-status.`);
+  },
+
+  async release() {
+    const app = await appOf(args.app);
+    const vs = await all(`/v1/apps/${app.id}/appStoreVersions` + q({ 'filter[platform]': 'IOS', limit: 20 }));
+    const v = vs.find(x => stateOf(x.attributes) === 'PENDING_DEVELOPER_RELEASE');
+    if (!v) throw new Error('no version waits for you to release it (state PENDING_DEVELOPER_RELEASE). Nothing sent.');
+    await write('POST', '/v1/appStoreVersionReleaseRequests', { data: { type: 'appStoreVersionReleaseRequests',
+      relationships: { appStoreVersion: { data: { type: 'appStoreVersions', id: v.id } } } } });
+    console.log(DRY ? 'dry run, nothing changed' : `Version ${v.attributes.versionString} is released. The App Store can take up to 24 hours to show it everywhere.`);
   },
 
   async 'subs-create'() {

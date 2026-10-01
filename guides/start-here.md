@@ -240,6 +240,8 @@ field on the version page in App Store Connect is filled.
 ### Phase 9: submit, and what to do on a rejection
 
 Pick the TestFlight build on the version page and submit it for review.
+Guide: [submit-for-review.md](submit-for-review.md). It walks every field on
+the version page. Skill: `ship-ios:appstore-connect` fills what the API allows.
 
 A rejection is normal. It is not the end.
 

@@ -1061,6 +1061,23 @@
       "needs": []
     },
     {
+      "id": "submit-for-review",
+      "kind": "guide",
+      "phase": "launch",
+      "title": "Fill in the version page and submit for App Review",
+      "nudge": "Submit for review",
+      "needs": [
+        "apple-developer-account",
+        "asc-app-record",
+        "app-privacy-answers"
+      ],
+      "doneWhen": {
+        "stage": [
+          "store"
+        ]
+      }
+    },
+    {
       "id": "ship-an-update",
       "kind": "guide",
       "phase": "launch",

@@ -125,6 +125,8 @@ On your app's pages in App Store Connect:
 
 On the version page, click the button to add it for review, then submit.
 Watch for messages in App Review (on your app's pages) and your email.
+Every field on the version page, and what to answer:
+[submit-for-review.md](submit-for-review.md).
 
 ## What the onebox skills automate afterwards
 
@@ -141,7 +143,8 @@ Watch for messages in App Review (on your app's pages) and your email.
 | Subscription group and products | `ship-ios:appstore-connect` (`subs-create`); trial offers and the review screenshot stay **manual** |
 | Screenshots | `ship-ios:app-store-screenshots` |
 | Checking you did not miss anything | `ship-ios:app-store-ready` |
-| App Privacy, age rating, pricing, review info, EU trader status, Submit | **manual** |
+| Age rating, categories, copyright, review info, the build, release type, Submit | `ship-ios:appstore-connect` (`review-status`, then the write commands), or by hand: [submit-for-review.md](submit-for-review.md) |
+| App Privacy, pricing, countries, EU trader status | **manual** (the API cannot set them) |
 
 ## Where the values go
 
