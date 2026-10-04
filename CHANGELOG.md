@@ -14,6 +14,13 @@ update.
 
 ## start
 
+### 0.2.1 (2026-10-04)
+
+- `/start:plan` and `/start:new-app` ask their questions with any agent's
+  question tool, not only Claude Code's. Without one, they ask in one
+  numbered message, as before.
+- The Install section of `PLAN.md` says how to add the plugins in Codex.
+
 ### 0.2.0 (2026-10-04)
 
 - New skill `/start:check-features`. It checks that every feature you asked

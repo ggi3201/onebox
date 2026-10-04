@@ -24,7 +24,9 @@ Only the plugins this plan uses. In Claude Code:
 /plugin install app-features@onebox
 ```
 
-Other agents (Codex, Cursor, Gemini CLI): `npx skills add ggi3201/onebox` installs every skill.
+In Codex: `codex plugin add <plugin>@onebox` for each of them.
+
+Other agents (Cursor, Gemini CLI): `npx skills add ggi3201/onebox` installs every skill.
 
 ## Config keys
 

@@ -80,7 +80,14 @@ The plugins: `ship-ios` is the app and App Store side. `box` is the server
 side. `dev` is the agent's test loop. `content` makes images and video. `app-features` adds features to your app and API: an AI chat and
 agent, cost limits, AI consent, background jobs, import from a shared link.
 
-For other agents (Codex, Cursor, Gemini CLI and others):
+In Codex:
+
+```
+codex plugin marketplace add ggi3201/onebox
+codex plugin add start@onebox
+```
+
+For other agents (Cursor, Gemini CLI and others):
 
 ```bash
 npx skills add ggi3201/onebox

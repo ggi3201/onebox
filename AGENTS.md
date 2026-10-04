@@ -9,6 +9,8 @@ skill reads a value. Both are short.
 ```
 plugins/<plugin>/skills/<skill>/   the skills
 .claude-plugin/marketplace.json    the plugins, for /plugin install
+.agents/plugins/marketplace.json   the same, for Codex; made by scripts/versions.mjs
+plugins/<plugin>/.codex-plugin/    made by scripts/versions.mjs; do not edit
 guides/                            one page per account, key or topic
 site/                              the Astro site; it serves guides/ as pages and raw .md
 plugins/start/skills/plan/references/catalog.json

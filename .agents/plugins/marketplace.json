@@ -1,0 +1,80 @@
+{
+  "name": "onebox",
+  "interface": {
+    "displayName": "onebox"
+  },
+  "plugins": [
+    {
+      "name": "start",
+      "source": {
+        "source": "local",
+        "path": "./plugins/start"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    },
+    {
+      "name": "ship-ios",
+      "source": {
+        "source": "local",
+        "path": "./plugins/ship-ios"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    },
+    {
+      "name": "content",
+      "source": {
+        "source": "local",
+        "path": "./plugins/content"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    },
+    {
+      "name": "box",
+      "source": {
+        "source": "local",
+        "path": "./plugins/box"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    },
+    {
+      "name": "dev",
+      "source": {
+        "source": "local",
+        "path": "./plugins/dev"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    },
+    {
+      "name": "app-features",
+      "source": {
+        "source": "local",
+        "path": "./plugins/app-features"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

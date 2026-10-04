@@ -257,7 +257,9 @@ function render(answers, sources, detect) {
     ...plugins.map((p) => `/plugin install ${p}@onebox`),
     "```",
     "",
-    "Other agents (Codex, Cursor, Gemini CLI): `npx skills add ggi3201/onebox` installs every skill.",
+    "In Codex: `codex plugin add <plugin>@onebox` for each of them.",
+    "",
+    "Other agents (Cursor, Gemini CLI): `npx skills add ggi3201/onebox` installs every skill.",
   ]);
 
   const set = new Set([...(detect.config?.user?.keysSet ?? []), ...(detect.config?.project?.keysSet ?? [])]);

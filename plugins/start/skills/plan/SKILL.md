@@ -72,12 +72,13 @@ It prints `state`, `ask` and `skipped`:
   them. For example: "Your app has its own server, Sign in with Apple and
   in-app purchases. Tell me if that is wrong." The `why` is for when the user
   asks.
-- **`ask`**: the questions left, with options in order. Use the
-  AskUserQuestion tool if you have it: up to 4 questions per call, `header`
-  from the item, the option labels as given, with `tag` added to the label
-  ("(detected)" or "(recommended)"). Set `multiSelect` when `multi` is true.
-  Put the `why` or `hint` in the question text when there is one. Without the
-  tool, ask them in one message as a numbered list.
+- **`ask`**: the questions left, with options in order. Use your agent's
+  question tool if it has one (in Claude Code, AskUserQuestion: up to 4
+  questions per call, `header` from the item, `multiSelect` when `multi` is
+  true). Use the option labels as given, with `tag` added to the label
+  ("(detected)" or "(recommended)"). Put the `why` or `hint` in the question
+  text when there is one. Without such a tool, ask them in one message as a
+  numbered list.
 - **`skipped`**: questions no answer would change, given what is known. Do
   not ask them.
 

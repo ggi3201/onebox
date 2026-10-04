@@ -10,7 +10,7 @@ export const GET: APIRoute = ({ site }) => {
     "",
     "> Free agent skills (SKILL.md, for Claude Code, Codex, Cursor, Gemini CLI and others) and plain guides for getting an Expo / React Native app onto the App Store. If the app needs a backend, it runs on one cheap server (a mini PC at home or a small VPS). MIT licensed. iOS only; Android and the Play Store are not covered.",
     "",
-    `Install in Claude Code: \`/plugin marketplace add ${REPO_SLUG}\`, then \`/plugin install <plugin>@onebox\`. Other tools: \`npx skills add ${REPO_SLUG}\`. Source: ${REPO}`,
+    `Install in Claude Code: \`/plugin marketplace add ${REPO_SLUG}\`, then \`/plugin install <plugin>@onebox\`. Install in Codex: \`codex plugin marketplace add ${REPO_SLUG}\`, then \`codex plugin add <plugin>@onebox\`. Other tools: \`npx skills add ${REPO_SLUG}\`. Source: ${REPO}`,
     "",
     "Start here: install the `start` plugin, then run `/start:plan` in the app's folder (in other agents, ask for the plan skill). It detects what the app already has, asks what the user wants (server or not, sign-in, paid or free, landing page, AI), and writes PLAN.md with only the guides, skills and plugins that app needs. No app yet: `/start:new-app` makes the repo first.",
     "",
