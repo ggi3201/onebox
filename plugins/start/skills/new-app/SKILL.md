@@ -72,9 +72,10 @@ exception: pnpm is pinned to major 10 (step 0).
 
 ## 1. Ask
 
-Ask everything in one questionnaire with AskUserQuestion: up to 4 questions in
-one call. Do not ask them in chat, one by one. Only when you do not have the
-tool, put the same four questions in one numbered message. Fill in the
+Ask everything in one questionnaire, with your agent's question tool if it
+has one (in Claude Code, AskUserQuestion: up to 4 questions in one call). Do
+not ask them in chat, one by one. Only when you do not have such a tool, put
+the same four questions in one numbered message. Fill in the
 options yourself, from the user's idea and the config, so the user picks and
 does not type. "Other" is always there for their own text. Do not ask a
 question the user already answered.

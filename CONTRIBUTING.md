@@ -55,7 +55,9 @@ load the skill, so it must carry the trigger phrases.
     `marketplace.json` together. `check` in the same script runs on every PR.
     A change in `guides/` needs no bump: skills fetch guides from the site.
     `bump` also adds an empty entry to `CHANGELOG.md`: fill in 1-4 lines on
-    what changed for the user, or `check` fails.
+    what changed for the user, or `check` fails. It also rewrites the Codex
+    manifests (`.codex-plugin/plugin.json`, `.agents/plugins/marketplace.json`)
+    from the Claude Code ones. Do not edit those by hand.
 11. **End with a nudge.** A skill ends with the next step as one plain
     question: "Next: Sign in with Apple. Continue?". "Yes" must be enough.
     No lists, config keys or detection lines unless the user asks. If

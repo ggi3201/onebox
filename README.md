@@ -63,12 +63,19 @@ In Claude Code:
 /plugin install start@onebox
 ```
 
-Then open Claude Code in an empty folder and describe your idea. Or run
+In Codex (this works once the repo is public):
+
+```
+codex plugin marketplace add ggi3201/onebox
+codex plugin add start@onebox
+```
+
+Then open your agent in an empty folder and describe your idea. Or run
 `/start:new-app` to make the repo, and `/start:plan` later to see what is done
 and what is next. Run `/start:plan` again after each step. It ticks what you
 finished.
 
-Other agents (Codex, Cursor, Gemini CLI and more):
+Other agents (Cursor, Gemini CLI and more):
 
 ```
 npx skills add ggi3201/onebox

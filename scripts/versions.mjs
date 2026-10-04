@@ -9,6 +9,11 @@
 //   node scripts/versions.mjs bump <plugin> [patch|minor]
 //       Raises the version in both files, and adds an empty entry for it to
 //       CHANGELOG.md. patch (the default) for a fix, minor for a new skill.
+//   node scripts/versions.mjs codex
+//       Writes the Codex manifests from the Claude Code ones: each
+//       plugins/<plugin>/.codex-plugin/plugin.json and
+//       .agents/plugins/marketplace.json. Do not edit those files by hand.
+//       check fails when they differ from what this writes; bump rewrites them.
 
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
@@ -18,6 +23,10 @@ const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..")
 const MARKET = ".claude-plugin/marketplace.json";
 const CHANGELOG = "CHANGELOG.md";
 const pluginFile = (p) => `plugins/${p}/.claude-plugin/plugin.json`;
+const CODEX_MARKET = ".agents/plugins/marketplace.json";
+const codexPluginFile = (p) => `plugins/${p}/.codex-plugin/plugin.json`;
+// Codex wants a category on each plugin. All onebox plugins are dev tools.
+const CODEX_CATEGORY = "Developer Tools";
 
 const git = (...args) => execFileSync("git", args, { cwd: root, encoding: "utf8", stdio: "pipe" }).trim();
 const readJson = (file) => JSON.parse(fs.readFileSync(path.join(root, file), "utf8"));
@@ -36,6 +45,48 @@ const newer = (a, b) => {
   for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] > y[i];
   return false;
 };
+
+// The Codex manifests, as { file: text }, built from the Claude Code ones.
+// Codex reads the same skills/ folders, so only the manifests differ.
+// Schema: the plugin-creator skill in github.com/openai/plugins,
+// .agents/skills/plugin-creator/references/plugin-json-spec.md.
+function codexFiles() {
+  const market = readJson(MARKET);
+  const files = {};
+  for (const entry of market.plugins) {
+    const own = readJson(pluginFile(entry.name));
+    const manifest = { name: own.name, version: own.version, description: own.description };
+    for (const key of ["author", "homepage", "repository", "license", "keywords"]) {
+      if (own[key] !== undefined) manifest[key] = own[key];
+    }
+    manifest.skills = "./skills/";
+    manifest.interface = {
+      displayName: own.name,
+      developerName: own.author?.name,
+      category: CODEX_CATEGORY,
+    };
+    files[codexPluginFile(entry.name)] = JSON.stringify(manifest, null, 2) + "\n";
+  }
+  const codexMarket = {
+    name: market.name,
+    interface: { displayName: market.name },
+    plugins: market.plugins.map((entry) => ({
+      name: entry.name,
+      source: { source: "local", path: entry.source },
+      policy: { installation: "AVAILABLE", authentication: "ON_INSTALL" },
+      category: CODEX_CATEGORY,
+    })),
+  };
+  files[CODEX_MARKET] = JSON.stringify(codexMarket, null, 2) + "\n";
+  return files;
+}
+
+function writeCodex() {
+  for (const [file, text] of Object.entries(codexFiles())) {
+    fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
+    fs.writeFileSync(path.join(root, file), text);
+  }
+}
 
 // CHANGELOG.md has a "## <plugin>" section per plugin, and in it a
 // "### <version> (<date>)" heading per version, newest first.
@@ -74,9 +125,18 @@ function check(base) {
     }
   }
 
+  for (const [file, text] of Object.entries(codexFiles())) {
+    const full = path.join(root, file);
+    if (!fs.existsSync(full) || fs.readFileSync(full, "utf8") !== text) {
+      errors.push(`${file} does not match the Claude Code manifests. Run: node scripts/versions.mjs codex`);
+    }
+  }
+
+  // The Codex manifests are made from plugin.json, so a change to them alone
+  // needs no new version.
   const since = git("merge-base", "HEAD", base);
   const changed = new Set(
-    git("diff", "--name-only", since, "--", "plugins/")
+    git("diff", "--name-only", since, "--", "plugins/", ":(exclude)plugins/*/.codex-plugin/*")
       .split("\n")
       .filter(Boolean)
       .map((f) => f.split("/")[1]),
@@ -115,6 +175,7 @@ function bump(p, level = "patch") {
   replaceIn(pluginFile(p), /("version":\s*")[^"]+/, next);
   replaceIn(MARKET, new RegExp(`("name":\\s*"${p}"[^}]*?"version":\\s*")[^"]+`), next);
   console.log(`${p}: ${next}`);
+  writeCodex();
   addChangelogEntry(p, next);
 }
 
@@ -145,8 +206,11 @@ try {
     check(i >= 0 ? rest[i + 1] : "origin/main");
   } else if (cmd === "bump") {
     bump(rest[0], rest[1]);
+  } else if (cmd === "codex") {
+    writeCodex();
+    console.log(`wrote ${Object.keys(codexFiles()).join(", ")}`);
   } else {
-    console.error("usage: versions.mjs check [--base <ref>] | bump <plugin> [patch|minor]");
+    console.error("usage: versions.mjs check [--base <ref>] | bump <plugin> [patch|minor] | codex");
     process.exit(2);
   }
 } catch (e) {

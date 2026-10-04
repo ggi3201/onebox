@@ -1,7 +1,8 @@
 name: Plugin versions
 
 # Claude Code updates an installed plugin only when its version changes.
-# This fails a PR that changes a plugin and leaves its version alone.
+# This fails a PR that changes a plugin and leaves its version alone, and a
+# PR where the Codex manifests no longer match the Claude Code ones.
 on:
   pull_request:
 
