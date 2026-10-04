@@ -14,6 +14,16 @@ update.
 
 ## start
 
+### 0.2.0 (2026-10-04)
+
+- New skill `/start:check-features`. It checks that every feature you asked
+  for has a flow that passed on the current code, and says the next gap.
+- `/start:plan` now asks what the app should do and writes `FEATURES.md`.
+  The site's picker has the same question. Sign-in, payments and AI steps
+  add their own features, with what the proof must show.
+- New plan step "Check that every feature works". It is ticked only while
+  every feature's flow passes.
+
 ### 0.1.17 (2026-10-01)
 
 - New plan step "Submit for review", the last launch step, with a guide that
@@ -183,6 +193,11 @@ update.
   host a landing page, and run a staging backend.
 
 ## dev
+
+### 0.1.4 (2026-10-04)
+
+- A flow can name the features it proves with a `Covers:` line, and the
+  test loop records each flow run for `/start:check-features`.
 
 ### 0.1.3 (2026-09-29)
 

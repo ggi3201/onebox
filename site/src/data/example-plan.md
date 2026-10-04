@@ -97,6 +97,7 @@ Skills read these from `~/.config/onebox/config.json`, or `.onebox.json` for thi
 - [ ] Slow AI work as background jobs — skill: /app-features:durable-jobs <!-- skill:app-features/durable-jobs -->
 - [ ] Trace and cost every AI call — guide: https://onebox.lokkesveen.com/guides/langfuse/ (raw: https://onebox.lokkesveen.com/guides/langfuse.md) <!-- guide:langfuse -->
 - [ ] Ask for a rating at a good moment — guide: https://onebox.lokkesveen.com/guides/ask-for-a-rating/ (raw: https://onebox.lokkesveen.com/guides/ask-for-a-rating.md) <!-- guide:ask-for-a-rating -->
+- [ ] Check that every feature works, with proof — skill: /start:check-features <!-- skill:start/check-features -->
 
 ## App Store Connect and builds
 

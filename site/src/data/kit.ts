@@ -47,6 +47,7 @@ export const PLUGINS: Plugin[] = [
 
 const TAGLINES: Record<string, string> = {
   "new-app": "A new repo in the layout every other skill expects, with the checks already green.",
+  "check-features": "Checks that every feature you asked for has a flow that passed on the current code.",
   "app-store-ready": "Tells you why Apple will reject your app, before Apple does.",
   "expo-local-build": "Builds on your own Mac and sends it to TestFlight. No build credits.",
   "eas-update": "Sends a JavaScript fix to phones without a new build or App Review.",

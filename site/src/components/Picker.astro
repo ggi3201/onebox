@@ -28,6 +28,11 @@ const questions = catalog.questions as Q[];
         </div>
       </fieldset>
     ))}
+    <fieldset class="q">
+      <legend><span class="label n">{String(questions.length + 1).padStart(2, "0")}</span>What should the app do?</legend>
+      <p class="hint">One line per thing, in your own words. Optional. The plan writes them to <code>FEATURES.md</code>, and <code>/start:check-features</code> checks that each one is built and works.</p>
+      <textarea class="does" name="does" rows="4" placeholder={"Add a receipt with a photo\nRemind me before a warranty ends"}></textarea>
+    </fieldset>
   </form>
 
   <aside class="cart" aria-live="polite">
@@ -88,6 +93,12 @@ const questions = catalog.questions as Q[];
     return a;
   }
 
+  // The app's own features: not a catalog question, so the plan skill takes
+  // them out of the answers and passes them to FEATURES.md.
+  function does() {
+    return form.querySelector("[name=does]").value.split("\n").map((l) => l.replace(/^\s*(?:[-*•]|\d+[.)])\s+/, "").trim()).filter(Boolean).slice(0, 20);
+  }
+
   function matches(when, a) {
     if (!when) return true;
     return Object.entries(when).every(([qid, opts]) => {
@@ -113,7 +124,8 @@ const questions = catalog.questions as Q[];
       ...plugins.map((p) => `/plugin install ${p}@onebox`),
     ].join("\n");
 
-    const said = `My answers from the onebox site: ${JSON.stringify(a)}`;
+    const d = does();
+    const said = `My answers from the onebox site: ${JSON.stringify(d.length ? { ...a, does: d } : a)}`;
     out.prompt.textContent = `/start:plan ${said}`;
     out.promptCopy.dataset.copy = `/start:plan ${said}`;
     out.promptOther.dataset.copy = `Use the onebox plan skill. ${said}`;
@@ -165,6 +177,7 @@ const questions = catalog.questions as Q[];
   }
 
   form.addEventListener("change", render);
+  form.addEventListener("input", render);
   root.querySelector("[data-copy-install]").addEventListener("click", async (e) => {
     const btn = e.currentTarget;
     try {
@@ -193,6 +206,12 @@ const questions = catalog.questions as Q[];
     font-family: var(--display); font-stretch: 112%; font-weight: 700; font-size: 1.08rem;
   }
   .q .n { flex: none; }
+  .does {
+    display: block; width: 100%; box-sizing: border-box; margin: 10px 0 0 34px; max-width: calc(100% - 34px);
+    padding: 8px 10px; border: 1px solid var(--rule); background: var(--paper); color: var(--ink);
+    font: inherit; font-size: 0.95rem; resize: vertical;
+  }
+  .does:focus { outline: 2px solid var(--signal); outline-offset: 1px; border-color: var(--ink); }
   .hint { margin: 6px 0 0 34px; color: var(--ink-3); font-size: 0.95rem; }
   .opts { display: grid; gap: 6px; margin: 10px 0 0 34px; }
   .opt {
@@ -274,6 +293,7 @@ const questions = catalog.questions as Q[];
   }
   @media (max-width: 520px) {
     .opts, .hint { margin-left: 0; }
+    .does { margin-left: 0; max-width: 100%; }
     .cmdbox { flex-direction: column; }
     .cmdbox button { border-left: 0; border-top: 1px solid var(--ink); padding: 10px 12px; }
     .cart-head { flex-wrap: wrap; }

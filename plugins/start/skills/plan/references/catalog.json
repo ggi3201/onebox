@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "about": "One source for the planner skill and the picker on the website. Each question has options; each item says which answers include it. An option with `agreesWith` does not conflict with detection that finds that other option (sign in later, and Sign in with Apple found in the app). An item with no `when` is always in the plan. `when` lists question ids with the option ids that turn the item on; all listed questions must match (AND), any option within one question matches (OR). `doneWhen` uses the same shape: when it matches, the item is still listed but starts ticked as likely done (the user can untick it). `nudge` is the short name the agent says (\"Next: <nudge>. Continue?\"). `needs` lists ids from needs.json: what the step needs before it starts, in the order `plan.mjs ready` checks them. An entry can also be {\"id\", \"when\"}, with `when` in the same shape as an item's.",
+  "about": "One source for the planner skill and the picker on the website. Each question has options; each item says which answers include it. An option with `agreesWith` does not conflict with detection that finds that other option (sign in later, and Sign in with Apple found in the app). An item with no `when` is always in the plan. `when` lists question ids with the option ids that turn the item on; all listed questions must match (AND), any option within one question matches (OR). `doneWhen` uses the same shape: when it matches, the item is still listed but starts ticked as likely done (the user can untick it). `nudge` is the short name the agent says (\"Next: <nudge>. Continue?\"). `needs` lists ids from needs.json: what the step needs before it starts, in the order `plan.mjs ready` checks them. An entry can also be {\"id\", \"when\"}, with `when` in the same shape as an item's. `proves` (optional) says what a flow must show before the feature counts as built; /start:check-features copies it into FEATURES.md.",
   "questions": [
     {
       "id": "stage",
@@ -504,6 +504,7 @@
         "gh-login",
         "box-ssh"
       ],
+      "proves": "one user never sees another user's data.",
       "when": {
         "backend": [
           "box"
@@ -517,6 +518,7 @@
       "title": "Supabase, Convex or Firebase: set up, keep users apart, secrets",
       "nudge": "Your hosted backend",
       "needs": [],
+      "proves": "one user never sees another user's data.",
       "when": {
         "backend": [
           "hosted"
@@ -592,6 +594,7 @@
         "siwa-capability",
         "siwa-key"
       ],
+      "proves": "sign in, sign out, and delete the account from Settings.",
       "when": {
         "login": [
           "apple"
@@ -608,6 +611,7 @@
         "paid-apps-agreement",
         "revenuecat-key"
       ],
+      "proves": "the paywall shows the price, a sandbox purchase opens the paid part, and Restore works.",
       "when": {
         "paid": [
           "subs"
@@ -624,6 +628,7 @@
         "eas-login",
         "apns-key"
       ],
+      "proves": "the app asks for permission at a good moment, and a push sent from your API arrives.",
       "when": {
         "backend": [
           "box"
@@ -677,6 +682,7 @@
         "plugin-app-features",
         "llm-key"
       ],
+      "proves": "a message gets an answer that streams in, and a failed answer shows a clear message.",
       "when": {
         "ai": [
           "chat"
@@ -697,6 +703,7 @@
         "plugin-app-features",
         "llm-key"
       ],
+      "proves": "a link shared to the app becomes data in the app.",
       "when": {
         "ai": [
           "import"
@@ -716,6 +723,7 @@
       "needs": [
         "plugin-app-features"
       ],
+      "proves": "a user over the budget sees a clear message, not an error.",
       "when": {
         "ai": [
           "chat",
@@ -736,6 +744,7 @@
       "needs": [
         "plugin-app-features"
       ],
+      "proves": "the app asks before it sends data to an AI service, and No keeps the AI parts off.",
       "when": {
         "ai": [
           "chat",
@@ -833,7 +842,19 @@
       "phase": "features",
       "title": "Ask for a rating at a good moment",
       "nudge": "Ask for a rating",
-      "needs": []
+      "needs": [],
+      "proves": "the rating prompt shows after the good moment, never on the first launch."
+    },
+    {
+      "id": "check-features",
+      "kind": "skill",
+      "plugin": "start",
+      "phase": "features",
+      "title": "Check that every feature works, with proof",
+      "nudge": "Check that every feature works",
+      "needs": [
+        "node"
+      ]
     },
     {
       "id": "app-store-connect-setup",
@@ -921,6 +942,7 @@
         "siwa-capability",
         "siwa-key"
       ],
+      "proves": "sign in, sign out, and delete the account from Settings.",
       "when": {
         "login": [
           "later"

@@ -26,6 +26,7 @@ node scripts/versions.mjs check          # a changed plugin needs a new version 
 bash site/scripts/example-plan.sh && git diff --stat site/src/data/example-plan.md
 node plugins/start/skills/plan/scripts/plan.mjs write --answers '{"stage":"idea"}' --repo "$(mktemp -d)" --dry-run
 bash scripts/plan-notes-check.sh         # a re-run keeps the user's notes byte for byte
+bash scripts/features-check.sh            # the feature check gives the same answer for the same files
 git diff origin/main | grep -nE '/Users/|/home/|\b10\.[0-9]+\.[0-9]+\.[0-9]+\b'   # must print nothing
 ```
 

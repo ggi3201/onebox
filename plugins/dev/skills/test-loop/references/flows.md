@@ -48,6 +48,12 @@ routes.
 - **Name the seed data it needs.** "Sign in as the dev user with 3 items in
   the cart." The seed must make that state exist (see `seed-data.md`).
 - **Start from a known place.** A deep link, or a fresh launch.
+- **Say which features it proves.** When the repo has a `FEATURES.md`, add a
+  `Covers:` line with the feature ids from it (`Covers: lists-create,
+  lists-empty`). `/start:check-features` counts a feature as built only when
+  a flow covers it and passed. `Feature:` names the code the flow tests,
+  relative to the app folder. When that code changes, the last pass no longer
+  counts.
 - **Update it in the same commit** as a change to the button text or the
   screen order. A stale flow fails, and that is correct.
 
@@ -75,6 +81,7 @@ tree find the control by name.
 # Lists: create, see, empty state
 
 Feature: src/features/lists/
+Covers: lists-create, lists-empty
 Needs: seed users `dev-empty` (no lists) and `dev-rich` (40 lists, one with
 a 120-character name). See the seed file.
 Proof: save a screenshot at every step marked (proof).
@@ -125,6 +132,9 @@ Proof: save a screenshot at every step marked (proof).
    broken screen.
 6. Save proof screenshots outside the repo, or in a git-ignored folder, and
    list their paths in the report.
+7. When the repo has a `FEATURES.md`, record the result with the
+   `start:check-features` skill's script: `features.mjs record --flow <path>
+   --pass`, or `--fail --step <n>`. A step you could not run is not a pass.
 
 ### Which tool does what
 

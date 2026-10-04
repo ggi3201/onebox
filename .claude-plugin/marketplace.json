@@ -10,7 +10,7 @@
       "name": "start",
       "source": "./plugins/start",
       "description": "Start here. Run /start:plan in your app's folder: it looks at what the app already has, asks what it cannot see, and writes PLAN.md with only the steps and plugins you need. No app yet: /start:new-app makes the repo first. Runs on your Mac.",
-      "version": "0.1.17",
+      "version": "0.2.0",
       "license": "MIT"
     },
     {
@@ -38,7 +38,7 @@
       "name": "dev",
       "source": "./plugins/dev",
       "description": "Make the coding agent prove its change before it says done: lint, strict types, unit and database tests, then a check in the iOS Simulator with a screenshot. Also trims a bloated test suite. Runs on your Mac.",
-      "version": "0.1.3",
+      "version": "0.1.4",
       "license": "MIT"
     },
     {
