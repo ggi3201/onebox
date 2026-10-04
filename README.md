@@ -105,7 +105,7 @@ tells you which of the others you need.
 
 | Plugin | Runs on | What it does | Skills |
 |---|---|---|---|
-| `start` | your Mac | Makes the repo, writes your plan, and says what is next | plan, new-app |
+| `start` | your Mac | Makes the repo, writes your plan, and says what is next | plan, new-app, check-features |
 | `ship-ios` | your Mac | From a working app to TestFlight and the store | app-store-ready, expo-local-build, eas-update, appstore-connect, ios-preview-build, app-store-screenshots, store-listing, draw-app-icon, draw-icon-set |
 | `box` | your server | A safe, small server for the API and the site | box-setup, expose-service, new-landing-page, staging-env |
 | `dev` | your Mac | Makes the agent prove its work before it says "done" | test-loop, trim-tests |

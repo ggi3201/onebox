@@ -17,7 +17,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { loadNeeds, loadConfig, checkNeeds } from "./needs.mjs";
 
 const root = path.resolve(process.argv[2] ?? ".");
@@ -500,6 +500,19 @@ if (expo.found) {
   if (!lackL.length) done["skill:dev/test-loop"] = list(have);
   else if (have.length) seen["skill:dev/test-loop"] = `${list(have)}; still missing ${list(lackL)}`;
 }
+
+// /start:check-features: done when every feature in FEATURES.md has a flow
+// that passed on the current code. Its check reads files only. Without the
+// skill next to this one (an install of the plan skill alone), skip it.
+try {
+  const { checkFeatures } = await import(pathToFileURL(path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "check-features", "scripts", "features.mjs")).href);
+  const r = checkFeatures(root);
+  if (r?.allDone) done["skill:start/check-features"] = `all ${r.total} features in FEATURES.md have a flow that passed on the current code`;
+  else if (r?.total) {
+    const left = r.features.filter((f) => f.state !== "done").map((f) => `${f.name} (${f.state})`);
+    open["skill:start/check-features"] = `${r.done} of ${r.total} features proven; not yet: ${left.slice(0, 3).join(", ")}${left.length > 3 ? ` and ${left.length - 3} more` : ""}`;
+  }
+} catch (e) { if (e?.code !== "ERR_MODULE_NOT_FOUND") notes.push(`could not check FEATURES.md: ${e.message}`); }
 
 const cannotDetect = [
   "whether your Apple Developer membership is active",
