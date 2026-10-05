@@ -274,18 +274,10 @@ screens they use, where they give up. Skip it until you have a question that
 only analytics can answer. Every tool you add is one more processor in your
 privacy policy and one more App Privacy answer.
 
-If you add one, PostHog is a good fit: it has a React Native SDK, an EU cloud
-(Frankfurt), and the free amounts above. Rules:
-
-- **Ask first.** Guideline 5.1.1(ii) says apps that collect user or usage data
-  must get the user's consent, even for anonymous data. Start PostHog with
-  `defaultOptIn: false` and call `posthog.optIn()` only after the user agrees.
-  Paid features must not depend on that answer.
-- Track a few named events (`import_started`, `import_finished`), not every
-  tap.
-- Do not connect it to an ad network or share its data with data brokers.
-  That is tracking in Apple's sense, and it needs the App Tracking
-  Transparency prompt.
+If you add one before your first public release, PostHog is a good fit. The
+whole setup is in [product-analytics.md](product-analytics.md): the region, the
+key, a small wrapper with named events, the opt-in that Apple's Guideline
+5.1.1(ii) asks for, and the privacy paperwork.
 
 ## App Privacy answers and privacy policy lines
 
@@ -315,10 +307,8 @@ Name each tool:
 > address of the request and our internal account id, never the request
 > content.
 
-If you use PostHog:
-
-> If you agree, the app sends usage events (for example "import started") to
-> PostHog, stored in the EU. You can turn this off in the app's settings.
+If you use PostHog, the wording is in
+[product-analytics.md](product-analytics.md#paperwork-before-release).
 
 ## Where the values go
 
@@ -328,7 +318,7 @@ If you use PostHog:
 | Organization and project slugs | the Sentry plugin entry in `app.json` |
 | `SENTRY_AUTH_TOKEN` | your secrets tool; passed to the build command. Never in the repo or the app. |
 | API DSN (`SENTRY_DSN`), `SENTRY_ENVIRONMENT` | the API's secrets and its `environment:` block in `docker-compose.yml` |
-| PostHog project key and host | `eas.json` `env` per profile. Not a secret. |
+| PostHog project key and host | the EAS `production` environment ([product-analytics.md](product-analytics.md)). Not a secret. |
 
 ## Check it works
 

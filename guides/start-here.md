@@ -230,15 +230,20 @@ the main feature end to end against the production API.
    icons: `ship-ios:draw-icon-set`.
 2. **Screenshots.** Skill: `ship-ios:app-store-screenshots`. For extra
    artwork: `content:image` (needs [kie-ai.md](kie-ai.md)).
-3. **Privacy.** You need a privacy policy at a public URL, and the App
+3. **Product analytics (optional).** Before your first public release, you
+   can add PostHog to see where new users drop off. Do it before the privacy
+   step, so the policy and the answers include it. Guide:
+   [product-analytics.md](product-analytics.md). Skip it if you have no
+   question that numbers would answer yet.
+4. **Privacy.** You need a privacy policy at a public URL, and the App
    Privacy answers in App Store Connect must match what the app really
    collects. A site for the policy and a support page: skill
    `box:new-landing-page`. No landing page? Host the two pages for free:
    [privacy-and-support-pages.md](privacy-and-support-pages.md).
-4. **Review notes.** Tell App Review how to reach every feature. If a feature
+5. **Review notes.** Tell App Review how to reach every feature. If a feature
    needs a subscription, say so. If sign-in needs anything other than Sign in
    with Apple, give a demo account.
-5. **Readiness check.** Skill: `ship-ios:app-store-ready`. It looks for the
+6. **Readiness check.** Skill: `ship-ios:app-store-ready`. It looks for the
    usual rejection causes before Apple does.
 
 Done when: `ship-ios:app-store-ready` reports nothing blocking, and every
@@ -329,6 +334,7 @@ Done when: the app is approved and released.
 - [ ] App record in App Store Connect, API key stored
 - [ ] Preview build tested on your phone
 - [ ] TestFlight build tested end to end
+- [ ] (Optional) Product analytics: opt-in, privacy policy and App Privacy match ([product-analytics.md](product-analytics.md))
 - [ ] Icon, screenshots, privacy policy URL, App Privacy answers, review notes
 - [ ] `ship-ios:app-store-ready` passes
 - [ ] Submitted

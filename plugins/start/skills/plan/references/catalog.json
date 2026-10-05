@@ -1162,6 +1162,15 @@
       "needs": []
     },
     {
+      "id": "product-analytics",
+      "kind": "guide",
+      "phase": "launch",
+      "title": "Optional: see where new users drop off, before your first release",
+      "nudge": "Product analytics",
+      "needs": [],
+      "repeat": true
+    },
+    {
       "id": "submit-for-review",
       "kind": "guide",
       "phase": "launch",

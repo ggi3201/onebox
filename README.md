@@ -107,7 +107,7 @@ and terms pages that App Store Connect and your paywall link to.
 
 ## What is in the box
 
-25 skills in 6 plugins, and 28 guides. Install the `start` plugin first. It
+26 skills in 6 plugins, and 30 guides. Install the `start` plugin first. It
 tells you which of the others you need.
 
 | Plugin | Runs on | What it does | Skills |

@@ -14,6 +14,13 @@ update.
 
 ## start
 
+### 0.2.5 (2026-10-07)
+
+- New optional plan step "Product analytics", with a guide. It adds PostHog
+  before your first public release: the EU region, a small wrapper with named
+  events, an opt-in, and the privacy paperwork. It is listed after "crash
+  reports" and is never the "Next" step.
+
 ### 0.2.4 (2026-10-07)
 
 - New plan step for an AI app on Supabase, Convex or Firebase: "A cost

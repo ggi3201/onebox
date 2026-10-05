@@ -28,6 +28,8 @@ time, most of it on App Privacy and the review notes.
 - The privacy policy and the support page are live at public URLs
   ([privacy-and-support-pages.md](privacy-and-support-pages.md), or
   `box:new-landing-page`).
+- If the app has product analytics, the policy names PostHog and the
+  App Privacy answers match ([product-analytics.md](product-analytics.md)).
 
 The version page is the one under your app's iOS version, for example
 "1.0 Prepare for Submission". App Store Connect makes it with the app record.
@@ -64,7 +66,7 @@ What the usual parts of this setup add:
 | Sign in with Apple, when you ask for the name and email | Contact Info: Name, Email Address | Yes | No |
 | Your own API with accounts | User ID, plus each kind of content the user saves (for example Other User Content, Photos) | Yes | No |
 | RevenueCat | Purchases: Purchase History. Identifiers: User ID if you set your own app user ID | Follow RevenueCat's page | Follow RevenueCat's page |
-| Crash reports (Sentry, PostHog) | See the table in [crash-reports.md](crash-reports.md#app-privacy-answers-and-privacy-policy-lines) | | |
+| Crash reports (Sentry), product analytics (PostHog) | See the table in [crash-reports.md](crash-reports.md#app-privacy-answers-and-privacy-policy-lines), and [product-analytics.md](product-analytics.md#paperwork-before-release) | | |
 | An AI provider | The content you send to it (for example Other User Content, Photos) | Yes, if your API sends it with the user's ID | No |
 
 - RevenueCat explains its own answers on its page "Apple App Privacy"
