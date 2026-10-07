@@ -14,6 +14,12 @@ update.
 
 ## start
 
+### 0.2.4 (2026-10-07)
+
+- New plan step for an AI app on Supabase, Convex or Firebase: "A cost
+  budget per user on your hosted backend". Its guide adds a per-user daily
+  AI count, a cap on each request and an app-wide daily budget.
+
 ### 0.2.3 (2026-10-07)
 
 - `/start:new-app` builds the API protected from the first commit, in .NET

@@ -235,6 +235,10 @@ Supabase guide shows the current way to read the user:
 https://supabase.com/docs/guides/functions/auth. Mind the 150 s limit on the
 Free plan. A long agent run must be split into steps, or run on the box.
 
+Before the model call, check and count the user's AI budget. The table, the
+Postgres function and the Edge Function are in
+[hosted-ai-limits.md](hosted-ai-limits.md#supabase).
+
 ### RevenueCat
 
 RevenueCat's webhook does not carry a Supabase login, so the gateway would
@@ -354,7 +358,7 @@ export const ask = action({
   handler: async (ctx, { prompt }) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not signed in");
-    // Check the user's AI budget here (a query via ctx.runQuery).
+    // Check and count the user's AI budget here, in one mutation (see below).
     const res = await fetch(`${process.env.LLM_BASE_URL}/chat/completions`, {
       method: "POST",
       headers: {
@@ -372,6 +376,10 @@ export const ask = action({
   },
 });
 ```
+
+The budget check must be a mutation, not a query: a mutation checks and
+counts in one transaction. The code is in
+[hosted-ai-limits.md](hosted-ai-limits.md#convex).
 
 The values match [llm-api-key.md](llm-api-key.md). For a chat that streams,
 the usual Convex way is to write the answer into a table as it arrives. The
@@ -503,12 +511,15 @@ const llmKey = defineSecret("LLM_API_KEY");
 export const ask = onCall({ secrets: [llmKey] }, async (request) => {
   if (!request.auth) throw new HttpsError("unauthenticated", "Sign in first.");
   const uid = request.auth.uid;
-  // check uid's AI budget, then call the model with llmKey.value()
+  // check and count uid's AI budget (see below), then call the model with llmKey.value()
 });
 ```
 
 The secret is only visible to functions that list it in `secrets`. Raise
 `timeoutSeconds` on the function if your model is slow.
+
+The budget check is a Firestore transaction in the function. The code, the
+rules and App Check are in [hosted-ai-limits.md](hosted-ai-limits.md#firebase).
 
 ### RevenueCat
 
