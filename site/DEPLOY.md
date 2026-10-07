@@ -13,11 +13,16 @@ live until you deploy.** Skills fetch the guides from this site.
 cd site
 npm ci && npm run build
 CLOUDFLARE_API_TOKEN=<token> CLOUDFLARE_ACCOUNT_ID=<account id> \
-  npx wrangler pages deploy dist --project-name onebox --branch main
+  npx --no-install wrangler pages deploy dist --project-name onebox --branch main
 ```
 
 The token needs one permission: Account, Cloudflare Pages, Edit. Read it from
 your secrets tool. Never put it in the repo or in a command you share.
+
+wrangler is pinned in `package.json` (a dev dependency), so `npm ci` installs
+it before the token is in the environment. `--no-install` makes `npx` use that
+copy and never fetch another. To update it: `npm install --save-dev
+--save-exact wrangler@<version>` in `site/`, in its own PR.
 
 ## Check it
 
