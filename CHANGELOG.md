@@ -14,6 +14,13 @@ update.
 
 ## start
 
+### 0.2.3 (2026-10-07)
+
+- `/start:new-app` builds the API protected from the first commit, in .NET
+  and in Node: the real client IP behind the tunnel, a rate limit per user
+  or IP, a stricter `auth` limit for the sign-in routes to come, and a
+  request body size limit. Two new tests check the 429 and the 413.
+
 ### 0.2.2 (2026-10-07)
 
 - `/start:plan` ticks the backend only when the API is protected too: the

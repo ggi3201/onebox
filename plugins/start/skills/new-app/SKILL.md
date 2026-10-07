@@ -167,10 +167,12 @@ API, the repo root without one. Run every `npx expo` and `eas` command there.
    checks `eas.json` (`references/files.md`, "The Expo app"). With an API,
    it also checks what `expo-app.md` step 4 asks for: every profile that
    leaves the Mac has an `https` API URL.
-6. **API.** The project, the solution and the first test:
+6. **API.** The project, the solution and the first tests:
    `references/files.md`, "The API". It meets the five rules in `backend.md`,
-   "The language". Its Dockerfile is `backend.md` step 1.
-   A Node API: `references/node-api.md` has all its files.
+   "The language". It is protected from the first commit: the real client
+   IP, rate limits and a request body size limit (`backend.md`, "Protect the
+   API", steps 1, 2 and 4), each with a test. Its Dockerfile is `backend.md`
+   step 1. A Node API: `references/node-api.md` has all its files.
 7. **API: dev database and the app's API URL.** `docker-compose.dev.yml`
    from `references/files.md`. Pick a free port first
    (`lsof -iTCP:5433 -sTCP:LISTEN` prints nothing). Then point the dev
@@ -268,7 +270,8 @@ No file list and no check output, unless the user asks.
 
 ## Rules
 
-- No features, no sample screens, no auth code. The skeleton only.
+- No features, no sample screens, no auth code. The skeleton only. The
+  API's protections are not features: keep them.
 - Never write a secret. The dev database password is a fixed dev value, and
   its port is bound to `127.0.0.1`.
 - Run Expo and EAS commands only from the app folder: `apps/mobile` with an
