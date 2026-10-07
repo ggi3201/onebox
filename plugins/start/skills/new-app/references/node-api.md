@@ -11,8 +11,9 @@ Replace `myapp` with the slug.
 
 `backend.md`, "The language", leaves some choices open. These are the kit's:
 
-- **Fastify.** `app.inject()` tests the real app without a port.
-  `backend.md`, "Protect the API", "On Node", shows its settings.
+- **Fastify, with `@fastify/rate-limit`.** `app.inject()` tests the real
+  app without a port. The skeleton has the settings from `backend.md`,
+  "Protect the API", "On Node": `trustProxy`, a rate limit and `bodyLimit`.
 - **Drizzle, with `pg` and `drizzle-kit`.** Migrations are plain SQL files.
   The migrator runs in the app before `listen()` (`backend.md` step 5). There
   is no generated client and no engine in the image.
@@ -94,7 +95,7 @@ TypeScript takes the Expo app's range, and `@types/node` the major in
 
 ```bash
 mkdir -p apps/api/src apps/api/test
-pnpm --filter api add fastify drizzle-orm pg
+pnpm --filter api add fastify @fastify/rate-limit drizzle-orm pg
 T=$(node -p 'require("./apps/mobile/package.json").devDependencies.typescript')   # for example ~6.0.3
 pnpm --filter api add -D "typescript@$T" "@types/node@$(cat .node-version)" @types/pg \
   drizzle-kit vitest @testcontainers/postgresql eslint typescript-eslint
@@ -159,14 +160,28 @@ export default defineConfig(
 
 ## The server
 
-It meets the five rules in `backend.md`, "The language".
+It meets the five rules in `backend.md`, "The language". It has the first
+protections from `backend.md`, "Protect the API": step 1 (the real client
+IP), step 2 (rate limits) and step 4 (request body size). The settings are
+the same as for .NET (`files.md`, `Program.cs`): `TRUSTED_PROXIES`,
+`RATE_LIMIT_PER_MINUTE`, `AUTH_RATE_LIMIT_PER_MINUTE` and
+`MAX_REQUEST_BODY_BYTES`. The Dockerfile sets `NODE_ENV=production`, and
+then a missing `TRUSTED_PROXIES` stops the start.
 
 `src/settings.ts`:
 
 ```ts
 // Every setting comes from the environment. On this Mac: .env.development.
 // A missing one stops the start and names the setting.
-export type Settings = { databaseUrl: string; host: string; port: number };
+export type Settings = { databaseUrl: string; host: string; port: number; limits: Limits };
+
+// backend.md, "Protect the API". The defaults are for production; the tests set small ones.
+export type Limits = {
+  trustedProxies: string; // TRUSTED_PROXIES: the proxy network, for example 172.18.0.0/16 (step 1)
+  rateLimitPerMinute: number; // every request, per user or IP (step 2)
+  authRateLimitPerMinute: number; // sign-in, refresh and sign-out, per IP (step 2)
+  maxRequestBodyBytes: number; // step 4
+};
 
 function required(env: NodeJS.ProcessEnv, key: string): string {
   const value = env[key];
@@ -174,11 +189,25 @@ function required(env: NodeJS.ProcessEnv, key: string): string {
   return value;
 }
 
+export function loadLimits(env: NodeJS.ProcessEnv = process.env): Limits {
+  return {
+    trustedProxies: env.TRUSTED_PROXIES ?? "",
+    rateLimitPerMinute: Number(env.RATE_LIMIT_PER_MINUTE ?? 100),
+    authRateLimitPerMinute: Number(env.AUTH_RATE_LIMIT_PER_MINUTE ?? 10),
+    maxRequestBodyBytes: Number(env.MAX_REQUEST_BODY_BYTES ?? 1_000_000),
+  };
+}
+
 export function loadSettings(env: NodeJS.ProcessEnv = process.env): Settings {
+  const limits = loadLimits(env);
+  if (!limits.trustedProxies && env.NODE_ENV === "production") {
+    throw new Error("TRUSTED_PROXIES is not set; every client would share one rate-limit bucket.");
+  }
   return {
     databaseUrl: required(env, "DATABASE_URL"),
     host: env.HOST ?? "127.0.0.1", // the Dockerfile sets 0.0.0.0
     port: Number(env.PORT ?? 8080),
+    limits,
   };
 }
 ```
@@ -233,22 +262,45 @@ export function asUser<T>(db: Db, userId: string, work: (tx: Tx) => Promise<T>):
 `src/app.ts`:
 
 ```ts
-import Fastify from "fastify";
+import rateLimit, { normalizeIP, type RateLimitOptions } from "@fastify/rate-limit";
+import Fastify, { type FastifyRequest } from "fastify";
 import type { Db } from "./db.ts";
+import { loadLimits, type Limits } from "./settings.ts";
 
 declare module "fastify" {
   interface FastifyInstance {
     db: Db;
+    // Sign-in, token refresh and sign-out: { config: { rateLimit: app.authRateLimit } }.
+    authRateLimit: RateLimitOptions;
+  }
+  interface FastifyRequest {
+    userId?: string; // set by the sign-in code, from the token
   }
 }
 
+// backend.md, "Protect the API", step 2. Partition only on values you trust.
+const byIp = (req: FastifyRequest) => `ip:${normalizeIP(req.ip)}`; // groups IPv6 by subnet
+const byUserOrIp = (req: FastifyRequest) => (req.userId ? `u:${req.userId}` : byIp(req));
+
 // The whole API. The tests call it with app.inject(), with no port.
-export function buildApp(db: Db, { logger = false } = {}) {
-  const app = Fastify({ logger });
+export async function buildApp(db: Db, { logger = false, limits = loadLimits({}) }: { logger?: boolean; limits?: Limits } = {}) {
+  const app = Fastify({
+    logger,
+    // Step 1: req.ip is the client. Trust X-Forwarded-For only from the proxy network, never `true`.
+    trustProxy: limits.trustedProxies || false,
+    // Step 4: the largest request body. An upload route raises it for itself only: { bodyLimit: 10_000_000 }.
+    bodyLimit: limits.maxRequestBodyBytes,
+  });
   app.decorate("db", db);
   app.addHook("onClose", () => db.$client.end());
 
-  app.get("/health", { logLevel: "silent" }, () => ({ ok: true }));
+  // Step 2: every route, per user when signed in, else per IP. It answers 429 with Retry-After.
+  // Its check runs after the app's onRequest hooks, so a sign-in hook that sets req.userId comes first.
+  await app.register(rateLimit, { max: limits.rateLimitPerMinute, timeWindow: "1 minute", keyGenerator: byUserOrIp });
+  // Stricter, and per IP: there is no user yet. There are no such routes yet; each one uses it when it comes.
+  app.decorate("authRateLimit", { max: limits.authRateLimitPerMinute, timeWindow: "1 minute", keyGenerator: byIp });
+
+  app.get("/health", { logLevel: "silent", config: { rateLimit: false } }, () => ({ ok: true }));
 
   return app;
 }
@@ -264,7 +316,7 @@ import { loadSettings } from "./settings.ts";
 const settings = loadSettings();
 await runMigrations(settings.databaseUrl);
 
-const app = buildApp(createDb(settings.databaseUrl), { logger: true });
+const app = await buildApp(createDb(settings.databaseUrl), { logger: true, limits: settings.limits });
 await app.listen({ host: settings.host, port: settings.port });
 
 // docker stop sends SIGTERM. Node as PID 1 ignores it unless it has a handler.
@@ -414,6 +466,7 @@ import pg from "pg";
 import { inject } from "vitest";
 import { buildApp } from "../src/app.ts";
 import { createDb, runMigrations } from "../src/db.ts";
+import type { Limits } from "../src/settings.ts";
 
 // A new, empty database on the run's server, migrated. One per test file,
 // so test files that run in parallel never see each other's rows.
@@ -434,9 +487,9 @@ export async function createDatabase(): Promise<string> {
 }
 
 // The real app on its own database, as server.ts starts it, without a port.
-export async function createTestApp() {
+export async function createTestApp(limits?: Limits) {
   const databaseUrl = await createDatabase();
-  return buildApp(createDb(databaseUrl));
+  return buildApp(createDb(databaseUrl), { limits });
 }
 ```
 
@@ -498,6 +551,48 @@ test("the API runs as a role that row-level security applies to", async () => {
 Add the behaviour test with the first owned table: user A creates a row, user
 B asks for it and gets 404.
 
+`test/protection.test.ts`, the same two tests as for .NET: past the rate
+limit, 429 with `Retry-After`, also with a new `X-Forwarded-For` on each
+request; over the body size limit, 413. Each test builds its own app with one
+small limit. The skeleton has no POST route yet, so the test adds one:
+
+```ts
+// backend.md, "Protect the API", steps 1, 2 and 4. Each test builds its own app with one small limit.
+import { expect, test } from "vitest";
+import { loadLimits } from "../src/settings.ts";
+import { createTestApp } from "./database.ts";
+
+async function appWith(env: NodeJS.ProcessEnv) {
+  const app = await createTestApp(loadLimits(env));
+  // The skeleton has no POST route yet. This one stands in for the first JSON endpoint.
+  app.post("/read-body", () => ({ ok: true }));
+  return app;
+}
+
+test("requests past the rate limit get 429", async () => {
+  const app = await appWith({ RATE_LIMIT_PER_MINUTE: "3" });
+  const codes: number[] = [];
+  for (let i = 1; i <= 4; i++) {
+    // A new X-Forwarded-For on each request. The API must not trust it (step 1),
+    // or a bot gets a fresh bucket for every request.
+    const res = await app.inject({ method: "POST", url: "/read-body", payload: {}, headers: { "x-forwarded-for": `203.0.113.${String(i)}` } });
+    codes.push(res.statusCode);
+    if (res.statusCode === 429) expect(res.headers["retry-after"]).toBeDefined();
+  }
+  await app.close();
+  expect(codes).toEqual([200, 200, 200, 429]);
+});
+
+test("a body over the size limit gets 413", async () => {
+  const app = await appWith({ MAX_REQUEST_BODY_BYTES: "1000" });
+  const small = await app.inject({ method: "POST", url: "/read-body", payload: { text: "x".repeat(900) } });
+  const large = await app.inject({ method: "POST", url: "/read-body", payload: { text: "x".repeat(2000) } });
+  await app.close();
+  expect(small.statusCode).toBe(200);
+  expect(large.statusCode).toBe(413);
+});
+```
+
 ## `ci.yml`: the `api` job
 
 In place of the .NET job. The `mobile` job's `pnpm typecheck` and `pnpm lint`
@@ -519,13 +614,15 @@ cover the API too, through the root scripts.
 
 ## `AGENTS.md`
 
-The block in `files.md` stays. Add two lines under it:
+The block in `files.md` stays. Add these lines under it:
 
 ```markdown
 - API tables: change `apps/api/src/schema.ts`, then
   `pnpm --filter api db:new --name <what>`. Never edit a migration that ran.
 - An owned table has an `owner_id` column and a `pgPolicy`. Handlers query it
   in `asUser()`. `test/isolation.test.ts` fails without the policy.
+- The `auth` limit is `app.authRateLimit`: a sign-in route takes
+  `{ config: { rateLimit: app.authRateLimit } }`.
 ```
 
 In the test-loop block, step 2 is

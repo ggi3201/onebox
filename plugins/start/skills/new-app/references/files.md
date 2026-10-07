@@ -210,9 +210,28 @@ touch the files below:
   <NoWarn>$(NoWarn);CA1707</NoWarn>
   ```
 
-`Program.cs`:
+`Program.cs`. It has the first protections from `backend.md`, "Protect the
+API": step 1 (the real client IP), step 2 (rate limits) and step 4 (request
+body size). They are not features: an API without them is open to one
+script in a loop. The limits are settings with defaults, so the tests can set
+small ones:
+
+| Setting | Default | What it limits |
+|---|---|---|
+| `TRUSTED_PROXIES` | none | who may set `X-Forwarded-For`. Required in Production: `backend.md` step 2 puts it in the compose file. |
+| `RATE_LIMIT_PER_MINUTE` | 100 | every request, per user or per IP |
+| `AUTH_RATE_LIMIT_PER_MINUTE` | 10 | the `auth` policy: sign-in, refresh, sign-out, per IP |
+| `MAX_REQUEST_BODY_BYTES` | 1000000 | the request body, on every route |
+
+With no `TRUSTED_PROXIES`, `UseForwardedHeaders` must not run. With empty
+`KnownProxies` and `KnownIPNetworks` it trusts every sender, and any client
+picks its own IP and gets a new rate-limit bucket on each request.
 
 ```csharp
+using System.Globalization;
+using System.Security.Claims;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Data;
 
@@ -227,9 +246,69 @@ string Required(string key) =>
 
 builder.Services.AddDbContext<AppDb>(o => o.UseNpgsql(Required("DATABASE_URL")));
 
+// backend.md, "Protect the API". The limits have defaults; the tests set small ones.
+var perMinute = builder.Configuration.GetValue("RATE_LIMIT_PER_MINUTE", 100);
+var authPerMinute = builder.Configuration.GetValue("AUTH_RATE_LIMIT_PER_MINUTE", 10);
+var maxBodyBytes = builder.Configuration.GetValue("MAX_REQUEST_BODY_BYTES", 1_000_000L);
+
+// Step 1: the real client IP. Trust X-Forwarded-For only from the proxy network,
+// for example 172.18.0.0/16. Find it on the box:
+//   docker network inspect proxy -f '{{range .IPAM.Config}}{{.Subnet}}{{end}}'
+var trusted = (builder.Configuration["TRUSTED_PROXIES"] ?? "")
+    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+if (trusted.Length == 0 && builder.Environment.IsProduction())
+    throw new InvalidOperationException("TRUSTED_PROXIES is not set; every client would share one rate-limit bucket.");
+
+builder.Services.Configure<ForwardedHeadersOptions>(o =>
+{
+    o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    o.ForwardLimit = 2;          // two hops: Traefik, then the tunnel
+    o.KnownIPNetworks.Clear();   // the default trusts loopback; list exactly what you trust
+    o.KnownProxies.Clear();
+    foreach (var cidr in trusted) o.KnownIPNetworks.Add(System.Net.IPNetwork.Parse(cidr));
+});
+
+// Step 2: rate limits. Per user when the request has a token, else per client IP.
+static string Ip(HttpContext c) => c.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+static string UserOrIp(HttpContext c) =>
+    c.User.FindFirstValue("sub") is { } id ? "u:" + id : "ip:" + Ip(c);   // "sub": backend.md step 7
+
+builder.Services.AddRateLimiter(o =>
+{
+    o.RejectionStatusCode = StatusCodes.Status429TooManyRequests;   // the default is 503, which looks like an outage
+
+    // Every request: a backstop against a script in a loop.
+    o.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(c =>
+        RateLimitPartition.GetTokenBucketLimiter(UserOrIp(c), _ => new TokenBucketRateLimiterOptions
+        { TokenLimit = perMinute, TokensPerPeriod = perMinute, ReplenishmentPeriod = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+
+    // Sign-in, token refresh and sign-out. No user yet, so per IP.
+    // There are no such routes yet. Each one gets .RequireRateLimiting("auth") when it comes.
+    o.AddPolicy("auth", c => RateLimitPartition.GetFixedWindowLimiter(Ip(c), _ => new FixedWindowRateLimiterOptions
+        { PermitLimit = authPerMinute, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+
+    o.OnRejected = (ctx, ct) =>
+    {
+        if (ctx.Lease.TryGetMetadata(MetadataName.RetryAfter, out var wait))
+            ctx.HttpContext.Response.Headers.RetryAfter = ((int)wait.TotalSeconds).ToString(CultureInfo.InvariantCulture);
+        return ValueTask.CompletedTask;
+    };
+});
+
+// Step 4: request body size. Kestrel allows about 28.6 MB. An upload route raises it
+// for itself only: .WithMetadata(new RequestSizeLimitAttribute(10_000_000)).
+builder.WebHost.ConfigureKestrel(k => k.Limits.MaxRequestBodySize = maxBodyBytes);
+
 var app = builder.Build();
 
-app.MapGet("/health", () => Results.Ok(new { ok = true }));
+// Order matters: forwarded headers, then authentication, then the limiter.
+// Sign-in code puts app.UseAuthentication() and app.UseAuthorization() between
+// these two lines. Before them there is no user, and every limit falls back to IP.
+// With no proxy listed, the middleware trusts every sender, so skip it then (dev, tests).
+if (trusted.Length > 0) app.UseForwardedHeaders();   // first, before anything reads the client IP
+app.UseRateLimiter();
+
+app.MapGet("/health", () => Results.Ok(new { ok = true })).DisableRateLimiting();
 
 using (var scope = app.Services.CreateScope())
     await scope.ServiceProvider.GetRequiredService<AppDb>().Database.MigrateAsync();
@@ -379,6 +458,93 @@ public sealed class SkeletonTests(ApiFactory factory) : IClassFixture<ApiFactory
 The fixture uses the xunit v2 `IAsyncLifetime`, which the `dotnet new xunit`
 template installs. In xunit v3 its methods return `ValueTask`.
 
+`MyApp.Api.Tests/ProtectionTests.cs`, two tests for the protections in
+`Program.cs`:
+
+- Four requests against a limit of 3 get three 200s, then a 429 with
+  `Retry-After`. Each request sends a new `X-Forwarded-For`, so the test also
+  fails when the API trusts that header from anyone.
+- A body over the limit gets 413. A body at the limit gets 200.
+
+Each test starts its own app, so one test's used-up bucket never answers the
+other. They run on real Kestrel (`UseKestrel()`, new in .NET 10): the
+in-memory test server does not enforce the body size limit. The skeleton has
+no POST route yet, so the test adds one that reads the body.
+
+```csharp
+using System.Net;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace MyApp.Api.Tests;
+
+// backend.md, "Protect the API", steps 1, 2 and 4. Each test starts its own app with
+// one small limit, on real Kestrel: the in-memory test server has no body size limit.
+public sealed class ProtectionTests(ApiFactory factory) : IClassFixture<ApiFactory>
+{
+    WebApplicationFactory<Program> AppWith(string setting, string value)
+    {
+        var app = factory.WithWebHostBuilder(b =>
+        {
+            b.UseSetting(setting, value);
+            b.ConfigureServices(s => s.AddTransient<IStartupFilter, ReadBodyRoute>());
+        });
+        app.UseKestrel();
+        return app;
+    }
+
+    [Fact]
+    public async Task requests_past_the_rate_limit_get_429()
+    {
+        using var app = AppWith("RATE_LIMIT_PER_MINUTE", "3");
+        using var client = app.CreateClient();
+
+        var codes = new List<HttpStatusCode>();
+        for (var i = 1; i <= 4; i++)
+        {
+            // A new X-Forwarded-For on each request. The API must not trust it (step 1),
+            // or a bot gets a fresh bucket for every request.
+            using var req = new HttpRequestMessage(HttpMethod.Get, new Uri("/", UriKind.Relative));
+            req.Headers.Add("X-Forwarded-For", $"203.0.113.{i}");
+            using var res = await client.SendAsync(req);
+            codes.Add(res.StatusCode);
+            if (res.StatusCode == HttpStatusCode.TooManyRequests) Assert.True(res.Headers.Contains("Retry-After"));
+        }
+
+        Assert.Equal([HttpStatusCode.OK, HttpStatusCode.OK, HttpStatusCode.OK, HttpStatusCode.TooManyRequests], codes);
+    }
+
+    [Fact]
+    public async Task a_body_over_the_size_limit_gets_413()
+    {
+        using var app = AppWith("MAX_REQUEST_BODY_BYTES", "1000");
+        using var client = app.CreateClient();
+
+        using var small = new ByteArrayContent(new byte[1000]);
+        using var smallRes = await client.PostAsync(new Uri("/", UriKind.Relative), small);
+        Assert.Equal(HttpStatusCode.OK, smallRes.StatusCode);
+
+        using var large = new ByteArrayContent(new byte[2000]);
+        using var largeRes = await client.PostAsync(new Uri("/", UriKind.Relative), large);
+        Assert.Equal(HttpStatusCode.RequestEntityTooLarge, largeRes.StatusCode);
+    }
+
+    // The skeleton has no POST route yet. This one stands in for the first: it comes after
+    // the app's own middleware and reads the whole body, as a JSON endpoint does.
+    sealed class ReadBodyRoute : IStartupFilter
+    {
+        public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) => app =>
+        {
+            next(app);
+            app.Run(c => c.Request.Body.CopyToAsync(Stream.Null, c.RequestAborted));
+        };
+    }
+}
+```
+
 For Node, use `node-api.md` instead of this section.
 
 ## `docker-compose.dev.yml`
@@ -478,6 +644,11 @@ With an API in the repo:
 - Every setting the API needs is listed in the compose file's `environment:`
   block. A value only in the secrets tool never reaches the container.
 - The user id comes from the token, never from the request.
+- The API ships with the real client IP, rate limits and a body size limit
+  (https://onebox.lokkesveen.com/guides/backend.md, "Protect the API").
+  Sign-in, refresh and sign-out routes take the stricter `auth` limit. The
+  rest of that section (AI quotas, SSRF, tokens, logs) comes with the
+  feature that needs it.
 ```
 
 Hosted backend or no server. The template's `AGENTS.md` is already at the

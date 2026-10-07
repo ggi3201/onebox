@@ -643,7 +643,8 @@ builder.Services.Configure<ForwardedHeadersOptions>(o =>
 });
 
 var app = builder.Build();
-app.UseForwardedHeaders();       // first, before anything reads the client IP
+// With no proxy listed, the middleware trusts every sender, so skip it then (dev, tests).
+if (trusted.Length > 0) app.UseForwardedHeaders();   // first, before anything reads the client IP
 ```
 
 Add `TRUSTED_PROXIES: 172.18.0.0/16` (your subnet) to the API's
@@ -654,7 +655,9 @@ Why not trust every `X-Forwarded-For`: `KnownIPNetworks.Clear()` with nothing
 added back, plus `ForwardLimit = null`, makes the API read the left-most
 entry. The client writes that entry. A bot then picks a new address for every
 request and never hits a per-IP limit. It can also name someone else's address
-and lock them out.
+and lock them out. An empty list does the same: with no `KnownProxies` and no
+`KnownIPNetworks`, the middleware trusts every sender. That is why the code
+above skips `UseForwardedHeaders` when `TRUSTED_PROXIES` is empty.
 
 A simpler option, when the tunnel is the only way in: read `CF-Connecting-IP`.
 Cloudflare sets it on every request. Read it only when the connection comes
@@ -714,7 +717,7 @@ builder.Services.AddRateLimiter(o =>
 
 // Order matters: forwarded headers, then authentication, then the limiter.
 // Before UseAuthentication there is no user, and every limit falls back to IP.
-app.UseForwardedHeaders();
+if (trusted.Length > 0) app.UseForwardedHeaders();   // step 1
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
