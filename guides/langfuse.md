@@ -72,7 +72,8 @@ Optional onebox config, so a skill can find the project:
 
 - **Nothing arrives, no error:** the endpoint variable is missing inside the
   container, so tracing never turned on (that is the opt-in working). Check
-  `docker compose exec myapp-api printenv | grep OTEL`.
+  `docker compose exec myapp-api printenv | grep -o '^OTEL[A-Z_]*'`. It prints
+  the names only: the header value is a secret.
 - **401 in the API log:** the header is quoted in the `.env` file, or the
   base64 has a newline in it. Use `printf`, not `echo`, and no quotes.
 - **Wrong or zero cost:** Langfuse prices from its own model table. A new model

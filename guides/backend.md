@@ -479,16 +479,29 @@ public sealed class AppDb(DbContextOptions<AppDb> options, CurrentUser user) : D
         modelBuilder.Entity<Comment>().HasQueryFilter(c => c.OwnerId == OwnerId);
     }
 
-    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    // Every SaveChanges and SaveChangesAsync ends in one of these two. Override
+    // both, or a sync SaveChanges() skips the owner stamp.
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
-        // Stamp the owner on insert, and refuse to move a row to another owner.
+        StampOwners();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        StampOwners();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
+    // Stamp the owner on insert, and refuse to move a row to another owner.
+    void StampOwners()
+    {
         foreach (var e in ChangeTracker.Entries<IOwned>())
         {
             if (e.State == EntityState.Added) e.Entity.OwnerId = OwnerId;
             else if (e.State == EntityState.Modified && e.Property(x => x.OwnerId).IsModified)
                 throw new InvalidOperationException("OwnerId cannot change");
         }
-        return base.SaveChangesAsync(cancellationToken);
     }
 }
 ```
@@ -685,10 +698,23 @@ everything, and stricter ones for sign-in, AI and import:
 
 ```csharp
 using System.Globalization;
+using System.Net;
+using System.Net.Sockets;
 using System.Security.Claims;
 using System.Threading.RateLimiting;
 
-static string Ip(HttpContext c) => c.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+// One bucket per IPv4 address, and per IPv6 /64: one client usually holds a
+// whole /64 and could take a new address for every request.
+static string Ip(HttpContext c)
+{
+    var ip = c.Connection.RemoteIpAddress;
+    if (ip is null) return "unknown";
+    if (ip.IsIPv4MappedToIPv6) ip = ip.MapToIPv4();
+    if (ip.AddressFamily != AddressFamily.InterNetworkV6) return ip.ToString();
+    var b = ip.GetAddressBytes();
+    Array.Clear(b, 8, 8);
+    return new IPAddress(b) + "/64";
+}
 static string UserOrIp(HttpContext c) =>
     c.User.FindFirstValue("sub") is { } id ? "u:" + id : "ip:" + Ip(c);   // "sub": see step 7
 
@@ -1007,21 +1033,30 @@ static string Hash(string s) => Convert.ToHexString(SHA256.HashData(Encoding.UTF
 // owner query filter: the refresh call has no user yet.
 var row = await db.RefreshTokens.SingleOrDefaultAsync(t => t.Hash == Hash(body.RefreshToken), ct);
 if (row is null || row.ExpiresAt < now) return Results.Unauthorized();
-if (row.RevokedAt is not null)                        // used twice: revoke the family
+// Revoke it in one statement that only an unused token passes. Of two
+// requests with the same token, exactly one gets 1 row back. The transaction
+// holds that row until the new token is saved, so a family revoke after a
+// reuse also catches the new token.
+await using var tx = await db.Database.BeginTransactionAsync(ct);
+var won = await db.RefreshTokens.Where(t => t.Id == row.Id && t.RevokedAt == null)
+    .ExecuteUpdateAsync(s => s.SetProperty(t => t.RevokedAt, now), ct);
+if (won == 0)                                         // used twice: revoke the family
 {
     await db.RefreshTokens.Where(t => t.Family == row.Family)
         .ExecuteUpdateAsync(s => s.SetProperty(t => t.RevokedAt, now), ct);
+    await tx.CommitAsync(ct);
     return Results.Unauthorized();
 }
-row.RevokedAt = now;
 var raw = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
 db.RefreshTokens.Add(new RefreshToken { UserId = row.UserId, Family = row.Family, Hash = Hash(raw), ExpiresAt = now.AddDays(60) });
 await db.SaveChangesAsync(ct);
+await tx.CommitAsync(ct);
 return Results.Ok(new { accessToken = jwt.Issue(row.UserId, TimeSpan.FromMinutes(15)), refreshToken = raw });
 ```
 
 The app must run only one refresh at a time. Two parallel refreshes with the
-same token look like theft and sign the user out.
+same token look like theft and sign the user out: the second one revokes the
+family.
 
 Validate access tokens strictly:
 
@@ -1166,7 +1201,7 @@ const byUserOrIp = (req) => req.user?.id ?? ipKeyGenerator(req.ip);   // ipKeyGe
 const common = { standardHeaders: "draft-8", legacyHeaders: false };
 
 app.use(rateLimit({ ...common, windowMs: 60_000, limit: 100, keyGenerator: byUserOrIp }));
-app.use("/auth", rateLimit({ ...common, windowMs: 60_000, limit: 10, keyGenerator: (req) => ipKeyGenerator(req.ip) }));
+app.use("/api/auth", rateLimit({ ...common, windowMs: 60_000, limit: 10, keyGenerator: (req) => ipKeyGenerator(req.ip) }));
 app.use("/api/ai", requireUser, rateLimit({ ...common, windowMs: 60_000, limit: 5, keyGenerator: byUserOrIp }));
 ```
 
@@ -1178,7 +1213,9 @@ sign-in route.
 `bodyLimit` is 1 MiB. Both are fine. Raise them only on upload routes.
 
 **Safe URL fetching.** Check the address in the DNS lookup of the HTTP agent,
-so redirects are checked too. `ipaddr.js` knows the private ranges:
+so the address you check is the one you connect to. Follow redirects by
+hand: an IP address in a URL skips the lookup, so each hop is checked again.
+`ipaddr.js` knows the private ranges:
 
 ```js
 import dns from "node:dns";
@@ -1197,12 +1234,19 @@ function lookup(host, opts, cb) {
 }
 const agent = new Agent({ connect: { lookup, timeout: 10_000 } });
 
-export async function fetchPublic(url) {
-  const u = new URL(url);
-  if (u.protocol !== "https:") throw new Error("https only");
-  const host = u.hostname.replace(/^\[|\]$/g, "");
-  if (net.isIP(host) && !isPublic(host)) throw new Error("refused");   // an IP literal skips the lookup
-  return fetch(u, { dispatcher: agent, signal: AbortSignal.timeout(15_000) });
+export async function fetchPublic(url, hops = 3) {
+  let u = new URL(url);
+  for (let i = 0; ; i++) {
+    if (u.protocol !== "https:") throw new Error("https only");
+    const host = u.hostname.replace(/^\[|\]$/g, "");
+    if (net.isIP(host) && !isPublic(host)) throw new Error("refused");   // an IP literal skips the lookup
+    const res = await fetch(u, { dispatcher: agent, redirect: "manual", signal: AbortSignal.timeout(15_000) });
+    const next = res.status >= 300 && res.status < 400 && res.headers.get("location");
+    if (!next) return res;
+    await res.body?.cancel();
+    if (i === hops) throw new Error("too many redirects");
+    u = new URL(next, u);                                               // checked like the first URL
+  }
 }
 ```
 

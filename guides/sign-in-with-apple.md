@@ -160,13 +160,17 @@ import { createRemoteJWKSet, jwtVerify } from "jose";
 import { createHash, timingSafeEqual } from "node:crypto";
 
 const APPLE_KEYS = createRemoteJWKSet(new URL("https://appleid.apple.com/auth/keys"));
+// Read once, at startup. jose skips the audience check when it is undefined,
+// so a missing value would let tokens made for other apps in.
+const APPLE_CLIENT_ID = process.env.APPLE_CLIENT_ID ?? "";   // com.example.myapp
+if (!APPLE_CLIENT_ID) throw new Error("APPLE_CLIENT_ID is not set");
 
 export async function verifyAppleIdentityToken(identityToken: string, rawNonce: string) {
   if (!rawNonce || rawNonce.length < 32) throw new Error("missing nonce");
 
   const { payload } = await jwtVerify(identityToken, APPLE_KEYS, {
     issuer: "https://appleid.apple.com",
-    audience: process.env.APPLE_CLIENT_ID,   // com.example.myapp
+    audience: APPLE_CLIENT_ID,
     algorithms: ["RS256"],
   });                                        // jwtVerify also checks exp
 
