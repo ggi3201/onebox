@@ -254,8 +254,20 @@ Then check RevenueCat's header yourself:
 
 ```ts
 // supabase/functions/revenuecat-webhook/index.ts
+// Hash both sides, then compare every byte: the time does not depend on
+// where they differ. An empty or missing secret never matches.
+async function sameSecret(given: string | null, expected: string | undefined) {
+  if (!given || !expected) return false;
+  const enc = new TextEncoder();
+  const [a, b] = await Promise.all([given, expected].map((s) => crypto.subtle.digest("SHA-256", enc.encode(s))));
+  const x = new Uint8Array(a), y = new Uint8Array(b);
+  let diff = 0;
+  for (let i = 0; i < x.length; i++) diff |= x[i] ^ y[i];
+  return diff === 0;
+}
+
 Deno.serve(async (req) => {
-  if (req.headers.get("Authorization") !== Deno.env.get("REVENUECAT_WEBHOOK_AUTH")) {
+  if (!(await sameSecret(req.headers.get("Authorization"), Deno.env.get("REVENUECAT_WEBHOOK_AUTH")))) {
     return new Response("unauthorized", { status: 401 });
   }
   const { event } = await req.json();
@@ -398,11 +410,23 @@ import { internal } from "./_generated/api";
 
 const http = httpRouter();
 
+// Hash both sides, then compare every byte: the time does not depend on
+// where they differ. An empty or missing secret never matches.
+async function sameSecret(given: string | null, expected: string | undefined) {
+  if (!given || !expected) return false;
+  const enc = new TextEncoder();
+  const [a, b] = await Promise.all([given, expected].map((s) => crypto.subtle.digest("SHA-256", enc.encode(s))));
+  const x = new Uint8Array(a), y = new Uint8Array(b);
+  let diff = 0;
+  for (let i = 0; i < x.length; i++) diff |= x[i] ^ y[i];
+  return diff === 0;
+}
+
 http.route({
   path: "/revenuecat",
   method: "POST",
   handler: httpAction(async (ctx, req) => {
-    if (req.headers.get("Authorization") !== process.env.REVENUECAT_WEBHOOK_AUTH) {
+    if (!(await sameSecret(req.headers.get("Authorization"), process.env.REVENUECAT_WEBHOOK_AUTH))) {
       return new Response("unauthorized", { status: 401 });
     }
     const { event } = await req.json();
