@@ -246,6 +246,12 @@ update.
 
 ## app-features
 
+### 0.1.3 (2026-10-07)
+
+- `ai-usage-limits` adds its per-account limit as one policy on the API's
+  own rate limiter. It no longer sets up a second limiter or a second
+  forwarded-headers step, which an API from `/start:new-app` already has.
+
 ### 0.1.2 (2026-10-07)
 
 - `ai-usage-limits` says what to do in an app without sign-in: a per-install

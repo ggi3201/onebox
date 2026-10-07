@@ -1,6 +1,6 @@
 ---
 name: ai-usage-limits
-description: Put a ceiling on what AI features can cost you - a per-user monthly budget in Postgres counted from real token usage, a model price table filled from OpenRouter's public list, one server-side gate for subscription, budget and consent on every endpoint that reaches a model, per-account rate limits, and forwarded-headers setup so per-IP limits work behind Traefik and a Cloudflare Tunnel. Use when the user asks "how much will the AI cost me", "one user could run up my OpenAI bill", "gate AI behind the subscription", "set a fair-use limit", "what should I charge for the AI features", "rate limit my AI endpoint", or when every request seems to share one rate limit behind a proxy.
+description: Put a ceiling on what AI features can cost you - a per-user monthly budget in Postgres counted from real token usage, a model price table filled from OpenRouter's public list, one server-side gate for subscription, budget and consent on every endpoint that reaches a model, and a per-account rate limit added to the API's own limiter. Use when the user asks "how much will the AI cost me", "one user could run up my OpenAI bill", "gate AI behind the subscription", "set a fair-use limit", "what should I charge for the AI features", "rate limit my AI endpoint", or when every request seems to share one rate limit behind a proxy.
 ---
 
 # AI usage limits
@@ -48,10 +48,16 @@ limit, a lower daily cap, and the app-wide budget as the real backstop.
    from the app's RevenueCat state (webhook table or entitlement check), and
    register `AiAccess` as `IAgentAccess`. `Payments:Enforced=false` ships the
    budget now and the paywall later.
-4. **Rate limits.** Copy `assets/dotnet/RateLimits.cs`.
-   `AddAiRateLimits`, `app.UseAiForwardedHeaders()` first in the pipeline,
-   `app.UseRateLimiter()` after auth, and `.RequireRateLimiting(AiRateLimits.Agent)`
-   on the chat. Set `Network__TrustedProxies` to the proxy network's subnet.
+4. **Rate limits.** Copy `assets/dotnet/RateLimits.cs`. Call
+   `builder.Services.AddAiRateLimits(builder.Configuration)` and put
+   `.RequireRateLimiting(AiRateLimits.Agent)` on the chat. It adds one
+   policy, 30 runs per account per hour (`RateLimits:AgentPerHour`), to the
+   app's own rate limiter, and keeps the app's global limit and forwarded
+   headers. The API needs that base first: `AddRateLimiter` and
+   `UseRateLimiter` (after `UseAuthentication`), and `UseForwardedHeaders`
+   from `TRUSTED_PROXIES`. An API from `/start:new-app` has it. Otherwise
+   add `https://onebox.lokkesveen.com/guides/backend.md`, "Protect the API",
+   steps 1 and 2, before this step.
 5. **Every spender behind the gate.** For each endpoint from the list above
    that is not the chat: call `IAgentAccess.CheckAsync` first and return its
    status and `{code, message}`; record usage with `IUsageRecorder` after the
