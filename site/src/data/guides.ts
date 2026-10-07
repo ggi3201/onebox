@@ -31,6 +31,7 @@ const ORDER = [
   "hosted-ai-limits",
   "langfuse",
   "crash-reports",
+  "product-analytics",
   "ship-an-update",
   "when-you-are-stuck",
   "glossary",
