@@ -66,11 +66,14 @@ Read `references/pitfalls.md` before you edit tunnel or Traefik config.
 3. **Verify locally, before DNS:**
    `ssh $BOX "curl -sk -o /dev/null -w '%{http_code} %{size_download}\n' --resolve <host>:443:127.0.0.1 https://<host>/"`
 4. **Ingress, restart, DNS:** copy the script and run it. Dry run first.
+   The scripts run as root, so they go in a folder only the admin user can
+   write, not `/tmp`. `-I` keeps Python from loading modules next to them.
 
    ```bash
-   scp scripts/expose.py scripts/audit-exposure.py "$BOX":/tmp/
-   scripts/secret.sh "$REF" | ssh "$BOX" "sudo python3 /tmp/expose.py <host> --domain $DOMAIN --token-stdin --dry-run"
-   scripts/secret.sh "$REF" | ssh "$BOX" "sudo python3 /tmp/expose.py <host> --domain $DOMAIN --token-stdin"
+   ssh "$BOX" 'install -d -m 700 ~/.onebox'
+   scp <skill-dir>/scripts/expose.py <skill-dir>/scripts/audit-exposure.py "$BOX":.onebox/
+   <skill-dir>/scripts/secret.sh "$REF" | ssh "$BOX" "sudo python3 -I ~/.onebox/expose.py <host> --domain $DOMAIN --token-stdin --dry-run"
+   <skill-dir>/scripts/secret.sh "$REF" | ssh "$BOX" "sudo python3 -I ~/.onebox/expose.py <host> --domain $DOMAIN --token-stdin"
    ```
 
    It records a baseline, backs up the tunnel config, inserts the entry before
@@ -137,7 +140,7 @@ and compare after:
 Run after any change that touched DNS, and before you call a service safely exposed:
 
 ```bash
-scripts/secret.sh "$REF" | ssh "$BOX" "sudo python3 /tmp/audit-exposure.py --domain $DOMAIN --token-stdin"
+<skill-dir>/scripts/secret.sh "$REF" | ssh "$BOX" "sudo python3 -I ~/.onebox/audit-exposure.py --domain $DOMAIN --token-stdin"
 ```
 
 It lists records that point at the origin IP, wildcards, private addresses in

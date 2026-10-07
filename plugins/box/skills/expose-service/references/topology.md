@@ -24,7 +24,7 @@ client -> Cloudflare edge (proxied CNAME, WAF, edge certificate)
 | Tunnel units | `cloudflared.service` (metrics 127.0.0.1:20241), `cloudflared-replica.service` (127.0.0.1:20243) |
 | Traefik stack | `<box.appsDir>/traefik/docker-compose.yml` |
 | Traefik dynamic config | `<box.appsDir>/traefik/dynamic/*.yml` (directory mount) |
-| Traefik API | `http://127.0.0.1:8081/api/http/routers` (box only) |
+| Traefik API | `http://127.0.0.1:8081/api/http/routers` (from the box only; other containers get 403) |
 | Traefik DNS token | `<box.appsDir>/traefik/.env` as `CF_DNS_API_TOKEN` (root, 600) |
 
 A box set up by hand may differ. Look before you assume:

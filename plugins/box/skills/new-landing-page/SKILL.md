@@ -147,7 +147,8 @@ Each of these has caused an outage or a silent time bomb.
 - Proxied CNAME to the tunnel. Never an A record to the origin IP.
 - No `ports:` in the compose file.
 - Scoped prune only. Never `docker system prune -a` on a shared box.
-- No `pull_request` trigger on a workflow that runs on the box.
+- No `pull_request` trigger on a workflow that runs on the box, and a box
+  runner only for a private repo (`box:box-setup`, `references/runner.md`).
 
 ## References
 

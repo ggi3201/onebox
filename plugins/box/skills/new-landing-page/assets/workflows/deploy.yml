@@ -6,7 +6,8 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-# Never add pull_request here: this runs on your box (see box-setup runner.md).
+# This runs on your box: keep the repo private, and never add pull_request
+# here (see box-setup references/runner.md).
 concurrency:
   group: deploy-myapp-landing     # per site, never shared
   cancel-in-progress: false       # a half-done swap leaves nothing serving

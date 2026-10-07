@@ -61,6 +61,8 @@ ssh "$BOX" "bash /root/box-setup.sh base $FLAGS"
    Agents run sudo over SSH and cannot answer a password prompt. The protection
    is key-only SSH. Tell the user this. `--sudo-password` opts out: the user then
    sets a password with `sudo passwd alice` and runs the sudo steps themselves.
+   `--sudo-password` and `--ssh-tailscale-only` stay chosen: a later `base`
+   without them keeps them, and `check` fails if they come undone.
 2. **Test the key login in a new session** before anything else:
    `ssh alice@<box> 'sudo -n true && echo ok'`. Only then run
    **`ssh-lockdown --confirmed-key-login`**. From here on use `alice@<box>` and
@@ -71,7 +73,8 @@ ssh "$BOX" "bash /root/box-setup.sh base $FLAGS"
 5. **`tunnel`** - cloudflared, a locally managed tunnel named `box.tunnelName`,
    and two replica units. The first run stops with exit 4 and asks for
    `cloudflared tunnel login` on the box. That prints a URL. The user opens it
-   on the Mac and picks the domain. Then run the phase again.
+   on the Mac and picks the domain. Then run the phase again. Once the tunnel
+   exists, the phase deletes the login's `cert.pem`.
 6. **`backup`** - the nightly timer. Then set the off-box target (below).
 7. **`check`** - must end with `0 fail`. Fix every FAIL before you call the box ready.
 8. For deploys, register a GitHub Actions runner: `references/runner.md`.
@@ -129,6 +132,8 @@ line is a real protection, not a formality:
 | SSH root login off | a stolen key reaching root directly | run `ssh-lockdown --confirmed-key-login` |
 | ufw active | host services (sshd, anything you install) open to the internet | run `base` again |
 | unattended-upgrades on | known holes in the OS staying open for months | run `base` again; reboot when it says a reboot is pending |
+| no "updates waiting" warning | Docker, runc and cloudflared holes. Automatic updates skip them. | `references/updates.md` |
+| SSH on tailscale0 only, sudo needs a password | a stricter choice quietly undone (shown only if you chose it) | run `base` again: it keeps the choice |
 | no container port on all interfaces | a database or admin UI on the public IP. **Docker-published ports skip ufw**, so ufw's "deny" does not cover them. | remove `ports:`, or bind to `127.0.0.1:`. If a port really must be public, limit it in the provider's firewall. |
 | docker socket only in traefik | a public container with the socket is root on the box. `:ro` does not help: it limits the file, not the API. | remove the socket mount from that service. Tools that need it (backups, updaters) stay off the proxy network. |
 
@@ -145,27 +150,21 @@ is a failure.
 - If Traefik logs `client version ... is too old`, the Traefik image is older
   than the Docker Engine allows. Bump it (below).
 - `cloudflared tunnel login` leaves `cert.pem` in the user's `~/.cloudflared`.
-  It can create and delete tunnels. The running tunnel does not need it.
+  It can create and delete every tunnel in the account. The running tunnel
+  does not need it. The tunnel phase deletes it; `check` warns if one is left.
+- The Traefik API on `127.0.0.1:8081` lists every router, LAN-only and
+  tailnet-only hostnames too. Only the box itself may read it. Other
+  containers on the proxy network get 403 (`dynamic/api.yml`).
 
-## Updating Traefik
+## Updates
 
-The image is pinned (`traefik:v3.7.13`, the latest stable v3 on 2026-09-28), so
-an install today matches an install next month. To bump it:
-
-```bash
-gh api repos/traefik/traefik/releases/latest --jq .tag_name   # e.g. v3.7.14
-```
-
-Read the release notes. For a new minor (v3.7 -> v3.8) also read the migration
-guide on doc.traefik.io. Then on the box, edit `image:` in
-`<appsDir>/traefik/docker-compose.yml`, and run
-`docker compose -p traefik pull && docker compose -p traefik up -d`, then
-`box-setup.sh check`. Pass `--traefik-image traefik:vX.Y.Z` on later runs, or
-the proxy phase writes the old pin back. Also update the default in
-`scripts/box-setup.sh`.
+Traefik is pinned, and Docker, containerd (runc) and cloudflared are not in
+automatic updates. `check` warns about both. How to update them:
+`references/updates.md`.
 
 ## References
 
 - `references/runner.md` - self-hosted GitHub Actions runner, and its risks
+- `references/updates.md` - update Traefik, Docker and cloudflared
 - `references/restore.md` - restore a dump, restore from restic
 - `box:expose-service` - put a service on a hostname after this

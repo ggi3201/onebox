@@ -315,6 +315,8 @@ I use a **self-hosted runner on the box**. A push to `main`
 runs the job on the box itself, so the deploy is a local `docker compose
 build` and `up`. No registry, no SSH key stored in GitHub, no open port.
 Register the runner with `box:box-setup` (`references/runner.md`).
+**This is for a private repo only.** In a public repo, a stranger's pull
+request can bring its own workflow and run it on the box.
 
 `.github/workflows/deploy-api.yml`:
 
@@ -370,9 +372,12 @@ With `secrets.tool: env`, drop the `doppler run --` prefix and add
 
 Rules for the runner:
 
-- **Never let a `pull_request` workflow run on the self-hosted runner.** In a
-  public repo, a stranger's pull request would run code on your box. Trigger
-  deploys only on `push` to your branches and on `workflow_dispatch`.
+- **A self-hosted runner only in a private repo.** Your own workflows'
+  triggers do not protect a public repo: a pull request runs the workflow
+  files from the pull request, so a fork can add one that runs on the box. A
+  public repo deploys by hand, or from a GitHub-hosted runner (below).
+- Trigger deploys only on `push` to your branches and on `workflow_dispatch`.
+  Never `pull_request`.
 - The runner's user is in the `docker` group, which is root on the box.
   Keep `permissions: contents: read`.
 - The runner's checkout on the box is thrown away on the next run. Fix a
@@ -380,8 +385,9 @@ Rules for the runner:
 
 The other common way is a GitHub-hosted runner that connects to the box over
 SSH and runs `git pull && docker compose up -d`. It needs an SSH port the
-internet can reach and a private key in GitHub. On a home box behind a router
-that is extra work. The self-hosted runner avoids both.
+internet can reach (or Tailscale on the runner) and a private key in GitHub.
+On a home box behind a router that is extra work. The self-hosted runner
+avoids both, in a private repo.
 
 ### 8. HTTPS and CORS
 
