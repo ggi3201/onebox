@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "about": "One source for the planner skill and the picker on the website. Each question has options; each item says which answers include it. An option with `agreesWith` does not conflict with detection that finds that other option (sign in later, and Sign in with Apple found in the app). An item with no `when` is always in the plan. `when` lists question ids with the option ids that turn the item on; all listed questions must match (AND), any option within one question matches (OR). `doneWhen` uses the same shape: when it matches, the item is still listed but starts ticked as likely done (the user can untick it). `nudge` is the short name the agent says (\"Next: <nudge>. Continue?\"). `needs` lists ids from needs.json: what the step needs before it starts, in the order `plan.mjs ready` checks them. An entry can also be {\"id\", \"when\"}, with `when` in the same shape as an item's. `proves` (optional) says what a flow must show before the feature counts as built; /start:check-features copies it into FEATURES.md.",
+  "about": "One source for the planner skill and the picker on the website. Each question has options; each item says which answers include it. An option with `agreesWith` does not conflict with detection that finds that other option (sign in later, and Sign in with Apple found in the app). An item with no `when` is always in the plan. `when` lists question ids with the option ids that turn the item on; all listed questions must match (AND), any option within one question matches (OR). `doneWhen` uses the same shape: when it matches, the item is still listed but starts ticked as likely done (the user can untick it). `nudge` is the short name the agent says (\"Next: <nudge>. Continue?\"). `needs` lists ids from needs.json: what the step needs before it starts, in the order `plan.mjs ready` checks them. An entry can also be {\"id\", \"when\"}, with `when` in the same shape as an item's. `proves` (optional) says what a flow must show before the feature counts as built; /start:check-features copies it into FEATURES.md. `conflicts` lists answers that do not work together, or need a warning: `when` (and `unless`) in the same shape as an item's, `ids` the questions involved, `level` \"conflict\" (ask the user before you write the plan) or \"warning\" (say it once), and `say`, the plain sentence to show.",
   "questions": [
     {
       "id": "stage",
@@ -129,6 +129,67 @@
         }
       ],
       "default": "yes"
+    }
+  ],
+  "conflicts": [
+    {
+      "id": "ai-without-server",
+      "ids": [
+        "backend",
+        "ai"
+      ],
+      "level": "conflict",
+      "when": {
+        "backend": [
+          "none"
+        ],
+        "ai": [
+          "chat",
+          "import"
+        ]
+      },
+      "say": "AI needs a server to keep the AI key secret. Pick a hosted backend or your own box, or leave AI out."
+    },
+    {
+      "id": "media-without-server",
+      "ids": [
+        "backend",
+        "ai"
+      ],
+      "level": "warning",
+      "when": {
+        "backend": [
+          "none"
+        ],
+        "ai": [
+          "media"
+        ]
+      },
+      "unless": {
+        "ai": [
+          "chat",
+          "import"
+        ]
+      },
+      "say": "Images made inside the app need a server too, to keep the image key secret. Images for the store page and social posts are fine without one."
+    },
+    {
+      "id": "ai-without-sign-in",
+      "ids": [
+        "login",
+        "ai"
+      ],
+      "level": "warning",
+      "when": {
+        "login": [
+          "none"
+        ],
+        "ai": [
+          "chat",
+          "import"
+        ]
+      },
+      "say": "Without sign-in, AI limits can only count per device and per IP, and a person can reset them. Sign in with Apple makes the limits hold."
     }
   ],
   "phases": [
@@ -504,7 +565,7 @@
         "gh-login",
         "box-ssh"
       ],
-      "proves": "one user never sees another user's data.",
+      "proves": "one user never sees another user's data, and too many requests get 429.",
       "when": {
         "backend": [
           "box"

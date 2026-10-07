@@ -14,6 +14,14 @@ update.
 
 ## start
 
+### 0.2.2 (2026-10-07)
+
+- `/start:plan` ticks the backend only when the API is protected too: the
+  real client IP, a rate limiter and, in .NET, a body size limit. It sees the
+  per-user AI usage count, and an AI key inside the app.
+- "No server" with AI chat or import is now a conflict the plan asks about,
+  and "no accounts" with AI is a warning. The site's picker shows both.
+
 ### 0.2.1 (2026-10-04)
 
 - `/start:plan` and `/start:new-app` ask their questions with any agent's
@@ -230,6 +238,12 @@ update.
   Simulator. `/dev:trim-tests` cuts a bloated test suite.
 
 ## app-features
+
+### 0.1.2 (2026-10-07)
+
+- `ai-usage-limits` says what to do in an app without sign-in: a per-install
+  id from the server, a per-IP limit, a lower daily cap, and the app-wide
+  budget as the real backstop.
 
 ### 0.1.1 (2026-09-29)
 

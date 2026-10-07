@@ -26,6 +26,7 @@ const questions = catalog.questions as Q[];
             );
           })}
         </div>
+        <p class="hint warn" data-warn-for={q.id} hidden></p>
       </fieldset>
     ))}
     <fieldset class="q">
@@ -107,8 +108,20 @@ const questions = catalog.questions as Q[];
     });
   }
 
+  // Answers that do not work together (catalog `conflicts`), shown under
+  // the later of the two questions. The plan skill asks about the same ones.
+  function warnings(a) {
+    for (const p of root.querySelectorAll("[data-warn-for]")) {
+      const hits = (catalog.conflicts || []).filter((c) => c.ids[c.ids.length - 1] === p.dataset.warnFor
+        && matches(c.when, a) && !(c.unless && matches(c.unless, a)));
+      p.textContent = hits.map((c) => c.say).join(" ");
+      p.hidden = !hits.length;
+    }
+  }
+
   function render() {
     const a = answers();
+    warnings(a);
     const seen = new Set();
     const items = catalog.items.filter((it) => {
       const key = it.kind + ":" + (it.slug || it.id);
@@ -213,6 +226,8 @@ const questions = catalog.questions as Q[];
   }
   .does:focus { outline: 2px solid var(--signal); outline-offset: 1px; border-color: var(--ink); }
   .hint { margin: 6px 0 0 34px; color: var(--ink-3); font-size: 0.95rem; }
+  .hint.warn { margin-top: 10px; padding: 6px 10px; color: var(--ink); box-shadow: inset 3px 0 0 var(--signal); background: var(--paper-2); }
+  .hint.warn[hidden] { display: none; }
   .opts { display: grid; gap: 6px; margin: 10px 0 0 34px; }
   .opt {
     display: flex; gap: 10px; align-items: flex-start; cursor: pointer;

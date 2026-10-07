@@ -43,7 +43,11 @@ check passes; a check that cannot run never ticks it. It prints JSON:
   file that calls `requestReview()`.
 - `backends`: ASP.NET projects and Node servers (express, fastify, hono and
   others). `hosted`: Supabase, Convex or Firebase SDKs. `compose`, `sites`.
-- `ai`: AI SDKs and AI API hosts named in the code.
+- `ai`: AI SDKs and AI API hosts named in the code. `ai.inApp`: an AI host
+  or an `EXPO_PUBLIC_` AI key in the app itself, so the key ships in the app.
+- `protection`: what the API still lacks from the backend guide's "Protect
+  the API" (the real client IP, a rate limiter, a body size limit). The
+  backend item is ticked only when nothing is missing.
 - `config`: which onebox config keys are set. Key names only, never values.
 - `plan`: whether `PLAN.md` exists and whether this skill made it.
 - `answers`: guesses for the catalog questions, each with `confidence`
@@ -81,6 +85,15 @@ It prints `state`, `ask` and `skipped`:
   numbered list.
 - **`skipped`**: questions no answer would change, given what is known. Do
   not ask them.
+- **`conflicts`**: known answers that do not work together. Each has `ids`
+  (the questions), `level` and `say`. Run `questions` again with the user's
+  answers before `write`, so the list covers them.
+  - `conflict`: raise it as one plain question before `write`, with `say` as
+    the reason. For example: "AI needs a server to keep the AI key secret.
+    Pick a hosted backend or your own box, or leave AI out?" Write the plan
+    with what the user picks. If they keep both, write it anyway; the plan
+    says it, and never puts the key in the app.
+  - `warning`: say `say` once, in one sentence, and go on. Do not ask.
 
 **Answers from the website.** The picker on the onebox site gives the user a
 prompt that ends with `My answers from the onebox site: {...}`. That JSON
@@ -187,7 +200,9 @@ When `PLAN.md` exists and this skill made it, run steps 1 and 3 again. Pass
   next unticked step.
 
 If the script says a detected answer now differs from the user's answer
-(a "Check:" line), tell the user and ask which one is right.
+(a "Check:" line), tell the user and ask which one is right. A "Check:" line
+for a conflict in the answers, or for an AI key in the app, gets the same
+treatment: one plain question. A "Warning:" line: say it once.
 
 ## 5. A PLAN.md this skill did not make
 

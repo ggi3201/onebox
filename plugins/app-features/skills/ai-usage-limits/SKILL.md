@@ -26,6 +26,12 @@ grep -rnE 'ChatClient|IOpenAIService|OpenAIClient|chat.completions' apps/api --i
 The second list is **the family of endpoints that spend money**. Every one of
 them must go through the gate. Write it down; step 5 checks it.
 
+**No sign-in?** The gate and the budget count per user. Without accounts
+there is no user, and the limits can only count per device and per IP,
+which a person can reset. Say so to the user, then follow
+`references/no-accounts.md`: a per-install id issued by the server, a per-IP
+limit, a lower daily cap, and the app-wide budget as the real backstop.
+
 ## Steps
 
 1. **Prices.** Run `scripts/prices.sh <model-id>...` for each model the API
@@ -80,3 +86,4 @@ them must go through the gate. Write it down; step 5 checks it.
 
 - `references/pricing.md`: choosing a price and a budget from measured cost.
 - `references/gates.md`: where the gates sit, and the tests that keep them there.
+- `references/no-accounts.md`: limits for an app without sign-in.
