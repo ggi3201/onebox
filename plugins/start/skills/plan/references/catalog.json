@@ -796,6 +796,24 @@
       }
     },
     {
+      "id": "hosted-ai-limits",
+      "kind": "guide",
+      "phase": "features",
+      "title": "A cost budget per user on your hosted backend",
+      "nudge": "An AI budget per user",
+      "needs": [],
+      "proves": "a user over the budget sees a clear message, not an error.",
+      "when": {
+        "ai": [
+          "chat",
+          "import"
+        ],
+        "backend": [
+          "hosted"
+        ]
+      }
+    },
+    {
       "id": "ai-consent",
       "kind": "skill",
       "plugin": "app-features",

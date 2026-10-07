@@ -28,6 +28,7 @@ const ORDER = [
   "kie-ai",
   "media-providers",
   "llm-api-key",
+  "hosted-ai-limits",
   "langfuse",
   "crash-reports",
   "ship-an-update",
