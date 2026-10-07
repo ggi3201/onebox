@@ -205,10 +205,13 @@ const hosted = {
 
 const AI_NPM = (n) => n === "@anthropic-ai/sdk" || n === "openai" || n === "ai" || n.startsWith("@ai-sdk/")
   || n.startsWith("@openrouter/") || n === "@google/genai" || n === "@google/generative-ai";
+const AI_NUGET = /^(Microsoft\.Extensions\.AI|Anthropic|OpenAI|Azure\.AI\.OpenAI|Google\.GenAI)/;
 const ai = {
-  packages: npmHas(AI_NPM).concat(nugetHas(/^(Microsoft\.Extensions\.AI|Anthropic|OpenAI|Azure\.AI\.OpenAI|Google\.GenAI)/)),
+  packages: npmHas(AI_NPM).concat(nugetHas(AI_NUGET)),
   endpoints: {}, // AI API host -> first file that names it
+  inApp: null,   // an AI host or EXPO_PUBLIC_ AI key in the app's own files
 };
+const AI_KEY_IN_APP = /\bEXPO_PUBLIC_\w*(OPENAI|ANTHROPIC|OPENROUTER|GEMINI|LLM)\w*/;
 
 // Grep source for a few strings. Backend folders and the app folder only.
 const grepDirs = uniq([...backends.map((b) => path.join(root, b.dir)), ...(expoPick ? [expoPick.dir] : [])]);
@@ -233,6 +236,8 @@ let appleRevoke = null;
 // The rating prompt (ask-for-a-rating.md): a requestReview( call in the app's
 // own code, not in tests.
 let reviewCall = null;
+const protect = new Map(); // backend -> the text of its files, for the protection checks below
+let aiServer = null; // a backend file that names an AI host, or a backend with an AI package
 const DELETE_ROUTE = /\bMapDelete\s*\(|\[HttpDelete\b|@Delete\s*\(|\.delete\s*\(\s*["'`]|method\s*:\s*["'`]DELETE["'`]/i;
 const ACCOUNT_ROUTE = /["'`](?:[^"'`\n]*\/)(?:account|accounts|users?|me)(?:\/[^"'`\n]*)?["'`]/i;
 for (const f of srcFiles) {
@@ -246,6 +251,63 @@ for (const f of srcFiles) {
   if (!reviewCall && expoPick && f.startsWith(expoPick.dir + path.sep) && /\brequestReview\s*\(/.test(t)) reviewCall = rel(f);
   if (!appleRevoke && inBackend && (/appleid\.apple\.com\/auth\/revoke/.test(t) || (/auth\/revoke/.test(t) && /appleid\.apple\.com/.test(t)))) appleRevoke = rel(f);
   for (const h of AI_HOSTS) if (!ai.endpoints[h] && t.includes(h)) ai.endpoints[h] = rel(f);
+  const b = backends.find((x) => f.startsWith(path.join(root, x.dir) + path.sep));
+  if (b) {
+    (protect.get(b) ?? protect.set(b, []).get(b)).push(t);
+    if (!aiServer && AI_HOSTS.some((h) => t.includes(h))) aiServer = rel(f);
+  } else if (expoPick && f.startsWith(expoPick.dir + path.sep) && !ai.inApp) {
+    // An AI host, or an EXPO_PUBLIC_ AI key, in the app: the key ships inside
+    // the app, and anyone can read it from the app file.
+    const h = AI_HOSTS.find((x) => t.includes(x)) ?? t.match(AI_KEY_IN_APP)?.[0];
+    if (h) ai.inApp = `${h} (${rel(f)})`;
+  }
+}
+
+// ---------- the API's protection (backend.md, "Protect the API") ----------
+// Text only, in the backend's own files that are not tests. The markers are
+// the identifiers the guide's code uses, so code that follows the guide
+// always passes:
+// - .NET (part 1, 2, 4): UseForwardedHeaders( with ForwardedHeadersOptions,
+//   or CF-Connecting-IP; AddRateLimiter( and UseRateLimiter(;
+//   MaxRequestBodySize (Kestrel's default is 30 MB).
+// - Node ("On Node"): trust proxy / trustProxy set to a subnet, or
+//   CF-Connecting-IP; a rate-limit package. The body limit is fine by default.
+// - Per-user AI quota (part 3, and app-features:ai-usage-limits): the
+//   ai_usage table from the guide, or UserUsages / IUsageRecorder from the skill.
+const NODE_LIMITERS = ["express-rate-limit", "@fastify/rate-limit", "hono-rate-limiter", "@nestjs/throttler"];
+const AI_QUOTA = /\bai_usage\b|\bUserUsages\b|\bIUsageRecorder\b/;
+let aiQuota = null;
+const lackP = [];
+for (const b of backends) {
+  const t = (protect.get(b) ?? []).join("\n");
+  const at = backends.length > 1 ? ` in ${b.dir}` : "";
+  if (!aiQuota && AI_QUOTA.test(t)) aiQuota = b.dir;
+  const cfIp = /CF-Connecting-IP/i.test(t);
+  if (b.kind === "aspnet") {
+    if (!(/\bUseForwardedHeaders\s*\(/.test(t) && /\bForwardedHeadersOptions\b/.test(t)) && !cfIp)
+      lackP.push(`the real client IP behind the tunnel (UseForwardedHeaders with ForwardedHeadersOptions; "Protect the API", part 1)${at}`);
+    if (!/\bAddRateLimiter\s*\(/.test(t) || !/\bUseRateLimiter\s*\(/.test(t))
+      lackP.push(`a rate limiter (AddRateLimiter and UseRateLimiter; "Protect the API", part 2)${at}`);
+    if (!/\bMaxRequestBodySize\b/.test(t))
+      lackP.push(`a request body size limit (MaxRequestBodySize; "Protect the API", part 4)${at}`);
+  } else {
+    const pkg = pkgs.find((x) => rel(x.dir) === b.dir)?.pkg;
+    const trust = [...t.matchAll(/\btrustProxy\s*:\s*([^,}\n]+)|["']trust proxy["']\s*,\s*([^)\n]+)/g)].map((m) => (m[1] ?? m[2]).trim());
+    if (!cfIp && !trust.some((v) => !/^true\b/.test(v))) {
+      lackP.push(trust.length
+        ? `the real client IP behind the tunnel (trust proxy is true, so the client picks its own address; trust the proxy subnet)${at}`
+        : `the real client IP behind the tunnel (trust proxy or trustProxy set to the proxy subnet)${at}`);
+    }
+    if (!NODE_LIMITERS.some((n) => deps(pkg)[n]))
+      lackP.push(`a rate limiter (${NODE_LIMITERS.slice(0, 2).join(" or ")})${at}`);
+  }
+}
+// An AI package in a backend's own package.json or .csproj counts as an AI call too.
+if (!aiServer) {
+  const hit = backends.find((b) => b.kind === "node"
+    ? Object.keys(deps(pkgs.find((x) => rel(x.dir) === b.dir)?.pkg)).some(AI_NPM)
+    : [...(csText.get(path.join(root, b.file)) ?? "").matchAll(/PackageReference\s+Include\s*=\s*"([^"]+)"/g)].some((m) => AI_NUGET.test(m[1])));
+  if (hit) aiServer = hit.dir;
 }
 
 // ---------- docker compose, landing site ----------
@@ -412,12 +474,18 @@ if (backends.length) {
   if (!prodCompose.length) lackB.push("a docker-compose.yml");
   else if (!prodHosts.length) lackB.push("Traefik router labels in the compose file");
   if (!deployWorkflows.length) lackB.push("a deploy workflow in .github/workflows");
+  // Deployed is not done: the guide's title says "protected" too.
+  lackB.push(...lackP);
   // Name the production deploy, not the staging one, when both exist.
   const prodDeploys = workflows.filter((w) => deployWorkflows.includes(w.file) && !stagingCompose.some((f) => w.text.includes(f))).map((w) => w.file);
   const by = (prodDeploys.length ? prodDeploys : deployWorkflows).join(", ");
-  if (!lackB.length) done["guide:backend"] = `${backends.map((b) => b.dir).join(", ")}, a Traefik router in ${prodHosts.join(", ")}, deployed by ${by}`;
-  else seen["guide:backend"] = `${where}; still missing ${list(lackB)}`;
+  if (!lackB.length) done["guide:backend"] = `${backends.map((b) => b.dir).join(", ")}, a Traefik router in ${prodHosts.join(", ")}, deployed by ${by}, with the real client IP, a rate limiter${backends.some((b) => b.kind === "aspnet") ? " and a body size limit" : ""}`;
+  // "open", not "seen": it also drops a tick an older run made before these checks.
+  else open["guide:backend"] = `${where}; still missing ${list(lackB)}`;
 }
+// The per-user AI quota: only an API that calls a model needs one.
+if (aiQuota) done["skill:app-features/ai-usage-limits"] = `a per-user AI usage count in ${aiQuota} (ai_usage, UserUsages or IUsageRecorder)`;
+else if (aiServer) open["skill:app-features/ai-usage-limits"] = `the API calls an AI model (${aiServer}); no per-user usage count found (ai_usage, UserUsages or IUsageRecorder)`;
 if (stagingCompose.length) {
   const deploys = workflows.filter((w) => stagingCompose.some((f) => w.text.includes(f))).map((w) => w.file);
   if (deploys.length) done["skill:box/staging-env"] = `${stagingCompose.join(", ")}, deployed by ${deploys.join(", ")}`;
@@ -445,7 +513,10 @@ if (hasKey("box.domain")) done["guide:domain"] = "box.domain is in the onebox co
 if (hasKey("box.ssh")) done["guide:vps"] = "you have a box: box.ssh is in the onebox config";
 if (hasKey("box.ssh")) seen["skill:box/box-setup"] = "box.ssh is in the onebox config; run the check phase to confirm";
 if (sites.length) seen["skill:box/new-landing-page"] = `site folder: ${sites.join(", ")}`;
-if (aiHits.length || hasKey("llm.keyRef")) seen["guide:llm-api-key"] = "the code already calls an AI API";
+if (ai.inApp) {
+  open["guide:llm-api-key"] = `the app itself names ${ai.inApp}, so the AI key ships inside the app, where anyone can read it. Move the AI call to the server`;
+  notes.push(`The app names ${ai.inApp}: an AI key in the app is readable by anyone who has the app.`);
+} else if (aiHits.length || hasKey("llm.keyRef")) seen["guide:llm-api-key"] = "the code already calls an AI API";
 if (hasKey("tracing.otlpEndpoint")) done["guide:langfuse"] = "tracing.otlpEndpoint is in the onebox config";
 
 // The tools item: done when every check it needs passes on this Mac. These are
@@ -526,6 +597,7 @@ const cannotDetect = [
 console.log(JSON.stringify({
   detect: "onebox v1",
   expo, backends, hosted, ai, appleServer, accountDelete, appleRevoke, pushServer, reviewCall, compose, traefikHosts, sites,
+  protection: { missing: lackP, aiServer, aiQuota },
   workflows: { files: workflows.map((w) => w.file), deploy: deployWorkflows, tests: testWorkflows },
   secretsRunIn, config, xcode, tools, plan, testScripts,
   answers, done, seen, open, notes, cannotDetect,

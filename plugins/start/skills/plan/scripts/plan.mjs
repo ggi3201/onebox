@@ -3,7 +3,8 @@
 //
 //   node plan.mjs questions [--answers <json|@file>] [--detect <file|->] [--repo <dir>]
 //       Prints JSON: which answers detection gives, which questions to ask,
-//       and which to skip because they do not change the plan.
+//       which to skip because they do not change the plan, and `conflicts`:
+//       known answers that do not work together (catalog.json `conflicts`).
 //
 //   node plan.mjs write [--answers <json|@file>] [--detect <file|->] [--repo <dir>]
 //                       [--out PLAN.md] [--dry-run] [--convert]
@@ -11,6 +12,8 @@
 //       your ticks, notes and extra lines are kept, newly detected items are ticked.
 //       A PLAN.md in another format is left alone (exit 3) unless --convert is
 //       given; then its text is kept under "Kept from your old plan".
+//       It prints a "Check:" line for each conflict and a "Warning:" line for
+//       each warning in the answers.
 //       --dry-run prints the file instead of writing it.
 //
 //   node plan.mjs ready [--answers <json|@file>] [--detect <file|->] [--repo <dir>]
@@ -143,6 +146,12 @@ function selectItems(ans) {
   }
   return out;
 }
+// Answers that do not work together (catalog `conflicts`): AI with no server
+// would ship the AI key inside the app. Only rules whose questions all have
+// an answer count, so a question not yet asked never raises one.
+const conflictsFor = (ans) => (catalog.conflicts ?? [])
+  .filter((c) => c.ids.every((id) => id in ans) && matches(c.when, ans) && !(c.unless && matches(c.unless, ans)))
+  .map(({ id, ids, level, say }) => ({ id, ids, level, say }));
 // Which items are in the plan, in which phase, and which of them start ticked
 // as likely done. A question that changes any of these changes the plan, so it
 // is asked.
@@ -217,7 +226,7 @@ function questionsMode() {
     }
     ask.push({ id: q.id, header: HEADERS[q.id] ?? q.id, question: q.q, hint: q.hint, multi: !!q.multi, why: d?.why, options });
   }
-  console.log(JSON.stringify({ state, ask, skipped }, null, 2));
+  console.log(JSON.stringify({ state, ask, skipped, conflicts: conflictsFor(known) }, null, 2));
 }
 const labelOf = (q, v) => (Array.isArray(v) ? (v.length ? v.map((x) => optLabel(q, x)).join("; ") : "None") : optLabel(q, v));
 
@@ -243,8 +252,11 @@ function render(answers, sources, detect) {
     "Made by `/start:plan` from onebox. Tick items as you go. Add notes anywhere: the next run keeps them.",
     "To change an answer, run `/start:plan` again and say which one.",
   ]);
-  sec("## Your answers", catalog.questions.filter((q) => applies(q, answers))
-    .map((q) => `- ${q.q} **${labelOf(q, answers[q.id])}** (${sources[q.id]})`));
+  const clash = conflictsFor(answers);
+  sec("## Your answers", [
+    ...catalog.questions.filter((q) => applies(q, answers)).map((q) => `- ${q.q} **${labelOf(q, answers[q.id])}** (${sources[q.id]})`),
+    ...(clash.length ? ["", ...clash.map((c) => `**${c.level === "conflict" ? "Warning" : "Note"}:** ${c.say}`)] : []),
+  ]);
 
   const items = selectItems(answers);
   const plugins = [];
@@ -488,6 +500,8 @@ function writeMode() {
       log(`Check: you answered ${q.id}=${answers[q.id]}, but detection now says ${d.value} (${d.why}).`);
     }
   }
+  for (const c of conflictsFor(answers)) log(`${c.level === "conflict" ? "Check" : "Warning"}: ${c.say}`);
+  if (detect.ai?.inApp) log(`Check: the app names ${detect.ai.inApp}, so the AI key ships inside the app. Move the AI call to the server.`);
   if (newlyDone.length) log(`Newly done: ${newlyDone.map((it) => it.nudge ?? it.title).join("; ")}`);
   log(next ? `Next: ${next.text} (${next.heading})` : "Next: nothing left. Every item is ticked.");
   if (detect.cannotDetect?.length) log(`Could not detect: ${detect.cannotDetect.join("; ")}.`);

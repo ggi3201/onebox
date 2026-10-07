@@ -23,6 +23,10 @@ backend** (Supabase, Convex or Firebase) replaces the box steps with the
 hosted-backend guide. **No server** skips both. With either
 of those two, a landing page still adds a small VPS to host it.
 
+The backend item is ticked only when the API is deployed **and** protected:
+the real client IP behind the tunnel, a rate limiter, and (in .NET) a body
+size limit, as in the backend guide's "Protect the API".
+
 ## Do users sign in? (`login`)
 
 With accounts, the plan adds Sign in with Apple, checked on your server.
@@ -30,6 +34,11 @@ Apple asks for it (or an equal private option) when you offer another social
 login. App Review also checks that users can delete their account inside the
 app. **Yes, but later** keeps the same step, and moves it to after your first
 TestFlight build. **No accounts** leaves it out.
+
+**No accounts** with AI is a warning: AI limits can then only count per
+device and per IP, and a person can reset them. Sign in with Apple makes
+the limits hold. `app-features:ai-usage-limits`, "No accounts", says what to
+do without it.
 
 ## Will users pay inside the app? (`paid`)
 
@@ -52,6 +61,12 @@ means you host those two pages somewhere else yourself.
   budget, consent and tracing.
 - **Generated images or video**: a kie.ai key and the image and video
   skills. The skills also work with fal.ai or Replicate.
+
+**No server** with chat or import is a conflict. The AI key would have to
+ship inside the app, and anyone can read it from the app file. The plan asks
+the user to pick a hosted backend or their own box, or to leave AI out.
+With images or video only, it is a warning: images made inside the app need
+a server too, but images for the store page and social posts do not.
 
 ## Do you want to fix things from your phone? (`remote`)
 
