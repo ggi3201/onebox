@@ -38,10 +38,12 @@
 #   --tunnel none|cloudflare box.tunnel [cloudflare]
 #   --tunnel-name NAME      box.tunnelName [onebox]
 #   --acme-email EMAIL      box.acmeEmail: optional contact for Let's Encrypt
-#   --traefik-image IMAGE   pinned Traefik image [traefik:v3.7.13]
-#   --sudo-password         admin user needs a password for sudo (no NOPASSWD)
+#   --traefik-image IMAGE   pinned Traefik image [traefik:v3.7.14]
+#   --sudo-password         admin user needs a password for sudo (no NOPASSWD).
+#                           Kept on later runs; delete /etc/onebox/sudo-password to undo
 #   --token-stdin           read the Cloudflare API token from stdin (proxy phase)
-#   --ssh-tailscale-only    vps: allow SSH only on the tailscale0 interface
+#   --ssh-tailscale-only    vps: allow SSH only on the tailscale0 interface.
+#                           Kept on later runs; delete /etc/onebox/ssh-tailscale-only to undo
 #   --auto-reboot           let unattended-upgrades reboot at 04:00 when needed
 #   --no-swap               do not create a swap file on a vps
 #   --confirmed-key-login   you have logged in as --user with a key in a new session
@@ -69,8 +71,8 @@ SWAP=1
 KEY_LOGIN_OK=0
 ALLOW_EXISTING=0
 DRY=0
-# Pinned. To bump: see "Updating Traefik" in SKILL.md.
-TRAEFIK_IMAGE=traefik:v3.7.13
+# Pinned. To bump: references/updates.md.
+TRAEFIK_IMAGE=traefik:v3.7.14
 SUDO_PW=0
 
 # Config defaults. python3 is on every Ubuntu install; jq may not be yet.
@@ -126,6 +128,8 @@ TRAEFIK_DIR="$APPS_DIR/traefik"
 CF_DIR=/etc/cloudflared
 CF_CONF="$CF_DIR/config.yml"
 BACKUP_ENV=/etc/onebox/backup.env
+# Choices that make the box stricter. A later run without the flag keeps them.
+STATE=/etc/onebox
 HERE="$(cd "$(dirname "$0")" && pwd)"
 
 log()  { printf '\n=== %s\n' "$*"; }
@@ -225,8 +229,12 @@ phase_base() {
   # Agents run sudo over SSH without a terminal. A password prompt there hangs
   # the run, so the admin user gets NOPASSWD. Key-only SSH is what protects it.
   local sudoers="/etc/sudoers.d/90-onebox-$ADMIN"
+  if [ "$SUDO_PW" = 0 ] && [ -f "$STATE/sudo-password" ]; then
+    SUDO_PW=1; say "keeping --sudo-password from an earlier run (delete $STATE/sudo-password to undo)"
+  fi
   if [ "$SUDO_PW" = 1 ]; then
     [ -f "$sudoers" ] && run rm -f "$sudoers"
+    printf '%s\n' "$MARK" | put "$STATE/sudo-password" 0644 root:root || true
     say "sudo needs a password (--sudo-password). Set one now in an interactive session:"
     say "  sudo passwd $ADMIN"
     say "Agents cannot answer the prompt, so you run the sudo steps yourself from here."
@@ -259,10 +267,14 @@ phase_base() {
   # nothing, or only on 127.0.0.1 (see the proxy phase).
   run ufw default deny incoming >/dev/null
   run ufw default allow outgoing >/dev/null
+  if [ "$SSH_TS_ONLY" = 0 ] && [ -f "$STATE/ssh-tailscale-only" ]; then
+    SSH_TS_ONLY=1; say "keeping --ssh-tailscale-only from an earlier run (delete $STATE/ssh-tailscale-only to undo)"
+  fi
   if [ "$SSH_TS_ONLY" = 1 ]; then
     ip link show tailscale0 >/dev/null 2>&1 || die "tailscale0 not found. Install and log in to Tailscale first." 4
     run ufw allow in on tailscale0 to any port "$SSH_PORT" proto tcp >/dev/null
     run ufw delete allow "$SSH_PORT/tcp" >/dev/null 2>&1 || true
+    printf '%s\n' "$MARK" | put "$STATE/ssh-tailscale-only" 0644 root:root || true
     say "SSH allowed on tailscale0 only. Keep the provider's web console as the way back in."
   else
     run ufw allow "$SSH_PORT/tcp" >/dev/null
@@ -408,6 +420,24 @@ http:
         referrerPolicy: strict-origin-when-cross-origin
 EOF
 
+  # The API lists every router, LAN-only and tailnet-only hostnames too. Only
+  # the host may read it: it comes in through 127.0.0.1:8081 from the network
+  # gateway. Other containers on $NET get 403. /ping stays open to all.
+  put "$TRAEFIK_DIR/dynamic/api.yml" 0644 root:root <<EOF || true
+$MARK
+http:
+  routers:
+    onebox-api:
+      entryPoints: [traefik]
+      rule: "PathPrefix(\`/api\`) || PathPrefix(\`/dashboard\`)"
+      service: api@internal
+      middlewares: [onebox-api-host-only]
+  middlewares:
+    onebox-api-host-only:
+      ipAllowList:
+        sourceRange: ["$gw/32", "127.0.0.1/32"]
+EOF
+
   # With a tunnel, nothing needs to reach 80/443 from outside. On a VPS the
   # ports bind to 127.0.0.1, because Docker-published ports skip ufw. At home
   # the router already blocks inbound, and LAN-only hostnames need the LAN IP.
@@ -438,7 +468,8 @@ services:
       # Trust the tunnel hop, or every client IP becomes $gw.
       - --entrypoints.websecure.forwardedHeaders.trustedIPs=$gw/32,127.0.0.1/32,::1/128
       - --entrypoints.traefik.address=:8081
-      - --api.insecure=true
+      - --api=true
+      - --api.dashboard=true
       - --ping=true
       # DNS-01 needs no inbound port, so it renews behind the tunnel.
       - --certificatesresolvers.cloudflare.acme.dnschallenge=true
@@ -544,6 +575,10 @@ credentials-file: $CF_DIR/$tid.json
 ingress:
   - service: http_status:404
 EOF
+    rm -f "$cert"
+    say "removed $cert: it can create and delete every tunnel in your Cloudflare"
+    say "  account, and the running tunnel does not need it. For another tunnel"
+    say "  later, run cloudflared tunnel login again."
   fi
   if [ "$DRY" = 0 ]; then
     cloudflared --config "$CF_CONF" tunnel ingress validate >/dev/null && say "ingress valid"
@@ -649,6 +684,21 @@ phase_check() {
       || bad "unattended-upgrades configured but the service is not enabled"
   else bad "unattended-upgrades not configured"; fi
   [ -f /var/run/reboot-required ] && meh "a reboot is pending (security update)"
+  # Docker, containerd (runc) and cloudflared come from their makers' repos,
+  # which unattended-upgrades does not cover. A Docker upgrade restarts every
+  # container, so it waits for the user (references/updates.md).
+  local up
+  up="$(apt list --upgradable 2>/dev/null | grep -oE '^(docker-ce|docker-ce-cli|containerd\.io|docker-buildx-plugin|docker-compose-plugin|cloudflared)/' | tr -d / | tr '\n' ' ' || true)"
+  [ -n "$up" ] && meh "updates waiting that automatic updates do not install: ${up% } (references/updates.md)"
+  if [ -n "$sshd" ] && [ -f "$STATE/ssh-tailscale-only" ]; then
+    local sp; sp="$(echo "$sshd" | awk '/^port /{print $2; exit}')"
+    S ufw status 2>/dev/null | grep -qE "^(${sp:-22}/tcp|${sp:-22}|OpenSSH) +ALLOW" \
+      && bad "SSH is open to every address, but --ssh-tailscale-only was chosen" || ok "SSH allowed on tailscale0 only"
+  fi
+  if [ -f "$STATE/sudo-password" ]; then
+    S test -e "/etc/sudoers.d/90-onebox-$ADMIN" \
+      && bad "$ADMIN has passwordless sudo again, but --sudo-password was chosen" || ok "sudo needs a password ($ADMIN)"
+  fi
   if [ "$TYPE" = vps ]; then swapon --show --noheadings | grep -q . && ok "swap on" || meh "no swap; image builds may run out of memory"; fi
 
   if S docker info >/dev/null 2>&1; then
@@ -659,6 +709,11 @@ phase_check() {
     if [ -n "$tk" ]; then ok "traefik running ($tk)"; else bad "traefik not running"; fi
     if [ "$tk" = traefik ]; then
       curl -sf --max-time 5 http://127.0.0.1:8081/ping >/dev/null 2>&1 && ok "traefik API on 127.0.0.1:8081" || bad "traefik API not answering"
+      local tv; tv="$(S docker inspect -f '{{.Config.Image}}' traefik 2>/dev/null || true)"; tv="${tv#*:}"
+      case "$tv" in v[0-9]*)
+        [ "$tv" != "${TRAEFIK_IMAGE#*:}" ] && [ "$(printf '%s\n%s\n' "$tv" "${TRAEFIK_IMAGE#*:}" | sort -V | head -1)" = "$tv" ] \
+          && meh "traefik $tv is older than ${TRAEFIK_IMAGE#*:}, the version this kit pins (references/updates.md)" ;;
+      esac
     elif [ -n "$tk" ]; then
       meh "traefik $tk was not set up by box-setup; its API check is skipped"
     fi
@@ -701,6 +756,10 @@ phase_check() {
     done
     [ "$(systemctl list-units 'cloudflared*.service' --state=active --plain --no-legend 2>/dev/null | wc -l)" -ge 2 ] \
       || meh "one tunnel replica only; a restart drops traffic for a few seconds"
+    local h c; h="$(getent passwd "$ADMIN" | cut -d: -f6 || true)"
+    for c in ${h:+"$h/.cloudflared/cert.pem"} /root/.cloudflared/cert.pem; do
+      S test -f "$c" && meh "$c can create and delete every tunnel in your Cloudflare account. The running tunnel does not need it: delete it"
+    done
   fi
 
   local last=/var/backups/onebox/last-run other
@@ -708,7 +767,7 @@ phase_check() {
     ok "backup timer enabled"
   else
     # A box set up by hand may back up with its own timer. Say so; do not guess what it covers.
-    other="$(systemctl list-timers --all --plain --no-legend 2>/dev/null | grep -oE '[A-Za-z0-9@_.-]*backup[A-Za-z0-9@_.-]*\.timer' | grep -v '^dpkg-db-backup' | sort -u | tr '\n' ' ')"
+    other="$(systemctl list-timers --all --plain --no-legend 2>/dev/null | grep -oE '[A-Za-z0-9@_.-]*backup[A-Za-z0-9@_.-]*\.timer' | grep -v '^dpkg-db-backup' | sort -u | tr '\n' ' ' || true)"
     if [ -n "$other" ]; then meh "onebox backup timer not enabled; other backup timers: ${other% }. Check they cover every volume"
     else bad "backup timer not enabled"; fi
   fi

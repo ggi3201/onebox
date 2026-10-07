@@ -103,8 +103,10 @@ running (for example when a name clashes). The step compares image IDs.
 **Scoped prune.** Only old tags of this image. `docker system prune -a` on a
 shared box deletes images other stacks still need for rollback.
 
-**Push and `workflow_dispatch` only.** The runner is root on the box. A
-`pull_request` trigger on a public repo would let a fork run code there.
+**Push and `workflow_dispatch` only, in a private repo.** The runner is root
+on the box. In a public repo, a fork's pull request can add its own workflow
+that runs there, whatever this file triggers on. So the site's repo stays
+private while it deploys from the box.
 
 ## Rollback
 

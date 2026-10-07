@@ -210,6 +210,17 @@ update.
 
 ## box
 
+### 0.1.3 (2026-10-07)
+
+- A GitHub runner on your box is for private repos only. `references/runner.md`
+  says why, shows how to check a repo, and how to remove a runner.
+- `/box:box-setup`: only the box itself can read the Traefik API; Traefik is
+  pinned to v3.7.14; `--ssh-tailscale-only` and `--sudo-password` stay chosen
+  on later runs; the tunnel phase deletes the login's `cert.pem`. `check`
+  reports these, and warns when Docker or cloudflared updates are waiting. Run
+  the `proxy` phase again to apply (Traefik restarts for a few seconds).
+- `/box:expose-service` copies its scripts to a private folder on the box.
+
 ### 0.1.2 (2026-10-01)
 
 - `/box:new-landing-page` points to sample wording for deleting the account,

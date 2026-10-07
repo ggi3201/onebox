@@ -6,13 +6,20 @@ SSH key in GitHub, no inbound port.
 
 ## Risks first
 
+- **Private repos only.** A runner on your box is for a private repo. GitHub
+  says the same. Your own workflows' triggers do not protect a public repo: a
+  pull request runs the workflow files from the pull request, so a fork can
+  add its own workflow with `runs-on: [self-hosted, box]`. Once one of a
+  person's pull requests is merged, GitHub runs their next ones without asking
+  you.
 - **The runner user is in the `docker` group. That is root on the box.** Any
-  workflow that runs on it can do anything.
-- **Public repo: never let a `pull_request` workflow reach this runner.** A
-  fork's pull request could run its code on your box. GitHub recommends
-  self-hosted runners for private repos only. If the repo is public, make sure
-  every workflow with `runs-on: self-hosted` triggers only on `push` to your
-  branches and on `workflow_dispatch`.
+  job that reaches the runner can read every `.env`, the tunnel credentials
+  and the Traefik token. A separate user for the runner does not change that.
+- **A public app repo gets no runner.** Deploy it by hand on the box
+  (`docker compose up -d`), or from a GitHub-hosted runner over Tailscale or
+  SSH. If a repo with a runner goes public, remove the runner first (below).
+- **Still never add `pull_request`** to a workflow that runs on the box. Use
+  `push` to your branches and `workflow_dispatch`.
 - **One runner runs one job at a time.** A repo's `ci.yml` and its deploy wait
   for each other. Give each deploy its own `concurrency.group`.
 
@@ -22,12 +29,25 @@ On a personal account a runner belongs to one repo. Each repo that deploys
 needs its own runner (one directory each on the box). A free GitHub
 organization lets one runner serve all its repos. Pick one before you register.
 
+An organization's runner group must not allow public repositories. That is
+the default. Check it:
+
+```bash
+gh api orgs/<org>/actions/runner-groups --jq '.runner_groups[] | "\(.name) public=\(.allows_public_repositories)"'
+```
+
 ## Register (repo scope)
 
-On your Mac, get a registration token. It expires after one hour.
+On your Mac, check that the repo is private. Stop if this prints `false`:
 
 ```bash
 REPO=owner/myapp
+gh api "repos/$REPO" --jq .private
+```
+
+Then get a registration token. It expires after one hour.
+
+```bash
 LABEL=$(cfg | jq -r '.box.runnerLabel // "box"')     # cfg() as in SKILL.md
 TOKEN=$(gh api -X POST "repos/$REPO/actions/runners/registration-token" --jq .token)
 URL=$(gh api repos/actions/runner/releases/latest \
@@ -65,6 +85,23 @@ there. Commit to the repo.
 ## Check
 
 ```bash
+gh api "repos/$REPO" --jq .private          # must print true
 gh api "repos/$REPO/actions/runners" --jq '.runners[] | "\(.name) \(.status) \(.busy)"'
 ssh user@host 'systemctl list-units "actions.runner.*" --no-legend'
 ```
+
+## Remove
+
+Before a repo goes public, or when it stops deploying to the box. On your Mac:
+
+```bash
+TOKEN=$(gh api -X POST "repos/$REPO/actions/runners/remove-token" --jq .token)
+printf '%s' "$TOKEN" | ssh user@host "
+  set -e
+  cd ~/actions-runner-myapp
+  sudo ./svc.sh stop && sudo ./svc.sh uninstall
+  ./config.sh remove --token \"\$(cat)\""
+```
+
+Then delete the folder on the box, and check that the runner list above is
+empty.

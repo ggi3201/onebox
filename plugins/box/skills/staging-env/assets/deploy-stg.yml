@@ -1,6 +1,8 @@
 # .github/workflows/deploy-stg.yml
 # Deploys any qa/** branch to the staging stack on the box.
 # This file must exist ON the pushed branch, or nothing runs (see gotchas).
+# It runs on your box: keep the repo private, and never add pull_request here
+# (see box-setup references/runner.md).
 name: Deploy staging
 on:
   push:
