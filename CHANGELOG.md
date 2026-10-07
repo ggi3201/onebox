@@ -14,6 +14,14 @@ update.
 
 ## start
 
+### 0.2.6 (2026-10-07)
+
+- `/start:new-app`: the root `.gitignore` keeps `.env` and `.env.*` (the
+  default place for secrets), `build/` and `.ipa` files out of git and out of
+  EAS uploads, in both layouts. In an existing app, add these lines yourself.
+- Node API: the row-level security policy also refuses rows outside `asUser`
+  on a reused connection. .NET API: per-IP limits group IPv6 by /64.
+
 ### 0.2.5 (2026-10-07)
 
 - New optional plan step "Product analytics", with a guide. It adds PostHog

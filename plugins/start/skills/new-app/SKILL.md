@@ -142,7 +142,9 @@ API, the repo root without one. Run every `npx expo` and `eas` command there.
      run `git init` yourself. In `myapp`: `.node-version` and the `.npmrc`
      from `references/files.md`, then pin pnpm 10 (`expo-app.md`, "Pin pnpm"). Add
      `.claude/worktrees/` and `.worktrees/` to its `.gitignore`
-     (`expo-app.md`, "Recommended layout", says why).
+     (`expo-app.md`, "Recommended layout", says why), and `.env`, `.env.*`,
+     `.onebox.json`, `build/` and `*.ipa`: secrets and build output never go
+     into git or an EAS upload.
    - Then, in the app folder: `echo n | pnpm reset-project`. It asks whether
      to move the example to `example/`. The `n` deletes it instead.
    - The template ships its own agent files and a `LICENSE`. Handle them as
