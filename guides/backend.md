@@ -591,8 +591,9 @@ Prisma and Drizzle have no built-in global filter. Two options that keep the
 "cannot forget" property:
 
 - **Postgres row-level security.** Enable RLS on each owned table with a policy
-  `owner_id = current_setting('app.user_id')`, and set that setting at the
-  start of each request's transaction. The database refuses other users' rows
+  `owner_id = nullif(current_setting('app.user_id', true), '')`, and set that
+  setting at the start of each request's transaction. The `nullif` matters:
+  after a transaction, a pooled connection keeps the setting as `''`. The database refuses other users' rows
   whatever the query says. Connect as a role that is not the table owner, or
   the policy does not apply. A superuser skips it too, and the Postgres
   image's `POSTGRES_USER` is one. The step 5 test reads the catalog: every

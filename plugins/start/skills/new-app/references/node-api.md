@@ -332,8 +332,9 @@ for (const signal of ["SIGTERM", "SIGINT"] as const) {
 export {};
 ```
 
-`apps/api/.env.development`. Dev values, not secrets, so commit it (the
-`.gitignore` ignores only `.env*.local`). This file sets the local ports:
+`apps/api/.env.development`. Dev values, not secrets, so commit it (the root
+`.gitignore` ignores `.env` and `.env.*`, and lets this one file through).
+This file sets the local ports:
 
 - `DATABASE_URL` has the dev database port. Pick it now, with the check in
   the skill's step 7, and use the same port in `docker-compose.dev.yml`.
@@ -402,7 +403,9 @@ column and a policy. With a `pgPolicy`, `drizzle-kit` writes
 import { sql } from "drizzle-orm";
 import { pgPolicy, pgTable, text, uuid } from "drizzle-orm/pg-core";
 
-const me = sql`current_setting('app.user_id')`;   // set by asUser
+// Set by asUser. After that transaction, a pooled connection keeps the setting
+// as ''. nullif turns '' (and a missing setting) into null, which matches no row.
+const me = sql`nullif(current_setting('app.user_id', true), '')`;
 
 export const notes = pgTable(
   "notes",
@@ -416,8 +419,9 @@ export const notes = pgTable(
 ```
 
 Handlers run their queries in `asUser(app.db, userId, (tx) => ...)`. Outside
-it, a query on an owned table finds no rows or fails. It never finds all
-rows. `withCheck` stops an insert or update that sets another owner.
+it, a query on an owned table finds no rows, and an insert fails. It never
+finds all rows. `withCheck` stops an insert or update
+that sets another owner.
 
 ## Tests
 

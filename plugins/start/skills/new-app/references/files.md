@@ -73,10 +73,14 @@ layout".
 
 ```
 node_modules/
-.env*.local
+# Secrets live in .env (CONFIG.md). The Node API's dev file is the one exception.
+.env
+.env.*
+!apps/api/.env.development
 .onebox.json
 apps/mobile/ios/
 apps/mobile/android/
+build/
 *.ipa
 *.p8
 *.p12
@@ -229,6 +233,8 @@ picks its own IP and gets a new rate-limit bucket on each request.
 
 ```csharp
 using System.Globalization;
+using System.Net;
+using System.Net.Sockets;
 using System.Security.Claims;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -268,8 +274,18 @@ builder.Services.Configure<ForwardedHeadersOptions>(o =>
     foreach (var cidr in trusted) o.KnownIPNetworks.Add(System.Net.IPNetwork.Parse(cidr));
 });
 
-// Step 2: rate limits. Per user when the request has a token, else per client IP.
-static string Ip(HttpContext c) => c.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+// Step 2: rate limits. Per user when the request has a token, else per client IP:
+// one bucket per IPv4 address and per IPv6 /64 (a client usually holds a whole /64).
+static string Ip(HttpContext c)
+{
+    var ip = c.Connection.RemoteIpAddress;
+    if (ip is null) return "unknown";
+    if (ip.IsIPv4MappedToIPv6) ip = ip.MapToIPv4();
+    if (ip.AddressFamily != AddressFamily.InterNetworkV6) return ip.ToString();
+    var b = ip.GetAddressBytes();
+    Array.Clear(b, 8, 8);
+    return new IPAddress(b) + "/64";
+}
 static string UserOrIp(HttpContext c) =>
     c.User.FindFirstValue("sub") is { } id ? "u:" + id : "ip:" + Ip(c);   // "sub": backend.md step 7
 
