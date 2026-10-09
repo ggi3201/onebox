@@ -13,7 +13,7 @@
 # Cloud: `eas build --auto-submit` on Expo's servers. Used when --cloud is passed,
 # when expo.buildMode is "cloud" in the onebox config, or when this is not a Mac.
 #
-# Reads the onebox config (~/.config/onebox/config.json, then .onebox.json):
+# Reads the onebox config (~/.config/onebox/config.json, then the nearest .onebox.json):
 #   expo.buildMode, expo.tokenRef, apple.teamId,
 #   apple.ascKeyId, apple.ascIssuerId, apple.ascKeyPath | apple.ascKeyRef, secrets.*
 # Never prints a secret. Do not run it with EXPO_DEBUG=1: that dumps the API key.
@@ -42,8 +42,14 @@ die()  { printf '\033[0;31m[build]\033[0m %s\n' "$*" >&2; exit "${2:-1}"; }
 CLEANUP=(); cleanup() { local x; for x in "${CLEANUP[@]:-}"; do [ -n "$x" ] && rm -rf "$x"; done; }; trap cleanup EXIT
 
 command -v jq >/dev/null || die "jq is required (brew install jq)."
-cfg() { jq -s '.[0] * .[1]' ~/.config/onebox/config.json .onebox.json 2>/dev/null \
-  || cat ~/.config/onebox/config.json 2>/dev/null || cat .onebox.json 2>/dev/null || echo '{}'; }
+# The project config is the nearest .onebox.json, from the app folder up: in
+# a monorepo it sits at the repo root, not next to app.json.
+PROJ_CFG=""; d="$PWD"
+while :; do [ -f "$d/.onebox.json" ] && { PROJ_CFG="$d/.onebox.json"; break; }; [ "$d" = / ] && break; d="$(dirname "$d")"; done
+cfg() {
+  local f=(); [ -f ~/.config/onebox/config.json ] && f+=(~/.config/onebox/config.json); [ -n "$PROJ_CFG" ] && f+=("$PROJ_CFG")
+  if [ ${#f[@]} -gt 0 ]; then jq -s 'reduce .[] as $x ({}; . * $x)' "${f[@]}" 2>/dev/null || echo '{}'; else echo '{}'; fi
+}
 c() { cfg | jq -r "$1 // empty"; }
 
 # Read a secret by reference, the way CONFIG.md says ("Secrets"). Prints to

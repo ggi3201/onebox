@@ -150,7 +150,14 @@ eas update:edit <group id> --rollout-percentage 100
 
 ## 4. Undo a bad update
 
-Roll back the bad update by its group id:
+Still in a rollout (below 100%)? Revert the rollout. The phones outside it
+already run the update before, so nothing else changes:
+
+```bash
+eas update:revert-update-rollout --group <group id> -m "revert: <why>"
+```
+
+At 100%, roll back the bad update by its group id:
 
 ```bash
 eas update:list --branch production              # the bad update's group id
