@@ -352,7 +352,7 @@ function parseOld(text, staticLines, genHeadings) {
       continue;
     }
     if (genHeadings.has(line)) { flush(); heading = line; anchor = { type: "heading" }; occ = new Map(); curItem = null; continue; }
-    if (GEN_RE.some((r) => r.test(line)) || staticLines.has(line)) {
+    if (GEN_RE.some((r) => r.test(line)) || staticLines.has(`${heading}\n${line}`)) {
       flush();
       const n = (occ.get(line) ?? 0) + 1; occ.set(line, n);
       anchor = { type: "line", text: line, n };
@@ -404,9 +404,11 @@ function buildPlan({ readonly = false } = {}) {
   const { secs, items, plugins, keys } = render(answers, sources, detect);
 
   // Lines the planner owns: this render, plus the static lines of the old answers.
-  const staticLines = new Set([KEPT_INTRO]);
+  // Keyed by heading: a line such as "```" is the planner's under Install, and
+  // the user's own in their notes.
+  const staticLines = new Set([`${KEPT}\n${KEPT_INTRO}`]);
   const genHeadings = new Set([KEPT, ...secs.map((s) => s.heading)]);
-  const addStatic = (ss) => { for (const s of ss) { genHeadings.add(s.heading); for (const l of s.lines) if (!l.item) staticLines.add(l.text); } };
+  const addStatic = (ss) => { for (const s of ss) { genHeadings.add(s.heading); for (const l of s.lines) if (!l.item) staticLines.add(`${s.heading}\n${l.text}`); } };
   addStatic(secs);
   if (old?.meta?.answers) {
     try { addStatic(render(old.meta.answers, old.meta.sources ?? {}, {}).secs); } catch {}
@@ -421,7 +423,8 @@ function buildPlan({ readonly = false } = {}) {
   const userLines = (b) => b.lines.map((user) => ({ user }));
   const out = [];
   let doneCount = 0, next = null;
-  const left = [], newlyDone = [], tickedKeys = new Set();
+  const left = [], newlyDone = [], tickedKeys = new Set(), autoKeys = [];
+  const oldAuto = Array.isArray(old?.meta?.auto) ? new Set(old.meta.auto) : null;
   for (const s of secs) {
     out.push("", s.heading, "");
     out.push(...blocksFor((b) => b.heading === s.heading && b.anchor.type === "heading").flatMap(userLines));
@@ -430,11 +433,17 @@ function buildPlan({ readonly = false } = {}) {
       if (l.item) {
         const { key, done, likely, found, open, repeat } = l.item;
         const prev = parsed.items.get(key);
-        // Keep the user's tick. Tick what detection found done, unless the user
-        // unticked an item this planner had ticked before. Drop a tick this
-        // planner made when detection now sees what is still missing.
+        // A tick is the user's or the planner's. The header lists the planner's
+        // (meta.auto); an older plan without that list falls back to its notes.
+        // Keep the user's tick. The planner's tick lasts only while its reason
+        // does: detection or an answer, and nothing seen still missing. Do not
+        // tick again what the user unticked.
         const auto = !!done || !!likely;
-        const ticked = prev ? (prev.ticked && !(open && prev.autoTicked)) || (auto && !prev.autoTicked) : auto;
+        const prevOwned = !!prev?.ticked && (oldAuto ? oldAuto.has(key) : prev.autoTicked);
+        const ticked = !prev ? auto
+          : prev.ticked ? (prevOwned ? auto && !open : true)
+          : auto && !prev.autoTicked;
+        if (ticked && (!prev || !prev.ticked || prevOwned)) autoKeys.push(key);
         const fresh = l.text;
         const body = prev && !staticLooksGenerated(prev.body) ? prev.body : fresh;
         out.push(`- [${ticked ? "x" : " "}] ${body}`);
@@ -471,7 +480,7 @@ function buildPlan({ readonly = false } = {}) {
   kept.push(...blocksFor(() => true).flatMap(userLines));
   if (kept.length) out.push("", KEPT, "", KEPT_INTRO, "", ...kept);
 
-  const meta = { answers, sources };
+  const meta = { answers, sources, auto: autoKeys };
   const file = `${MARK}${JSON.stringify(meta)} -->\n${mergeBlanks(out)}\n`;
   return { detect, old, answers, sources, items, plugins, keys, file, doneCount, next, left, newlyDone, tickedKeys };
 }

@@ -14,6 +14,11 @@ update.
 
 ## start
 
+### 0.2.9 (2026-10-09)
+
+- `/start:plan` keeps code blocks in your notes, and drops the ticks an old
+  answer made when you change that answer. Your own ticks stay.
+
 ### 0.2.8 (2026-10-09)
 
 - `/start:plan` checks a secret the same way the scripts read it, including
@@ -197,6 +202,18 @@ update.
 
 ## ship-ios
 
+### 0.1.5 (2026-10-09)
+
+- `expo-local-build` no longer stops without a message when the app has only
+  `app.config.*`; `eas-update` no longer stops when the runtime version cannot
+  be resolved.
+- `app-store-ready`: no false BLOCKED for `registerRootComponent`, for
+  `expo-auth-session` used for other logins, for a missing `usesAppleSignIn`
+  (now a CHECK), or for an `ios.icon` with light and dark variants. A
+  git-ignored `.env` no longer counts as reaching builds.
+- `ios-preview-build`: a variable shared by preview and production is split
+  on expo.dev first; never `--force`.
+
 ### 0.1.4 (2026-10-09)
 
 - Secrets are read the same way in every script: the environment variable,
@@ -347,6 +364,11 @@ update.
   consent, background jobs, and import from the share sheet.
 
 ## content
+
+### 0.1.2 (2026-10-09)
+
+- fal: a failed job is an error now. Before, fal's error page was saved as the
+  output file and the script reported success.
 
 ### 0.1.1 (2026-10-09)
 

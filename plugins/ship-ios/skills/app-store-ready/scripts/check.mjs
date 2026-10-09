@@ -20,6 +20,7 @@ const JSON_OUT = argv.includes('--json'), NO_EXPO = argv.includes('--no-expo'), 
 const results = [];
 const add = (id, status, msg, fix) => results.push({ id, status, msg, fix });
 const exists = f => fs.existsSync(path.join(DIR, f));
+const gitIgnored = f => { try { execFileSync('git', ['check-ignore', '-q', f], { cwd: DIR, stdio: 'ignore' }); return true; } catch { return false; } };
 const readJson = f => { try { return JSON.parse(fs.readFileSync(path.join(DIR, f), 'utf8')); } catch { return null; } };
 
 // ---- Load --------------------------------------------------------------------
@@ -113,7 +114,8 @@ function pngInfo(p) {
     return { w, h, alpha: ct === 4 || ct === 6 || b.includes(Buffer.from('tRNS')) };
   } catch { return null; }
 }
-const iconPath = ios.icon && typeof ios.icon === 'string' ? ios.icon : expo.icon;
+// ios.icon is a path, or { light, dark, tinted } for the iOS 18 variants.
+const iconPath = typeof ios.icon === 'string' ? ios.icon : (ios.icon?.light || expo.icon);
 if (!iconPath) add('icon', 'BLOCKED', 'No app icon (expo.icon or ios.icon).', 'Add a 1024x1024 opaque PNG, or an Icon Composer .icon folder. See the draw-app-icon skill.');
 else if (/\.icon\/?$/.test(iconPath)) {
   add('icon', exists(iconPath) ? 'OK' : 'BLOCKED', `Icon Composer icon ${iconPath}${exists(iconPath) ? '' : ' is missing'}`);
@@ -185,14 +187,15 @@ else if (!trackers.length && att) add('att', 'FIX', 'App Tracking Transparency i
 else add('att', 'OK', trackers.length ? 'Tracking SDKs and ATT both present; check the prompt runs before tracking' : 'No tracking SDKs, no ATT prompt');
 
 // ---- Accounts ----------------------------------------------------------------------
-const social = ['@react-native-google-signin/google-signin', 'react-native-fbsdk-next', 'expo-auth-session', '@invertase/react-native-apple-authentication'].filter(d => deps[d] && !d.includes('apple'));
+// expo-auth-session alone is not social login: it also links other accounts. googleUse/fbUse catch its Google and Facebook use.
+const social = ['@react-native-google-signin/google-signin', 'react-native-fbsdk-next'].filter(d => deps[d]);
 const apple = has('expo-apple-authentication', '@invertase/react-native-apple-authentication');
 const googleUse = anySrc(/GoogleSignin|signInWithGoogle|Google\.useAuthRequest|provider:\s*['"]google/i);
 const fbUse = anySrc(/LoginManager|Facebook\.useAuthRequest|signInWithFacebook/i);
 if ((googleUse || fbUse || social.length) && !apple)
   add('sign-in-with-apple', 'BLOCKED', 'Social login found (Google/Facebook) but no Sign in with Apple.', 'Guideline 4.8: offer an equivalent login that limits data collection. Sign in with Apple is the usual answer: expo-apple-authentication + "ios.usesAppleSignIn": true.');
 else if (apple && !ios.usesAppleSignIn)
-  add('sign-in-with-apple', 'BLOCKED', 'expo-apple-authentication is installed but ios.usesAppleSignIn is not true.', 'Set "ios": {"usesAppleSignIn": true}. Without it EAS can turn the capability OFF on the App ID and Apple sign-in fails for everyone.');
+  add('sign-in-with-apple', 'CHECK', 'expo-apple-authentication is installed but ios.usesAppleSignIn is not set.', 'Its config plugin adds the Sign in with Apple entitlement. Set "ios": {"usesAppleSignIn": true} as well, as Expo\'s docs show, so the capability is plain to see.');
 else if (apple) add('sign-in-with-apple', 'OK', 'Sign in with Apple enabled');
 
 if (apple) {
@@ -201,7 +204,8 @@ if (apple) {
   if (handRolled.length) add('apple-button', 'FIX', `Text "… with Apple" outside AppleAuthenticationButton: ${first(handRolled)}`, 'Use the system AppleAuthenticationButton. A styled lookalike breaks Apple\'s button rules and gets rejected.');
 }
 
-const accountLike = apple || googleUse || fbUse || anySrc(/sign ?up|signUp|register|createAccount|createUser|createUserWithEmailAndPassword|supabase\.auth\.|auth\(\)\.|clerk|@clerk\//i);
+// Not a bare "register": registerRootComponent and registerForPushNotificationsAsync are in most apps.
+const accountLike = apple || googleUse || fbUse || anySrc(/sign ?up|signUp|register(User|Account)\b|createAccount|createUser|createUserWithEmailAndPassword|supabase\.auth\.|auth\(\)\.|clerk|@clerk\//i);
 const deletion = anySrc(/delete ?(my )?(account|data|profile)|deleteAccount|deleteUser|removeAccount|account.?deletion/i);
 if (accountLike && !deletion) add('account-deletion', 'BLOCKED', 'The app creates accounts but no account deletion was found in the code.', 'Guideline 5.1.1(v): offer "Delete account" inside the app, two taps or so from settings. It must really delete the data. See references/checklist.md.');
 else if (accountLike) add('account-deletion', 'OK', 'Account deletion found. Check it really deletes server data, revokes Apple tokens, and covers guest accounts too.');
@@ -361,7 +365,9 @@ if (resolvedAtsIssues.length) add('ats', 'CHECK', `The resolved Info.plist weake
 if (!rawAtsIssues.length && !resolvedAtsIssues.length) add('ats', 'OK', 'App Transport Security is not weakened for public hosts');
 const envVars = [...new Set(src.flatMap(s => [...s.t.matchAll(/process\.env\.(EXPO_PUBLIC_[A-Z0-9_]+)/g)].map(m => m[1])))];
 if (envVars.length && eas?.build) {
-  const onlyLocal = envVars.filter(v => !exists('.env') || !fs.readFileSync(path.join(DIR, '.env'), 'utf8').includes(v + '='))
+  // EAS uploads only files git does not ignore, so a git-ignored .env never reaches a build.
+  const envReachesBuilds = exists('.env') && !gitIgnored('.env');
+  const onlyLocal = envVars.filter(v => !envReachesBuilds || !fs.readFileSync(path.join(DIR, '.env'), 'utf8').includes(v + '='))
     .filter(v => !Object.values(eas.build).some(p => p?.env && v in p.env));
   if (onlyLocal.length) add('env-in-builds', 'CHECK', `${onlyLocal.join(', ')} are not in eas.json env or a committed .env.`, 'They are inlined at build time. If they live only in .env.local or on your machine, other builds get "". Check EAS: eas env:list --environment production. Also make the app show a clear error when the API URL is empty.');
   else add('env-in-builds', 'OK', `${envVars.length} EXPO_PUBLIC_ variables defined for builds`);

@@ -166,9 +166,9 @@ Settings screen. Sample wording: "Deleting the account: the wording" in
 
 **sign-in-with-apple** (4.8). If the app offers a third-party or social login
 (Google, Facebook), it must also offer an equivalent login that limits data
-collection. Sign in with Apple is the usual answer. With
-`expo-apple-authentication`, set `"ios": {"usesAppleSignIn": true}`. Without
-it, an EAS build can turn the capability off on the App ID.
+collection. Sign in with Apple is the usual answer. `expo-apple-authentication`'s
+config plugin adds the entitlement; also set `"ios": {"usesAppleSignIn": true}`,
+as Expo's docs show, so the capability is plain to see.
 
 **apple-button**. Use the system `AppleAuthenticationButton`. A styled button
 that says "Continue with Apple" breaks Apple's button rules and is rejected.

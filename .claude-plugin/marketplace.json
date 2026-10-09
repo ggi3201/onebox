@@ -10,21 +10,21 @@
       "name": "start",
       "source": "./plugins/start",
       "description": "Start here. Run /start:plan in your app's folder: it looks at what the app already has, asks what it cannot see, and writes PLAN.md with only the steps and plugins you need. No app yet: /start:new-app makes the repo first. Runs on your Mac.",
-      "version": "0.2.8",
+      "version": "0.2.9",
       "license": "MIT"
     },
     {
       "name": "ship-ios",
       "source": "./plugins/ship-ios",
       "description": "Take an Expo iOS app from 'works on my phone' to TestFlight and the App Store: readiness checks, local builds, preview builds, App Store Connect, screenshots and icons. Runs on your Mac.",
-      "version": "0.1.4",
+      "version": "0.1.5",
       "license": "MIT"
     },
     {
       "name": "content",
       "source": "./plugins/content",
       "description": "Generate images and video for the store page, the landing page and social posts, with kie.ai, fal.ai or Replicate. Runs on your Mac.",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "license": "MIT"
     },
     {

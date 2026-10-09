@@ -187,7 +187,8 @@ fi
 # Two agents building the same app upload two builds, with build numbers that
 # do not match their upload order. Key the lock on the bundle id, not the folder,
 # so two worktrees of one app share it.
-APP_KEY="$(jq -r '.expo.ios.bundleIdentifier // empty' app.json 2>/dev/null)"
+# An app with only app.config.* has no app.json; that is fine (|| true).
+APP_KEY="$(jq -r '.expo.ios.bundleIdentifier // empty' app.json 2>/dev/null || true)"
 APP_KEY="${APP_KEY:-$(basename "$APP_DIR")}"
 LOCK="${TMPDIR:-/tmp}/onebox-build-$APP_KEY.lock"
 if ! mkdir "$LOCK" 2>/dev/null; then
