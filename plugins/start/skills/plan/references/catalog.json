@@ -761,16 +761,12 @@
       "title": "Import from a shared link",
       "nudge": "Import from a shared link",
       "needs": [
-        "plugin-app-features",
-        "llm-key"
+        "plugin-app-features"
       ],
-      "proves": "a link shared to the app becomes data in the app.",
+      "proves": "a page shared from Safari opens the import screen with its data.",
       "when": {
         "ai": [
           "import"
-        ],
-        "backend": [
-          "box"
         ]
       }
     },

@@ -3,8 +3,8 @@
 Runs on: your browser (the provider's console). The key then goes to your box
 and, for smoke tests, to your Mac.
 
-Used by: `app-features:agent-harness`, `app-features:share-import`, and every
-AI feature in your API (`plugins/app-features`).
+Used by: `app-features:agent-harness`, and every AI feature in your API
+(`plugins/app-features`).
 
 Your API calls a model provider with a secret key. You need one only if the
 app has an AI feature. The key lives on the server, never in the app.

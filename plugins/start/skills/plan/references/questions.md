@@ -57,8 +57,9 @@ means you host those two pages somewhere else yourself.
 - **Chat or agent**: an LLM key, a chat screen, a cost budget per user, the AI
   consent Apple asks for, and tracing. With your own box it also adds a
   server-side agent and background jobs.
-- **Turn a shared link into data**: the import skill, with the same key,
-  budget, consent and tracing.
+- **Turn a shared link into data**: the share extension skill. The import
+  itself is your own code; with a model it also needs the key, budget and
+  consent.
 - **Generated images or video**: a kie.ai key and the image and video
   skills. The skills also work with fal.ai or Replicate.
 

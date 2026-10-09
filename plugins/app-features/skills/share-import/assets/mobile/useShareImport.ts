@@ -2,8 +2,8 @@
  * Send a link shared into the app from another app to the import screen.
  *
  * It opens the import screen FILLED IN and does NOT submit. A share is one
- * mis-tap from the wrong link, and an import is a paid, limited job: one tap
- * costs less than one wasted job.
+ * mis-tap from the wrong link, and an import can cost money: one tap costs
+ * less than one wasted import.
  *
  * `enabled` answers "is there anywhere to navigate to yet". A share can land on
  * a cold, signed-out app where the router stack does not exist; the provider
@@ -36,7 +36,12 @@ export function useShareImport(enabled: boolean): void {
   }, []);
 
   useEffect(() => {
-    if (!enabled || !hasShareIntent) return;
+    // No intent: the last one was handed on. The same link may be shared again.
+    if (!hasShareIntent) {
+      handled.current = null;
+      return;
+    }
+    if (!enabled) return;
 
     // `webUrl` is set for a plain URL and for text that CONTAINS one, which is
     // what most apps put on the share sheet ("Look at this: https://...").

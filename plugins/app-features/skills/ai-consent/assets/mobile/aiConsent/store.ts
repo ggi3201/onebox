@@ -9,8 +9,12 @@
  *   someone tapping an AI feature on purpose.
  * - The yes is stored with a VERSION. Change the provider or what you send,
  *   bump `CONSENT_VERSION`, and everyone is asked again.
- * - The yes is also sent to the server, which enforces it and survives a
- *   reinstall. The local copy only avoids asking before the server answers.
+ * - The yes is sent to the server, which enforces it and survives a
+ *   reinstall. The waiting AI call goes out only AFTER the server has it: with
+ *   enforcement on, a call that beats the record is refused. The local copy is
+ *   written only once the server has the yes.
+ * - When the API still refuses (403 consentRequired: the record failed or was
+ *   lost), call `consentRefused()`. The next AI action asks again.
  * - Two checks at once share ONE prompt and one answer. A naive version keeps
  *   one resolver and overwrites it, and the first caller waits forever.
  *
@@ -37,7 +41,7 @@ interface State {
   /** A check is waiting, so the prompt is on screen. */
   asking: boolean;
   load: () => Promise<void>;
-  answer: (agreed: boolean) => void;
+  answer: (agreed: boolean) => Promise<void>;
   revoke: () => Promise<void>;
 }
 
@@ -70,11 +74,16 @@ export const useAiConsentStore = create<State>((set, get) => ({
     return loading;
   },
 
-  answer(agreed) {
+  async answer(agreed) {
     set({ asking: false, granted: get().granted || agreed });
     if (agreed) {
-      AsyncStorage.setItem(KEY, String(CONSENT_VERSION)).catch(() => {});
-      consentApi.record(CONSENT_VERSION).catch(() => {});
+      try {
+        await consentApi.record(CONSENT_VERSION);
+        await AsyncStorage.setItem(KEY, String(CONSENT_VERSION)).catch(() => {});
+      } catch {
+        // Not saved on the server. Go on: without enforcement the call works,
+        // with it the API answers consentRequired and consentRefused() asks again.
+      }
     }
     const pending = waiters;
     waiters = [];
@@ -88,6 +97,16 @@ export const useAiConsentStore = create<State>((set, get) => ({
     await consentApi.revoke();
   },
 }));
+
+/**
+ * The API refused an AI call with 403 consentRequired: it has no yes on record.
+ * Forget the local yes, so the next AI action asks again and records it again.
+ */
+export async function consentRefused(): Promise<void> {
+  useAiConsentStore.setState({ granted: false });
+  loading = null;
+  await AsyncStorage.removeItem(KEY).catch(() => {});
+}
 
 /** True when the person has agreed, asking first if they have not. */
 export async function ensureAiConsent(): Promise<boolean> {

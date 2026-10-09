@@ -37,8 +37,9 @@ must name them.
    hosts an AI feature. It is an overlay because iOS will not show a second
    Modal over one that is up.
 3. **Gate every AI call.** `if (!(await ensureAiConsent())) return;` at the
-   start of each one, BEFORE anything is added to the screen or sent. The chat
-   feature's `config.ts` has a slot for it.
+   start of each one, BEFORE anything is added to the screen or sent. When the
+   API answers 403 `consentRequired`, call `consentRefused()`: the next AI
+   action asks again. The chat feature's `config.ts` has a slot for each.
 4. **Server.** Copy `assets/dotnet/AiConsent.cs`. Map `AiConsentRecord` in
    the DbContext, add a migration, `app.MapAiConsent()`, and register
    `AiConsentCheck` as `IAiConsentCheck`. `AiAccess` (from `ai-usage-limits`)
@@ -58,8 +59,9 @@ must name them.
    wording.
 9. **Check it.** Fresh install: the first AI action shows the prompt; "Not now"
    sends nothing; "Agree" sends and never asks again; two AI actions started
-   at once show ONE prompt. With Enforced=true, a user with no record gets 403
-   from the API.
+   at once show ONE prompt. With Enforced=true: the first AI action after
+   "Agree" works, a user with no record gets 403 from the API, and the app
+   then asks again.
 
 ## Rules
 
