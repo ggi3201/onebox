@@ -30,16 +30,22 @@ can go safely, stop at 8% and say so.
 
 ## 1. Measure the baseline
 
-Save everything outside the repo, for example in `$TMP/trim/before`.
+Save everything outside the repo, in one folder per test runner. A repo
+with both Jest and Vitest then keeps both baselines. macOS sets `TMPDIR`,
+not `TMP`:
+
+```bash
+T="${TMPDIR:-/tmp}/trim"; mkdir -p "$T"/vitest "$T"/jest "$T"/dotnet
+```
 
 **Vitest** (needs `@vitest/coverage-v8` as a dev dependency; ask before you add it):
 
 ```bash
 npx vitest list --json | jq length                       # test count
-npx vitest run --reporter=json --outputFile=$TMP/trim/before.json \
+npx vitest run --reporter=json --outputFile="$T/vitest/before.json" \
   --coverage --coverage.provider=v8 --coverage.include='src/**' \
   --coverage.reporter=json-summary --coverage.reporter=text-summary \
-  --coverage.reportsDirectory=$TMP/trim/before
+  --coverage.reportsDirectory="$T/vitest/before"
 ```
 
 Pass `--coverage.include`. Without it, Vitest reports only the files that
@@ -49,17 +55,17 @@ instead of showing 0%.
 **Jest:**
 
 ```bash
-npx jest --json --outputFile=$TMP/trim/before.json \
+npx jest --json --outputFile="$T/jest/before.json" \
   --coverage --coverageReporters=json-summary --coverageReporters=text-summary \
-  --coverageDirectory=$TMP/trim/before
-jq .numTotalTests $TMP/trim/before.json                    # test count
+  --coverageDirectory="$T/jest/before"
+jq .numTotalTests "$T/jest/before.json"                    # test count
 ```
 
 **.NET** (the test project needs the `coverlet.collector` package):
 
 ```bash
 dotnet test <sln> --logger "trx;LogFileName=before.trx" \
-  --collect:"XPlat Code Coverage" --results-directory $TMP/trim/before \
+  --collect:"XPlat Code Coverage" --results-directory "$T/dotnet/before" \
   -- 'DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.ExcludeByFile=**/Migrations/*.cs'
 ```
 
@@ -73,8 +79,8 @@ delete it and say so.
 Slowest tests:
 
 ```bash
-jq -r '.testResults[].assertionResults[] | "\(.duration)\t\(.fullName)"' $TMP/trim/before.json | sort -rn | head -20
-grep -o '<UnitTestResult [^>]*>' $TMP/trim/before/before.trx \
+jq -r '.testResults[].assertionResults[] | "\(.duration)\t\(.fullName)"' "$T/jest/before.json" | sort -rn | head -20   # or vitest/
+grep -o '<UnitTestResult [^>]*>' "$T/dotnet/before/before.trx" \
   | sed -E 's/.*testName="([^"]*)".*duration="([^"]*)".*/\2  \1/' | sort -r | head -20
 ```
 
@@ -140,10 +146,11 @@ regex (`https?`), a type check (`Array.isArray`), and one value in a range
 
 ## 4. Re-measure
 
-Run the same commands into `$TMP/trim/after`, then:
+Run the same commands with `after` in place of `before`, then once per
+runner:
 
 ```bash
-node <skill-dir>/scripts/coverage-diff.mjs $TMP/trim/before $TMP/trim/after
+node <skill-dir>/scripts/coverage-diff.mjs "$T/vitest/before" "$T/vitest/after"   # jest/, dotnet/ the same
 ```
 
 It reads Istanbul `coverage-summary.json` (Jest, Vitest) and Cobertura XML

@@ -70,7 +70,11 @@ every time and needs no registry:
 - The main checkout gets 8200-8299, from the repo's folder name.
 - A worktree gets 8100-8199, from the worktree path.
 
+Copy `assets/metro-port.sh` to the app's `scripts/metro-port.sh`. Always call
+it through `sh`: then it works without an exec bit too.
+
 ```bash
+#!/bin/sh
 # scripts/metro-port.sh: one Metro port per app and per worktree.
 # Main checkout: 8200-8299, from the repo's folder name, so two apps' main
 # checkouts do not share 8081. Worktrees: 8100-8199, from the worktree path.
@@ -85,8 +89,8 @@ fi
 Pass the same port to both commands:
 
 ```bash
-npx expo start --dev-client --port "$(scripts/metro-port.sh)"
-npx expo run:ios --port "$(scripts/metro-port.sh)"
+npx expo start --dev-client --port "$(sh scripts/metro-port.sh)"
+npx expo run:ios --port "$(sh scripts/metro-port.sh)"
 ```
 
 `expo run:ios --port` builds that port into the debug binary as the default

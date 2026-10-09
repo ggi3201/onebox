@@ -45,7 +45,9 @@ const readJsonc = (p) => {
 const rel = (p) => path.relative(root, p) || ".";
 
 const pkgs = [], slns = [], csprojs = [], flows = [];
-walk(root, 4, (f, n) => {
+// Deep enough for apps/mobile/src/features/<f>/<f>.flow.md. The heavy
+// folders are skipped, so depth costs little.
+walk(root, 10, (f, n) => {
   if (n === "package.json") pkgs.push(f);
   else if (n.endsWith(".sln") || n.endsWith(".slnx")) slns.push(f);
   else if (n.endsWith(".csproj")) csprojs.push(f);
