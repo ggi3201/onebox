@@ -88,7 +88,6 @@ Skills read these from `~/.config/onebox/config.json`, or `.onebox.json` for thi
 ## Features
 
 - [ ] Sign in with Apple, verified on the server — guide: https://onebox.lokkesveen.com/guides/sign-in-with-apple/ (raw: https://onebox.lokkesveen.com/guides/sign-in-with-apple.md) <!-- guide:sign-in-with-apple -->
-- [ ] Subscriptions with RevenueCat — guide: https://onebox.lokkesveen.com/guides/revenuecat/ (raw: https://onebox.lokkesveen.com/guides/revenuecat.md) <!-- guide:revenuecat -->
 - [ ] Send push notifications from your API — guide: https://onebox.lokkesveen.com/guides/push-notifications/ (raw: https://onebox.lokkesveen.com/guides/push-notifications.md) <!-- guide:push-notifications -->
 - [ ] Get an LLM API key — guide: https://onebox.lokkesveen.com/guides/llm-api-key/ (raw: https://onebox.lokkesveen.com/guides/llm-api-key.md) <!-- guide:llm-api-key -->
 - [ ] An agent in your API that calls your tools — skill: /app-features:agent-harness <!-- skill:app-features/agent-harness -->
@@ -98,12 +97,12 @@ Skills read these from `~/.config/onebox/config.json`, or `.onebox.json` for thi
 - [ ] Slow AI work as background jobs — skill: /app-features:durable-jobs <!-- skill:app-features/durable-jobs -->
 - [ ] Trace and cost every AI call — guide: https://onebox.lokkesveen.com/guides/langfuse/ (raw: https://onebox.lokkesveen.com/guides/langfuse.md) <!-- guide:langfuse -->
 - [ ] Ask for a rating at a good moment — guide: https://onebox.lokkesveen.com/guides/ask-for-a-rating/ (raw: https://onebox.lokkesveen.com/guides/ask-for-a-rating.md) <!-- guide:ask-for-a-rating -->
-- [ ] Check that every feature works, with proof — skill: /start:check-features <!-- skill:start/check-features -->
 
 ## App Store Connect and builds
 
 - [ ] The manual App Store Connect setup — guide: https://onebox.lokkesveen.com/guides/app-store-connect-setup/ (raw: https://onebox.lokkesveen.com/guides/app-store-connect-setup.md) <!-- guide:app-store-connect-setup -->
 - [ ] An App Store Connect API key — guide: https://onebox.lokkesveen.com/guides/app-store-connect-api-key/ (raw: https://onebox.lokkesveen.com/guides/app-store-connect-api-key.md) <!-- guide:app-store-connect-api-key -->
+- [ ] Subscriptions with RevenueCat — guide: https://onebox.lokkesveen.com/guides/revenuecat/ (raw: https://onebox.lokkesveen.com/guides/revenuecat.md) <!-- guide:revenuecat -->
 - [ ] Expo account, and local vs cloud builds — guide: https://onebox.lokkesveen.com/guides/expo-eas/ (raw: https://onebox.lokkesveen.com/guides/expo-eas.md) <!-- guide:expo-eas -->
 - [ ] Build on your Mac and send to TestFlight — skill: /ship-ios:expo-local-build <!-- skill:ship-ios/expo-local-build -->
 - [ ] Ship JavaScript fixes without a new build — skill: /ship-ios:eas-update <!-- skill:ship-ios/eas-update -->
@@ -115,6 +114,7 @@ Skills read these from `~/.config/onebox/config.json`, or `.onebox.json` for thi
 - [ ] The app icon — skill: /ship-ios:draw-app-icon <!-- skill:ship-ios/draw-app-icon -->
 - [ ] Store screenshots from real screens — skill: /ship-ios:app-store-screenshots <!-- skill:ship-ios/app-store-screenshots -->
 - [ ] Store page text that search finds — skill: /ship-ios:store-listing <!-- skill:ship-ios/store-listing -->
+- [ ] Check that every feature works, with proof — skill: /start:check-features <!-- skill:start/check-features -->
 - [ ] Find what Apple will reject, before Apple does — skill: /ship-ios:app-store-ready <!-- skill:ship-ios/app-store-ready -->
 - [ ] See crashes and errors after launch — guide: https://onebox.lokkesveen.com/guides/crash-reports/ (raw: https://onebox.lokkesveen.com/guides/crash-reports.md) <!-- guide:crash-reports -->
 - [ ] Optional: see where new users drop off, before your first release — guide: https://onebox.lokkesveen.com/guides/product-analytics/ (raw: https://onebox.lokkesveen.com/guides/product-analytics.md) <!-- guide:product-analytics -->

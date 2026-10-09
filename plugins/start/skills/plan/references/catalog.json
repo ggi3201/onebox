@@ -663,23 +663,6 @@
       }
     },
     {
-      "id": "revenuecat",
-      "kind": "guide",
-      "phase": "features",
-      "title": "Subscriptions with RevenueCat",
-      "nudge": "In-app purchases with RevenueCat",
-      "needs": [
-        "paid-apps-agreement",
-        "revenuecat-key"
-      ],
-      "proves": "the paywall shows the price, a sandbox purchase opens the paid part, and Restore works.",
-      "when": {
-        "paid": [
-          "subs"
-        ]
-      }
-    },
-    {
       "id": "push-notifications",
       "kind": "guide",
       "phase": "features",
@@ -921,17 +904,6 @@
       "proves": "the rating prompt shows after the good moment, never on the first launch."
     },
     {
-      "id": "check-features",
-      "kind": "skill",
-      "plugin": "start",
-      "phase": "features",
-      "title": "Check that every feature works, with proof",
-      "nudge": "Check that every feature works",
-      "needs": [
-        "node"
-      ]
-    },
-    {
       "id": "app-store-connect-setup",
       "kind": "guide",
       "phase": "store",
@@ -961,6 +933,23 @@
         "stage": [
           "testflight",
           "store"
+        ]
+      }
+    },
+    {
+      "id": "revenuecat",
+      "kind": "guide",
+      "phase": "store",
+      "title": "Subscriptions with RevenueCat",
+      "nudge": "In-app purchases with RevenueCat",
+      "needs": [
+        "paid-apps-agreement",
+        "revenuecat-key"
+      ],
+      "proves": "the paywall shows the price, a sandbox purchase opens the paid part, and Restore works.",
+      "when": {
+        "paid": [
+          "subs"
         ]
       }
     },
@@ -1137,6 +1126,17 @@
           "store"
         ]
       }
+    },
+    {
+      "id": "check-features",
+      "kind": "skill",
+      "plugin": "start",
+      "phase": "launch",
+      "title": "Check that every feature works, with proof",
+      "nudge": "Check that every feature works",
+      "needs": [
+        "node"
+      ]
     },
     {
       "id": "app-store-ready",

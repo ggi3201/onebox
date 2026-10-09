@@ -74,8 +74,18 @@ for (let i = 1; i < argv.length; i++) {
   if (["dry-run", "convert", "all", "list"].includes(k)) flags[k] = true;
   else { if (argv[i + 1] == null) die(`${a} needs a value`); flags[k] = argv[++i]; }
 }
+// The plan file. PLAN.md, unless the user kept their own PLAN.md and the
+// plan went to another file with --out: then the root .md file that starts
+// with the onebox mark. Without this, later runs forgot that file.
+function findPlan(dir) {
+  const isOnebox = (f) => { try { return fs.readFileSync(path.join(dir, f), "utf8").startsWith("<!-- onebox-plan v1"); } catch { return false; } };
+  if (isOnebox("PLAN.md")) return "PLAN.md";
+  let names = [];
+  try { names = fs.readdirSync(dir).filter((f) => f.endsWith(".md") && f !== "PLAN.md").sort(); } catch { /* no folder */ }
+  return names.find(isOnebox) ?? "PLAN.md";
+}
 const repo = path.resolve(flags.repo ?? ".");
-const outPath = path.resolve(repo, flags.out ?? "PLAN.md");
+const outPath = path.resolve(repo, flags.out ?? findPlan(repo));
 
 const readArg = (v) => (v === "-" ? fs.readFileSync(0, "utf8") : v.startsWith("@") ? fs.readFileSync(v.slice(1), "utf8") : v);
 

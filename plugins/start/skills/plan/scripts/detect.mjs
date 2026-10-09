@@ -406,9 +406,19 @@ const hasKey = (k) => keySet.has(k);
 
 // Like the tool checks, this reads the Mac, so ONEBOX_DETECT_NO_RUN=1 skips it.
 const xcode = process.env.ONEBOX_DETECT_NO_RUN !== "1" && exists("/Applications/Xcode.app");
-const planPath = path.join(root, "PLAN.md");
+// The plan file. PLAN.md, unless the user kept their own PLAN.md and the
+// plan went to another file with --out: then the root .md file that starts
+// with the onebox mark. Without this, later runs forgot that file.
+function findPlan(dir) {
+  const isOnebox = (f) => { try { return fs.readFileSync(path.join(dir, f), "utf8").startsWith("<!-- onebox-plan v1"); } catch { return false; } };
+  if (isOnebox("PLAN.md")) return "PLAN.md";
+  let names = [];
+  try { names = fs.readdirSync(dir).filter((f) => f.endsWith(".md") && f !== "PLAN.md").sort(); } catch { /* no folder */ }
+  return names.find(isOnebox) ?? "PLAN.md";
+}
+const planPath = path.join(root, findPlan(root));
 const planText = readText(planPath);
-const plan = planText == null ? { exists: false } : { exists: true, format: planText.startsWith("<!-- onebox-plan v1") ? "onebox" : "other" };
+const plan = planText == null ? { exists: false } : { exists: true, file: rel(planPath), format: planText.startsWith("<!-- onebox-plan v1") ? "onebox" : "other" };
 
 // ---------- test scripts ----------
 
