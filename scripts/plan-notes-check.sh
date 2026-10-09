@@ -26,6 +26,8 @@ while (/^ {2}- (detected|likely done|found): /.test(lines[i + 1])) i++;
 lines.splice(i + 1, 0, "  My note under an item.", "", "  A second paragraph, after a blank line.", "");
 let t = lines.join("\n");
 t += "\nFirst note, after a blank line.\n\nSecond note.\n\n\nThird note, after two blank lines.\n";
+// A code fence: "```" is also one of the planner's own lines, under Install.
+t += "\n```bash\neas build --local\n```\n";
 fs.writeFileSync(f, t);
 JS
 cp "$tmp/repo/PLAN.md" "$tmp/expected.md"

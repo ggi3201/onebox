@@ -241,8 +241,13 @@ function falAdapter(key) {
         const res = await fetch(statusEndpoint, { headers });
         const j = await res.json();
         if (j.status === "COMPLETED") {
+          // fal has no failed status: a failed request is COMPLETED with an
+          // `error`, and its result is a 4xx/5xx whose body links fal's docs.
+          // Without these checks that docs page was saved as the output.
+          if (j.error) throw new Error(`${label} failed: ${typeof j.error === "string" ? j.error : JSON.stringify(j.error)}`);
           const r = await fetch(resultEndpoint, { headers });
-          const result = await r.json();
+          const result = await r.json().catch(() => null);
+          if (!r.ok) throw new Error(`${label} failed (${r.status}): ${JSON.stringify(result?.detail ?? result)}`);
           const urls = findUrls(result);
           if (!urls.length) throw new Error(`${label}: completed with no result url found: ${JSON.stringify(result)}`);
           return { urls, lastFrameUrl: null, raw: result };

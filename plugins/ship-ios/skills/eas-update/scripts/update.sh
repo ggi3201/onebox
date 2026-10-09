@@ -61,7 +61,8 @@ ok "EAS environment \"$env\"; plus $n_env value(s) from the build profile's env 
 eas whoami >/dev/null 2>&1 || fail "not logged in to Expo. Run: eas login"
 ok "app folder, expo-updates, updates.url, channel $channel in eas.json, logged in"
 
-rv=$(npx expo-updates runtimeversion:resolve --platform ios 2>/dev/null | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{console.log(JSON.parse(s).runtimeVersion||"")}catch{console.log("")}})')
+# || true: under pipefail a failed resolve would end the script with no message.
+rv=$( (npx expo-updates runtimeversion:resolve --platform ios 2>/dev/null || true) | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{console.log(JSON.parse(s).runtimeVersion||"")}catch{console.log("")}})')
 [ -n "$rv" ] && ok "runtime version for iOS: $rv" || warn "could not resolve the runtime version"
 
 # 2. Build the bundle with the channel's EAS environment, not with local .env files alone.
