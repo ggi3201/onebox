@@ -143,6 +143,20 @@ say "Xcode $xv"
 if [ -n "$xmajor" ] && [ "$xmajor" -lt 26 ]; then
   warn "App Store Connect requires Xcode 26 or later for uploads. This build will be rejected at upload. See https://onebox.lokkesveen.com/guides/xcode.md."
 fi
+# The Expo SDK decides the Xcode (guides/xcode.md, "Which Xcode for your Expo SDK").
+sdk="$(node -p 'String((require("./package.json").dependencies||{}).expo||"").replace(/^[^0-9]*/,"").split(".")[0]' 2>/dev/null || true)"
+case "$sdk" in ''|*[!0-9]*) sdk="" ;; esac
+xminor="$(printf '%s' "$xv" | cut -d. -f2)"; case "$xminor" in ''|*[!0-9]*) xminor=0 ;; esac
+XGUIDE="See https://onebox.lokkesveen.com/guides/xcode.md, \"Which Xcode for your Expo SDK\"."
+if [ -n "$sdk" ] && [ -n "$xmajor" ]; then
+  if [ "$sdk" -ge 56 ] && [ "$xmajor" -eq 26 ] && [ "$xminor" -lt 4 ]; then
+    die "Expo SDK $sdk needs Xcode 26.4 or later; this is $xv. $XGUIDE"
+  elif [ "$xmajor" -ge 27 ] && [ "$sdk" -le 56 ]; then
+    die "Xcode $xv builds with the iOS 27 SDK, and Expo SDK $sdk has no scene support: the app would not launch on iOS 27. Build with Xcode 26.4 or later (sudo xcode-select -s <that Xcode>), or upgrade the SDK. $XGUIDE"
+  elif [ "$xmajor" -ge 27 ] && [ "$sdk" -eq 57 ] && ! grep -qsE 'enableSceneSupport"?[[:space:]]*:[[:space:]]*true' app.json app.config.*; then
+    die "Xcode $xv builds with the iOS 27 SDK. Expo SDK 57 then needs scene support turned on (expo-build-properties, ios.enableSceneSupport), or the app does not launch on iOS 27. $XGUIDE"
+  fi
+fi
 
 # CocoaPods dies on "Unicode Normalization not appropriate for ASCII-8BIT" when
 # the shell has no UTF-8 locale (cron, CI, agents). The error you then read comes

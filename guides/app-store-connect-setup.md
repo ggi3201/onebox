@@ -144,7 +144,7 @@ Every field on the version page, and what to answer:
 | Screenshots | `ship-ios:app-store-screenshots` |
 | Checking you did not miss anything | `ship-ios:app-store-ready` |
 | Age rating, categories, copyright, review info, the build, release type, Submit | `ship-ios:appstore-connect` (`review-status`, then the write commands), or by hand: [submit-for-review.md](submit-for-review.md) |
-| App Privacy, pricing, countries, EU trader status | **manual** (the API cannot set them) |
+| App Privacy, pricing, countries, EU trader status | **manual** (the skill does not set them; the API cannot set App Privacy or EU trader status) |
 
 ## Where the values go
 

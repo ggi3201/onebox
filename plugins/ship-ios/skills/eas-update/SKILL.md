@@ -107,6 +107,7 @@ and prints the publish command. It publishes only with `--publish`.
   -m "fix: paywall button text"                          # dry run: build and check
 <skill-dir>/scripts/update.sh ... --publish               # publish this bundle
 <skill-dir>/scripts/update.sh ... --publish --rollout 10  # to 10% of users first
+<skill-dir>/scripts/update.sh ... --publish --source-maps # keep dist-update/ with maps for Sentry
 ```
 
 What it checks, and why:

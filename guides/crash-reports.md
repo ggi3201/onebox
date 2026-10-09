@@ -181,12 +181,17 @@ If the token is missing or Sentry cannot be reached, the build can fail at the
 Sentry step. `SENTRY_ALLOW_FAILURE=true` lets the build go on. Then upload the
 maps by hand later, or the stack traces of that build stay unreadable.
 
-If you ship JavaScript updates with `eas update`, upload their maps after each
-update:
+If you ship JavaScript updates, upload their maps after each update. Publish
+with `ship-ios:eas-update`, not plain `eas update`: since SDK 55, `eas update`
+needs `--environment` and reads only the variables stored on EAS, not the
+`env` block in `eas.json`. A plain `eas update` then ships without
+`EXPO_PUBLIC_API_URL` and without the DSN. The skill builds the update with
+the same values as the build, and `--source-maps` keeps the maps:
 
 ```bash
-eas update
-SENTRY_AUTH_TOKEN=... npx @sentry/expo-upload-sourcemaps dist
+<eas-update skill>/scripts/update.sh --channel production --expect-host api.example.com \
+  -m "Fix the paywall typo" --publish --source-maps
+SENTRY_AUTH_TOKEN=... npx @sentry/expo-upload-sourcemaps dist-update
 ```
 
 ## Step 4: an error reporter for the API

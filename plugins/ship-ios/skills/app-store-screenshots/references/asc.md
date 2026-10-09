@@ -55,9 +55,17 @@ node scripts/asc.mjs replace --app <bundleId> --dir <set>/iphone-6.9 \
 ## Credentials
 
 The script uses the same App Store Connect API key as the `appstore-connect`
-skill. It reads the onebox config (`apple.ascKeyId`, `apple.ascIssuerId`, and
-`apple.ascKeyPath` or `apple.ascKeyRef`), then `ASC_KEY_ID` / `ASC_ISSUER_ID` /
-`ASC_KEY_PATH`, then `~/.appstoreconnect/config.json`. If none exists, point
+skill. It reads `ASC_KEY_ID` / `ASC_ISSUER_ID` / `ASC_KEY_PATH` first, then the
+onebox config (`apple.ascKeyId`, `apple.ascIssuerId`, and `apple.ascKeyPath`
+or `apple.ascKeyRef`), then `~/.appstoreconnect/config.json`. Old `ASC_*`
+variables in your shell therefore win over the config. If none exists, point
 the user to `https://onebox.lokkesveen.com/guides/app-store-connect-api-key.md`. Never print the key.
 
 The key needs a role that can edit app metadata (App Manager or Admin).
+
+## Deprecated resources
+
+`appScreenshotSets` and `appScreenshots` are deprecated since App Store
+Connect API 4.5 (checked 2026-10-09), in favour of the app asset library.
+They still work. If an upload starts failing with 404 or 410, the move to the
+asset library is due: see `appstore-connect`'s `references/api.md`.

@@ -309,3 +309,19 @@ real run, and report what differs. Two parts most likely to differ: the
 reuse of an `UNRESOLVED_ISSUES` submission, and a phased release created
 without a `phasedReleaseState` (the API takes it as optional).
 
+
+## Deprecated resources this skill still uses
+
+Checked 2026-10-09 in the endpoint pages' metadata. They work today; Apple
+removes deprecated resources later, with notice in the API release notes.
+
+| Resource | Deprecated in API | Used by |
+|---|---|---|
+| `subscriptionAvailabilities` | 4.4 | `subs-create` (territories) |
+| `subscriptionLocalizations` (v1), `subscriptionGroupLocalizations` (v1) | 4.4.1 | `subs-create` (names and descriptions) |
+| `appScreenshotSets`, `appScreenshots` | 4.5 | `app-store-screenshots` upload |
+
+When a command starts failing with 404 or 410 on one of these, the move to
+the replacements (subscription versions and plan availabilities, the app
+asset library) is due. Each endpoint page on developer.apple.com names its
+replacement.
