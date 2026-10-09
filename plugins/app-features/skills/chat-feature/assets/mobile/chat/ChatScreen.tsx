@@ -105,10 +105,13 @@ export function ChatScreen({ view, onPaywall }: { view: ViewContext; onPaywall?:
 function Bubble({ message }: { message: Message }) {
   if (message.role === 'user') {
     return (
-      <View style={styles.userBubble}>
-        {message.image && <Image source={{ uri: message.image }} style={styles.userImage} />}
-        {!!message.content && <Text style={styles.userText}>{message.content}</Text>}
-      </View>
+      <>
+        <View style={[styles.userBubble, message.notSent && styles.notSentBubble]}>
+          {message.image && <Image source={{ uri: message.image }} style={styles.userImage} />}
+          {!!message.content && <Text style={styles.userText}>{message.content}</Text>}
+        </View>
+        {message.notSent && <Text style={[styles.dim, styles.notSent]}>Not sent</Text>}
+      </>
     );
   }
 
@@ -159,6 +162,8 @@ const styles = StyleSheet.create({
   error: { color: '#a3382b', fontSize: 14 },
   userBubble: { alignSelf: 'flex-end', maxWidth: '85%', backgroundColor: '#1c1b19', borderRadius: 18, padding: 12, gap: 8 },
   userText: { color: '#fbfaf7', fontSize: 16, lineHeight: 22 },
+  notSentBubble: { opacity: 0.5 },
+  notSent: { alignSelf: 'flex-end' },
   userImage: { width: 180, height: 180, borderRadius: 12 },
   assistant: { gap: 8 },
   tool: { flexDirection: 'row', alignItems: 'center', gap: 8 },
