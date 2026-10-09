@@ -31,7 +31,7 @@
       "name": "box",
       "source": "./plugins/box",
       "description": "Run your backend and sites on one cheap box: a mini PC at home or a small VPS, with Docker, Traefik and Cloudflare Tunnel.",
-      "version": "0.1.6",
+      "version": "0.1.7",
       "license": "MIT"
     },
     {
