@@ -90,6 +90,42 @@ Then those lines probably need one real test, not a trivial one.
   or a fake HTTP handler. Delete it only if another test covers the same rule,
   and say so.
 
+## Junk patterns
+
+Each of these looks like a test but cannot fail for the reason its name
+gives. Delete it, or fix it when it guards something real.
+
+- **No assertion.** The test runs code and checks nothing. It only raises
+  coverage.
+- **A copy of the code.** The test holds its own copy of a regex, a formula
+  or a query, and tests that copy. The real code can change and the test
+  stays green.
+- **A comparison with itself.** `expect(x).toEqual(x)`, or a mapper checked
+  against the same mapper.
+- **A copied list.** The test repeats a list of exports, routes, keys or
+  file names. It breaks when the list changes, and catches no bug.
+- **A search of the source text.** The test greps a file for a string. Keep
+  it only when that string is the contract (a user-facing key, a path), and
+  it still passes after a rename of the code around it.
+- **A private method through reflection.** The test reaches a private
+  helper that a public test already runs. Test it at the public boundary.
+- **The same call twice.** Two tests check one contract with the same kind
+  of input.
+- **A test that keeps test-only code alive.** An export, a flag or a wrapper
+  that only tests use. Delete the test and the seam together.
+- **Dead code with a test.** Production code whose only caller is a test.
+  Delete both.
+- **An expected value made by the code under test.** The test calls the
+  function to build its expected result.
+- **A mock that does the work.** The mock holds the logic the test claims
+  to check, or one mock stands in for two different APIs.
+- **A negative case that passes for another reason.** A "rejects X" test
+  that is rejected by a different check, or an error case that passes with
+  its branch removed. Example: a "404 does not throw" test, when no status
+  throws.
+- **A name that promises more than the test checks.** "Clears the cache"
+  that only checks the cache was not touched.
+
 ## Keep these, even when they look redundant
 
 - A regression test for a real past bug, even if it looks like a duplicate.

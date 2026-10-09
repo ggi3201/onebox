@@ -337,6 +337,13 @@ update.
 
 ## dev
 
+### 0.1.6 (2026-10-09)
+
+- `trim-tests` lists junk patterns: tests that cannot fail for the reason
+  their name gives. It asks for written evidence before each delete.
+- A hand-made bug that also survives the original suite is now reported as a
+  weak test to fix, not counted as a lost test.
+
 ### 0.1.5 (2026-10-09)
 
 - Every skill ends with the next step from your plan, as one question.

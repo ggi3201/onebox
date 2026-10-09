@@ -114,10 +114,29 @@ Read `references/smells.md` for examples of each. In order of payoff:
 7. **Slow tests that repeat a fast one.** An integration test that checks
    only what a unit test already checks. Keep the integration test when it is
    the only one that touches the real database or HTTP pipeline.
+8. **Junk patterns.** Tests that cannot fail for the reason their name says:
+   no assertion, a test of a copy of the code, an expected value made by the
+   code under test, a mock that does the work, a negative case that passes
+   for another reason. The full list is in `references/smells.md`.
 
 A test that never failed and covers no line that other tests miss is a
 candidate. Coverage tells you which: delete the candidates, re-measure, and
 put back any test whose lines were lost.
+
+### Evidence before you delete
+
+Write down these fields for each candidate. A candidate with an empty field
+is not ready to delete.
+
+- The test: name, file and line, or the table row.
+- What bug it can catch. "None" is a valid answer: say why.
+- The test that stays and catches the same bug. Name it.
+- Its history: why it was added (`git log -S '<test name>'`).
+- What else the delete frees: a test-only export, a helper, a fixture.
+
+"Same branch" is a claim, not proof. It fails often for one alternative of a
+regex (`https?`), a type check (`Array.isArray`), and one value in a range
+(`>= 500`). Step 5 checks it.
 
 ## 4. Re-measure
 
@@ -142,6 +161,12 @@ Show the reverted diff is empty (`git diff --stat` on those files).
 
 If a bug survives, a deleted test was doing real work. Put it back.
 
+To tell which, run the surviving bug against the original tests
+(`git stash` the test changes, or check out the test files from `HEAD`). If
+it survives there too, no deleted test caught it. A kept test is weak: it
+passes for the wrong reason. Report it as a weak test, and offer to fix it.
+Do not delete it to raise the count.
+
 For a deeper check on one small module, use a mutation testing tool
 (StrykerJS for JS and TS, Stryker.NET for .NET). They are slow on a whole
 repo, so run them on one folder only.
@@ -161,6 +186,7 @@ Removed or merged, by reason
 - 64 snapshots replaced by 18 assertions (...)
 Lines that lost coverage: none (coverage-diff.mjs exit 0)
 Hand-made bugs: 14 tried, 14 caught
+Weak tests found: 1 (a 404 case that passes without its 404 branch)
 Protected regression tests touched: none
 Flaky tests: 1 fixed (...)
 ```
