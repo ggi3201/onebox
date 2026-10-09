@@ -498,6 +498,21 @@ update.
 
 ## content
 
+### 0.1.4 (2026-10-09)
+
+- `video`: Veo 3.1 with one image starts the clip from it
+  (`FIRST_AND_LAST_FRAMES_2_VIDEO`); before, the image was only a style
+  reference. `chain` stops before leg 1 when ffmpeg is missing, so no leg is
+  paid for. `--dur`, `--ar`, `--resolution` and `--tail` on a model with no
+  built-in schema are named as not sent, with how to pass them.
+- `image`, `video`: Replicate official models work as `owner/name`, with no
+  version id. `still --ref ... --dry-run` uploads nothing and reads no key.
+- `image`, `video`: every submitted job prints its id. One failed status
+  check no longer loses a paid result: the script retries, and after five
+  failures in a row it names the job, which may still finish on your account.
+  `probe` with a bad key fails instead of printing `null`. `.jpeg` files
+  upload as `image/jpeg`.
+
 ### 0.1.3 (2026-10-09)
 
 - Every skill ends with the next step from your plan, as one question.
