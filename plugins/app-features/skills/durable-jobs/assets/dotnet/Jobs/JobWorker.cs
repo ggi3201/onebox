@@ -8,7 +8,7 @@ namespace MyApp.Api.Jobs;
 /// Runs queued jobs, one at a time per API instance, inside the API process.
 ///
 ///   builder.Services.AddHostedService&lt;JobWorker&gt;();
-///   builder.Services.AddScoped&lt;IJobHandler, MyImportHandler&gt;();   // one per job kind
+///   builder.Services.AddJobHandler&lt;MyImportHandler&gt;("import", safeToRetry: false);   // one per job kind
 ///
 /// At-most-once for jobs with side effects: a worker that dies mid-job leaves
 /// a lease that expires, and the sweep FAILS that job (or re-queues it when
@@ -52,7 +52,7 @@ public sealed partial class JobWorker(IServiceScopeFactory scopes, ILogger<JobWo
     {
         using var scope = scopes.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDb>();
-        var kinds = scope.ServiceProvider.GetServices<IJobHandler>().Select(h => h.Kind).ToList();
+        var kinds = scope.ServiceProvider.GetServices<JobKind>().Select(k => k.Kind).ToList();
 
         var candidates = await db.Set<Job>().AsNoTracking()
             .Where(j => j.Status == JobStatus.Queued && kinds.Contains(j.Kind))
@@ -79,13 +79,19 @@ public sealed partial class JobWorker(IServiceScopeFactory scopes, ILogger<JobWo
     private async Task RunAsync(Job job, Guid lease, CancellationToken stopping)
     {
         using var scope = scopes.CreateScope();
-        var handler = scope.ServiceProvider.GetServices<IJobHandler>().Single(h => h.Kind == job.Kind);
+        var safeToRetry = scope.ServiceProvider.GetServices<JobKind>().Single(k => k.Kind == job.Kind).SafeToRetry;
         using var work = CancellationTokenSource.CreateLinkedTokenSource(stopping);
         using var stopBeat = new CancellationTokenSource();
         var beat = HeartbeatAsync(job.Id, lease, work, stopBeat.Token);
 
         try
         {
+            // The job's owner is the current user in this scope, so the
+            // per-user query filter works here as in a request.
+            scope.ServiceProvider.GetService<IJobUser>()?.ActAs(job.UserId);
+            // Built inside the try: a handler that cannot be built (no model
+            // key) fails this job with a sentence, not the worker loop.
+            var handler = scope.ServiceProvider.GetRequiredKeyedService<IJobHandler>(job.Kind);
             var result = await handler.RunAsync(job, new FencedProgress(scopes, job.Id, lease), work.Token);
             if (await FinishAsync(job.Id, lease, JobStatus.Completed, result.GetRawText(), null))
             {
@@ -99,13 +105,20 @@ public sealed partial class JobWorker(IServiceScopeFactory scopes, ILogger<JobWo
         catch (OperationCanceledException) when (stopping.IsCancellationRequested)
         {
             // The API is shutting down mid-job. Same rule as a crash.
-            await InterruptedAsync(job.Id, lease, handler.SafeToRetry);
+            await InterruptedAsync(job.Id, lease, safeToRetry);
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (work.IsCancellationRequested)
         {
             // Cancelled from the app, or the lease was lost. That transition
             // was already written by whoever won; do not overwrite it.
             LogNoLongerOurs(log, job.Id);
+        }
+        catch (OperationCanceledException e)
+        {
+            // Nobody cancelled the work: a timeout inside it (an HTTP client,
+            // the run deadline). The job is still ours, so it is a failure.
+            LogJobFailed(log, e, job.Id, job.Kind);
+            await FinishAsync(job.Id, lease, JobStatus.Failed, null, "That took too long. Please try again.");
         }
         catch (JobFailedException f)
         {
@@ -210,7 +223,7 @@ public sealed partial class JobWorker(IServiceScopeFactory scopes, ILogger<JobWo
     {
         using var scope = scopes.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDb>();
-        var retryable = scope.ServiceProvider.GetServices<IJobHandler>().Where(h => h.SafeToRetry).Select(h => h.Kind).ToHashSet();
+        var retryable = scope.ServiceProvider.GetServices<JobKind>().Where(k => k.SafeToRetry).Select(k => k.Kind).ToHashSet();
         var now = DateTime.UtcNow;
 
         var expired = await db.Set<Job>().AsNoTracking()

@@ -79,18 +79,50 @@ public interface IJobProgress
     Task<bool> ReportAsync(string line, CancellationToken ct);
 }
 
+/// <summary>
+/// A job kind and its retry rule. <see cref="JobRegistration.AddJobHandler{T}"/>
+/// registers it next to the handler, so the worker and the start route read it
+/// without building a handler.
+/// </summary>
+/// <param name="SafeToRetry">
+/// True only when running it twice is harmless (it creates nothing, or it
+/// checks first). Then a job whose worker died is queued again. False (the
+/// default for anything that creates rows or spends money): a job whose worker
+/// died is FAILED, and the person can start it again.
+/// </param>
+public sealed record JobKind(string Kind, bool SafeToRetry);
+
+public static class JobRegistration
+{
+    /// <summary>
+    /// One line per kind:
+    ///   builder.Services.AddJobHandler&lt;ImportHandler&gt;("import", safeToRetry: false);
+    /// A handler is built only for its own job. One that needs a setting the
+    /// server lacks (the model key) then fails its own kind, not every kind.
+    /// </summary>
+    public static IServiceCollection AddJobHandler<T>(this IServiceCollection services, string kind, bool safeToRetry)
+        where T : class, IJobHandler
+    {
+        services.AddSingleton(new JobKind(kind, safeToRetry));
+        services.AddKeyedScoped<IJobHandler, T>(kind);
+        return services;
+    }
+}
+
+/// <summary>
+/// Makes the job's owner the current user in the job's DI scope, so the
+/// per-user query filter and owner stamp (backend.md, "Keep each user's data
+/// apart") work in the worker too. Without it, CurrentUser.Id throws there.
+/// Implement it on CurrentUser with its ActAs method, and register:
+///   builder.Services.AddScoped&lt;IJobUser&gt;(sp => sp.GetRequiredService&lt;CurrentUser&gt;());
+/// </summary>
+public interface IJobUser
+{
+    void ActAs(string userId);
+}
+
 public interface IJobHandler
 {
-    string Kind { get; }
-
-    /// <summary>
-    /// True only when running it twice is harmless (it creates nothing, or it
-    /// checks first). Then a job whose worker died is queued again. False
-    /// (the default for anything that creates rows or spends money): a job
-    /// whose worker died is FAILED, and the person can start it again.
-    /// </summary>
-    bool SafeToRetry { get; }
-
     /// <summary>
     /// Do the work and return the result as JSON. Pass <paramref name="ct"/> to
     /// EVERY call inside, including model calls: it is how cancel and a lost

@@ -38,27 +38,38 @@ running it twice cause harm?** (creates a second row, spends twice). That sets
    DbContext and add a migration. `builder.Services.AddHostedService<JobWorker>();`
    and `app.MapJobs();`. Without `agent-harness`, delete the `IAgentAccess`
    lines in `JobEndpoints.cs` and gate there directly.
-2. **Write the handler** for the slow work: `IJobHandler` with a `Kind`,
-   `SafeToRetry`, `Validate` (runs before anything is spent) and `RunAsync`.
+2. **Write the handler** for the slow work: `IJobHandler` with `Validate`
+   (runs before anything is spent) and `RunAsync`.
    Pass the `CancellationToken` to EVERY call inside, model calls included:
    without it, Cancel and a lost lease stop nothing and the model calls run on.
    Throw `JobFailedException("a sentence for the person")` for known failures.
-3. **Progress.** Call `progress.ReportAsync("Reading the page", ct)` between
+   Register the handler with its kind and retry rule:
+   `builder.Services.AddJobHandler<ImportHandler>("import", safeToRetry: false);`.
+   A handler is built only for its own job, so one that needs a missing model
+   key fails its own kind (503 `notConfigured`), not every job route.
+3. **The job's user.** The worker runs outside a request, so
+   `CurrentUser.Id` throws there. Give `CurrentUser` an `ActAs` method
+   (`https://onebox.lokkesveen.com/guides/backend.md`, "Keep each user's data
+   apart", step 1), make it implement `IJobUser`, and register
+   `builder.Services.AddScoped<IJobUser>(sp => sp.GetRequiredService<CurrentUser>());`.
+   The worker then acts as the job's owner in the job's own scope, and the
+   query filter works as in a request.
+4. **Progress.** Call `progress.ReportAsync("Reading the page", ct)` between
    steps. It returns false when the job is no longer yours: stop then.
-4. **Refunds.** If starting a job takes from a quota, implement `IJobRefunds`.
+5. **Refunds.** If starting a job takes from a quota, implement `IJobRefunds`.
    The worker calls it once per job, on the move to Failed (and on cancel of a
    job that never started).
-5. **Done notification.** Implement `IJobNotifier` with the app's push service.
+6. **Done notification.** Implement `IJobNotifier` with the app's push service.
    It runs only after the Completed write landed, and should open the result
    when tapped. Check the push handler: an app that sets
    `Notifications.setNotificationHandler` in two modules gets the behaviour of
    whichever loaded last, for every notification.
-6. **App.** Copy `assets/mobile/useJob.ts`, wire `jobsApi`, and call
+7. **App.** Copy `assets/mobile/useJob.ts`, wire `jobsApi`, and call
    `clearJobPointers()` on sign-out. Show `job.progress`, a Cancel button, the
    result, or `job.error` (already a sentence).
-7. **Rate limits.** The start endpoint gets the AI bucket; the GET gets its
+8. **Rate limits.** The start endpoint gets the AI bucket; the GET gets its
    own, looser polling bucket.
-8. **Check it.** Start a job and kill the API mid-way: after the lease (5 min)
+9. **Check it.** Start a job and kill the API mid-way: after the lease (5 min)
    the sweep marks it Failed and refunds. Start one and tap Cancel: the worker
    log says "no longer ours" within about 5 s. Start one, close the app, open
    it: the screen picks the job up again.
