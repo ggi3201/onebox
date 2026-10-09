@@ -12,7 +12,11 @@ cannot run counts as a problem, not a pass: a silent false negative here is
 worse than no audit.
 
   audit-exposure.py --domain example.com [--domain other.example] [--token-stdin]
-                    [--public-ok grafana.example.com]
+                    [--public-ok grafana.example.com] [--tunnel none]
+
+--tunnel none (box.tunnel): proxied records to the origin are how that box
+works, so they pass, and the tunnel checks are skipped. An unproxied one
+still fails.
 
 It also requests every tunnelled hostname whose name looks like an admin tool
 (grafana, portainer, admin, dash, ...) and flags it when the answer is not a
@@ -109,6 +113,8 @@ def main():
     p.add_argument("--traefik-api", default=os.environ.get("TRAEFIK_API", "http://127.0.0.1:8081"))
     p.add_argument("--resolver", default="cloudflare", help="the only certResolver that renews behind the tunnel")
     p.add_argument("--tunnel-config", default="/etc/cloudflared/config.yml")
+    p.add_argument("--tunnel", choices=["cloudflare", "none"], default=os.environ.get("BOX_TUNNEL", "cloudflare"),
+                   help="box.tunnel")
     p.add_argument("--token-stdin", action="store_true")
     p.add_argument("--public-ok", action="append", default=[], help="admin-looking hostname that is public on purpose; repeat for more")
     a = p.parse_args()
@@ -120,14 +126,23 @@ def main():
     if not tok:
         sys.exit("no Cloudflare token: set CLOUDFLARE_API_TOKEN or pipe it with --token-stdin")
 
+    origins = set()
     try:
         origin = urllib.request.urlopen("https://api.ipify.org", timeout=10).read().decode().strip()
     except Exception as exc:
-        origin = None
         problems.append("origin-ip:unknown")
         print(f"origin IP: COULD NOT READ ({exc})")
     else:
+        origins.add(origin)
         print(f"origin IP: {origin}")
+    # api6 answers only over IPv6. No answer means the box has no public IPv6.
+    try:
+        origin6 = urllib.request.urlopen("https://api6.ipify.org", timeout=10).read().decode().strip()
+    except Exception:
+        print("origin IPv6: none")
+    else:
+        origins.add(origin6)
+        print(f"origin IPv6: {origin6}")
 
     # -- tunnel config first: DNS checks compare against it
     conf = ""
@@ -158,10 +173,13 @@ def main():
             print(f"  {d}: COULD NOT CHECK - {exc}")
             problems.append(f"dns:{d}")
             continue
-        hits = [r for r in by_zone[d] if origin and r["content"] == origin]
+        hits = [r for r in by_zone[d] if r["content"] in origins]
         if not hits:
             print(f"  {d}: clean")
         for r in hits:
+            if r["proxied"] and a.tunnel == "none":
+                print(f"  {d}: {r['type']} {r['name']} - proxied (expected with tunnel none)")
+                continue
             how = ("proxied, but needs 80/443 open on the origin" if r["proxied"]
                    else "LEAKS THE ORIGIN IP IN PUBLIC DNS")
             print(f"  {d}: {r['type']} {r['name']} - {how}")
@@ -238,10 +256,14 @@ def main():
             print(f"  none  ({len(routers)} routers checked, all on '{a.resolver}' or no TLS)")
 
     print("\n== tunnel ==")
-    unit_list = [line.split()[0] for line in
-                 sh(["systemctl", "list-units", "cloudflared*.service", "--all", "--plain", "--no-legend"]).splitlines()
-                 if line.strip()]
-    if not unit_list:
+    unit_list = [] if a.tunnel == "none" else [
+        line.split()[0] for line in
+        sh(["systemctl", "list-units", "cloudflared*.service", "--all", "--plain", "--no-legend"]).splitlines()
+        if line.strip()]
+    if a.tunnel == "none":
+        print("  skipped (box.tunnel is none)")
+        conf = ""
+    elif not unit_list:
         print("  no cloudflared unit found")
         problems.append("unit:none")
     remote = False
@@ -266,7 +288,7 @@ def main():
         for h in loop:
             print(f"  {h} targets port 80: loops through Traefik's redirect")
             problems.append(f"ingress-80:{h}")
-    elif not conf.strip():
+    elif not conf.strip() and a.tunnel != "none":
         print(f"  {a.tunnel_config}: not readable (run with sudo)")
         problems.append("ingress:unreadable")
 

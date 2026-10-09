@@ -302,6 +302,23 @@ update.
 
 ## box
 
+### 0.1.8 (2026-10-09)
+
+- `box-setup`: the copy step works on a mini PC too. The scripts go to your
+  home, then `sudo install` puts them in `/root/`. `base` takes the keys of
+  the user who ran `sudo`, so a mini PC no longer stops at "no public key".
+- `box-setup`, `tunnel: none`: Traefik trusts Cloudflare's IP ranges for
+  `X-Forwarded-For`, so per-IP limits count per user, not per Cloudflare edge.
+- `box-setup check` says when it could not read the backup status, instead of
+  "no backup has run yet".
+- `expose-service`: tailnet-only hostnames are for a home box. On a VPS with
+  the tunnel, `--mode private` refuses: Traefik listens on `127.0.0.1` only.
+  The DNS step keeps a TXT, MX or CAA record at the same name. The audit
+  checks IPv6 too, and takes `--tunnel none`.
+- `staging-env`: the compose file uses production's names (`JWT_SECRET_KEY`,
+  `TRUSTED_PROXIES`) and `PROXY_NETWORK`. In an env file, single-quote the
+  basic-auth hash.
+
 ### 0.1.7 (2026-10-09)
 
 - `box-setup`: the restore steps work on a new box. They restore

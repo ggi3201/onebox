@@ -44,8 +44,13 @@ yet: follow `https://onebox.lokkesveen.com/guides/cloudflare.md`. No box yet: ru
 |---|---|---|
 | Cloudflare tunnel | proxied CNAME -> `<tunnel-id>.cfargotunnel.com` | Anything the internet should reach. **The default.** |
 | LAN only (home box) | A -> the box's LAN IP, unproxied, no ingress | Reachable from the house only. |
-| Tailnet only | A -> the box's Tailscale IP, unproxied, no ingress | Dashboards and tools that follow you off the LAN. |
+| Tailnet only (home box) | A -> the box's Tailscale IP, unproxied, no ingress | Dashboards and tools that follow you off the LAN. |
 | Another host (Vercel, Cloudflare Pages, ...) | what that host says | Sites deployed there. Attach the domain in that host's project too, or it serves no certificate. |
+
+LAN and tailnet records need Traefik to listen on that address. On a VPS with
+the tunnel it listens on `127.0.0.1` only, so they reach nothing there, and
+`expose.py --mode private` refuses. Use the tunnel with Cloudflare Access
+(below) instead.
 
 Anything else, above all an A record to the public IP, is wrong. Say so rather
 than write it. Use one level below the domain: `api-stg.example.com`, not
@@ -143,7 +148,10 @@ Run after any change that touched DNS, and before you call a service safely expo
 <skill-dir>/scripts/secret.sh "$REF" | ssh "$BOX" "sudo python3 -I ~/.onebox/audit-exposure.py --domain $DOMAIN --token-stdin"
 ```
 
-It lists records that point at the origin IP, wildcards, private addresses in
+With `box.tunnel: none`, add `--tunnel none`: proxied records to the origin
+are how that box works, and the tunnel checks are skipped.
+
+It lists records that point at the origin IP (IPv4 and IPv6), wildcards, private addresses in
 public DNS that also have ingress, tunnel CNAMEs that are not proxied, routers on
 a resolver other than `cloudflare`, and tunnel unit health. It also requests
 each tunnelled hostname whose name looks like an admin tool (`grafana`,

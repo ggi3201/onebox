@@ -111,6 +111,16 @@ def probe_all(hosts):
         return dict(zip(hosts, ex.map(probe, hosts)))
 
 
+def loopback_only(port=443):
+    """True when only 127.0.0.1 / ::1 listen on the port: Traefik on a VPS with the tunnel."""
+    out = sh(["ss", "-ltnH", f"sport = :{port}"]).stdout if shutil.which("ss") else ""
+    addrs = [line.split()[3].rsplit(":", 1)[0].strip("[]") for line in out.splitlines() if len(line.split()) > 3]
+    try:
+        return bool(addrs) and all(ipaddress.ip_address(x.split("%")[0]).is_loopback for x in addrs)
+    except ValueError:  # "*" or "0.0.0.0" style wildcards
+        return False
+
+
 def sh(cmd, **kw):
     return subprocess.run(cmd, capture_output=True, text=True, **kw)
 
@@ -305,10 +315,16 @@ def upsert(cfapi, zone, host, rtype, content, proxied, dry):
     recs = cfapi.call("GET", f"/zones/{zone}/dns_records?name={host}")
     for r in recs:
         say(f"current: {r['type']} proxied={r['proxied']} -> {r['content']}   (record id {r['id']}, keep for rollback)")
+    # Only an address record is ours to replace. A TXT, MX or CAA record at
+    # the same name (often at the apex) stays.
+    others = [r for r in recs if r["type"] not in ("A", "AAAA", "CNAME")]
+    recs = [r for r in recs if r["type"] in ("A", "AAAA", "CNAME")]
+    if others:
+        say(f"keeping {len(others)} other record(s) at this name: {', '.join(sorted({r['type'] for r in others}))}")
     if not recs:
-        say("current: none")
+        say("current: no A, AAAA or CNAME record")
     if len(recs) > 1:
-        die("more than one record for this name. Resolve by hand first.")
+        die("more than one A, AAAA or CNAME record for this name. Resolve by hand first.")
     if recs and recs[0]["type"] == rtype and recs[0]["content"] == content and recs[0]["proxied"] == proxied:
         say("already correct, no change")
         return
@@ -373,6 +389,9 @@ def main():
         ip = ipaddress.ip_address(a.ip or die("--mode private needs --ip", 2))
         if not (ip.is_private or ip in ipaddress.ip_network("100.64.0.0/10")):
             die(f"{ip} is a public address. Private mode takes a LAN or tailnet IP only.", 2)
+        if loopback_only():
+            die("Traefik listens on 127.0.0.1 only on this box (a VPS with the tunnel), so a LAN or "
+                "tailnet record reaches nothing. Use the tunnel, with Cloudflare Access in front.", 2)
         if host in (open(a.tunnel_config).read() if os.path.exists(a.tunnel_config) else ""):
             say("WARN: this host is still in the tunnel ingress. Remove it there too, or it stays public.")
         log("DNS: unproxied A record to a private address")

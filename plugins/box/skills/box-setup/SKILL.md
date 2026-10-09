@@ -51,14 +51,24 @@ Copy the two scripts and the merged config over, then run one phase at a time.
 Read each output before the next phase. Every phase takes `--dry-run`.
 
 ```bash
-BOX=root@203.0.113.10            # a VPS starts with root; a mini PC uses its install user + sudo
+BOX=root@203.0.113.10            # a VPS starts with root
+ADMIN=alice                      # the admin user base creates
+# A mini PC: BOX=<install user>@<host> and ADMIN=<install user>. That user
+# already has sudo and your key (ssh-copy-id).
 cfg > /tmp/onebox.json
-scp scripts/box-setup.sh scripts/onebox-backup.sh /tmp/onebox.json "$BOX":/root/
-FLAGS="--config /root/onebox.json --user alice"
-ssh "$BOX" "bash /root/box-setup.sh preflight $FLAGS"
-ssh "$BOX" "bash /root/box-setup.sh base $FLAGS --dry-run"
-ssh "$BOX" "bash /root/box-setup.sh base $FLAGS"
+scp scripts/box-setup.sh scripts/onebox-backup.sh /tmp/onebox.json "$BOX":
+ssh "$BOX" '[ "$HOME" = /root ] || { sudo install -m 600 box-setup.sh onebox-backup.sh onebox.json /root/ \
+  && rm -f box-setup.sh onebox-backup.sh onebox.json; }'
+FLAGS="--config /root/onebox.json --user $ADMIN"
+ssh "$BOX" "sudo bash /root/box-setup.sh preflight $FLAGS"
+ssh "$BOX" "sudo bash /root/box-setup.sh base $FLAGS --dry-run"
+ssh "$BOX" "sudo bash /root/box-setup.sh base $FLAGS"
 ```
+
+The scripts live in `/root/`, so only root can change them. `sudo` works as
+root too, so the same commands run on both box types. `base` authorizes the
+keys of the user who ran `sudo`, or root's keys when you are root.
+`--pubkey-file` picks another file.
 
 1. **`base`** - packages, admin user, your key, ufw, unattended-upgrades,
    2 GB swap on a VPS. **The admin user gets passwordless sudo by default.**
