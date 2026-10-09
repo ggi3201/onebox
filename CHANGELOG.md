@@ -22,6 +22,11 @@ update.
 
 ## start
 
+### 0.2.12 (2026-10-09)
+
+- Internal: the plan's detection no longer looks for Xcode when run with
+  `ONEBOX_DETECT_NO_RUN=1`, so the example plan is the same on every machine.
+
 ### 0.2.11 (2026-10-09)
 
 - `/start:plan` checks plugin installs in the agent that runs it: Claude Code
