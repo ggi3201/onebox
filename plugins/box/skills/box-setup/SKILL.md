@@ -162,6 +162,13 @@ Traefik is pinned, and Docker, containerd (runc) and cloudflared are not in
 automatic updates. `check` warns about both. How to update them:
 `references/updates.md`.
 
+## Finish
+
+End with one line: the next step, as one question. "Next: <step>. Continue?".
+"Yes" must be enough. Take the step from the app's plan (`/start:plan`). If
+something blocks it, name only that one thing, in plain words, and offer the
+fix.
+
 ## References
 
 - `references/runner.md` - self-hosted GitHub Actions runner, and its risks

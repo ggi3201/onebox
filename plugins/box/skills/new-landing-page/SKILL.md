@@ -150,6 +150,13 @@ Each of these has caused an outage or a silent time bomb.
 - No `pull_request` trigger on a workflow that runs on the box, and a box
   runner only for a private repo (`box:box-setup`, `references/runner.md`).
 
+## Finish
+
+End with one line: the next step, as one question. "Next: <step>. Continue?".
+"Yes" must be enough. Take the step from the app's plan (`/start:plan`). If
+something blocks it, name only that one thing, in plain words, and offer the
+fix.
+
 ## References
 
 - `references/templates.md`: the four files, explained

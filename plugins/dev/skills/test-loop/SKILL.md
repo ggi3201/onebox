@@ -144,3 +144,10 @@ device: no simulator tool in this session."
 
 Paste `assets/AGENTS.snippet.md` into the repo's `AGENTS.md` or `CLAUDE.md`.
 Replace the placeholders with the commands `discover.mjs` found.
+
+## Finish
+
+End with one line: the next step, as one question. "Next: <step>. Continue?".
+"Yes" must be enough. Take the step from the app's plan (`/start:plan`). If
+something blocks it, name only that one thing, in plain words, and offer the
+fix.

@@ -410,7 +410,7 @@
       "kind": "tool",
       "problem": "the dev plugin is not installed",
       "check": { "plugin": "dev" },
-      "fix": "type `/plugin install dev@onebox` in Claude Code, then restart it",
+      "fix": "Claude Code: type `/plugin install dev@onebox`, then restart it. Codex: run `codex plugin add dev@onebox`",
       "yours": true
     },
     {
@@ -419,7 +419,7 @@
       "kind": "tool",
       "problem": "the ship-ios plugin is not installed",
       "check": { "plugin": "ship-ios" },
-      "fix": "type `/plugin install ship-ios@onebox` in Claude Code, then restart it",
+      "fix": "Claude Code: type `/plugin install ship-ios@onebox`, then restart it. Codex: run `codex plugin add ship-ios@onebox`",
       "yours": true
     },
     {
@@ -428,7 +428,7 @@
       "kind": "tool",
       "problem": "the box plugin is not installed",
       "check": { "plugin": "box" },
-      "fix": "type `/plugin install box@onebox` in Claude Code, then restart it",
+      "fix": "Claude Code: type `/plugin install box@onebox`, then restart it. Codex: run `codex plugin add box@onebox`",
       "yours": true
     },
     {
@@ -437,7 +437,7 @@
       "kind": "tool",
       "problem": "the app-features plugin is not installed",
       "check": { "plugin": "app-features" },
-      "fix": "type `/plugin install app-features@onebox` in Claude Code, then restart it",
+      "fix": "Claude Code: type `/plugin install app-features@onebox`, then restart it. Codex: run `codex plugin add app-features@onebox`",
       "yours": true
     },
     {
@@ -446,7 +446,7 @@
       "kind": "tool",
       "problem": "the content plugin is not installed",
       "check": { "plugin": "content" },
-      "fix": "type `/plugin install content@onebox` in Claude Code, then restart it",
+      "fix": "Claude Code: type `/plugin install content@onebox`, then restart it. Codex: run `codex plugin add content@onebox`",
       "yours": true
     }
   ]

@@ -77,3 +77,10 @@ running it twice cause harm?** (creates a second row, spends twice). That sets
    workers (or instances) only when a queue actually builds up.
 
 More: `references/lease.md`.
+
+## Finish
+
+End with one line: the next step, as one question. "Next: <step>. Continue?".
+"Yes" must be enough. Take the step from the app's plan (`/start:plan`). If
+something blocks it, name only that one thing, in plain words, and offer the
+fix.

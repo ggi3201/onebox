@@ -88,3 +88,10 @@ and native package if requested. Show a preview and link the canonical source.
 State what was actually validated and any concrete remaining limit. Store short
 reproduction instructions beside project-bound assets, including how derivatives
 are regenerated and whether native config was connected.
+
+## Finish
+
+End with one line: the next step, as one question. "Next: <step>. Continue?".
+"Yes" must be enough. Take the step from the app's plan (`/start:plan`). If
+something blocks it, name only that one thing, in plain words, and offer the
+fix.

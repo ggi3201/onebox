@@ -154,3 +154,10 @@ non-zero on any problem, including a check it could not run.
 The name check cannot see an admin tool under a neutral name. Keep your own
 list, and check each one: `curl -sI https://<host>/ | grep -i location` must
 point at `cloudflareaccess.com`.
+
+## Finish
+
+End with one line: the next step, as one question. "Next: <step>. Continue?".
+"Yes" must be enough. Take the step from the app's plan (`/start:plan`). If
+something blocks it, name only that one thing, in plain words, and offer the
+fix.

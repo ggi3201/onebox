@@ -134,3 +134,10 @@ spend if anything else is using the same key concurrently. Never loop
   unconfirmed aspect ratio; see above.
 - **`probe` first, always** — if credit is at zero the account blocks new
   tasks with a 402, which is a clearer signal than a stalled `still` call.
+
+## Finish
+
+End with one line: the next step, as one question. "Next: <step>. Continue?".
+"Yes" must be enough. Take the step from the app's plan (`/start:plan`). If
+something blocks it, name only that one thing, in plain words, and offer the
+fix.
