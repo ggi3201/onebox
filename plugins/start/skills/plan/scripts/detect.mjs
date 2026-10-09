@@ -22,6 +22,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { loadNeeds, loadConfig, checkNeeds } from "./needs.mjs";
 
 const root = path.resolve(process.argv[2] ?? ".");
+if (!fs.existsSync(root)) { process.stderr.write(`detect.mjs: ${root} does not exist\n`); process.exit(2); }
 const SKIP = new Set([
   "node_modules", ".git", "ios", "android", "build", "dist", "bin", "obj",
   ".expo", ".next", ".turbo", ".worktrees", "Pods", "coverage", "vendor",
@@ -37,12 +38,25 @@ const readText = (p, max = 512 * 1024) => {
   try { const s = fs.statSync(p); if (!s.isFile() || s.size > max) return null; return fs.readFileSync(p, "utf8"); }
   catch { return null; }
 };
+// Expo and EAS read app.json and eas.json as JSON5: comments and trailing
+// commas are fine there, so they must be here. Strip both outside strings.
+const stripJsonc = (t) => {
+  let out = "", i = 0, str = false;
+  while (i < t.length) {
+    const c = t[i], n = t[i + 1];
+    if (str) { out += c; if (c === "\\") { out += n ?? ""; i += 2; continue; } if (c === '"') str = false; i++; continue; }
+    if (c === '"') { str = true; out += c; i++; continue; }
+    if (c === "/" && n === "/") { while (i < t.length && t[i] !== "\n") i++; continue; }
+    if (c === "/" && n === "*") { i = t.indexOf("*/", i + 2); i = i < 0 ? t.length : i + 2; continue; }
+    out += c; i++;
+  }
+  return out.replace(/,(\s*[}\]])/g, "$1");
+};
 const readJson = (p) => {
   const t = readText(p);
   if (t == null) return null;
-  // eas.json and app.json are plain JSON; tolerate // comments in eas.json.
   try { return JSON.parse(t); } catch {}
-  try { return JSON.parse(t.replace(/^\s*\/\/.*$/gm, "")); } catch { return null; }
+  try { return JSON.parse(stripJsonc(t)); } catch { return null; }
 };
 const subdirs = (d) => {
   try {
@@ -52,15 +66,19 @@ const subdirs = (d) => {
       .sort();
   } catch { return []; }
 };
-function walk(dir, { depth = 5, test, limit = 4000 }, out = [], state = { n: 0 }) {
-  if (depth < 0 || state.n > limit) return out;
+// Walks stop after `limit` matching files. A stop is recorded in `capped`, so
+// detection can say it did not look everywhere instead of passing quietly.
+const capped = [];
+function walk(dir, { depth = 5, test, limit = 4000, skipDirs }, out = [], state = { n: 0, top: dir }) {
+  if (depth < 0) return out;
+  if (state.n > limit) { if (!state.told) { state.told = true; capped.push({ dir: state.top, limit }); } return out; }
   let entries;
   try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return out; }
   entries.sort((a, b) => a.name.localeCompare(b.name));
   for (const e of entries) {
     if (e.name.startsWith(".") && e.name !== ".env.example") continue;
     const p = path.join(dir, e.name);
-    if (e.isDirectory()) { if (!SKIP.has(e.name)) walk(p, { depth: depth - 1, test, limit }, out, state); }
+    if (e.isDirectory()) { if (!SKIP.has(e.name) && !skipDirs?.has(e.name)) walk(p, { depth: depth - 1, test, limit, skipDirs }, out, state); }
     else if (e.isFile() && test(e.name)) { state.n++; out.push(p); }
   }
   return out;
@@ -160,6 +178,7 @@ if (expoPick) {
     updates,
     notifications: !!dp["expo-notifications"],
     storeReview: !!dp["expo-store-review"],
+    sentry: !!dp["@sentry/react-native"],
   };
 }
 
@@ -201,7 +220,10 @@ const nugetHas = (re) => {
 
 const hosted = {
   supabase: npmHas((n) => n.startsWith("@supabase/")).concat(nugetHas(/^Supabase/)),
-  firebase: npmHas((n) => n === "firebase" || n.startsWith("@react-native-firebase/")).concat(nugetHas(/^FirebaseAdmin/)),
+  // Only the parts that hold data or run code are a backend. Crashlytics,
+  // Analytics or Messaging alone are not.
+  firebase: npmHas((n) => n === "firebase" || /^@react-native-firebase\/(firestore|database|functions|auth|storage)$/.test(n))
+    .concat(nugetHas(/^FirebaseAdmin/)),
   convex: npmHas((n) => n === "convex" || n.startsWith("@convex-dev/")),
 };
 
@@ -218,10 +240,13 @@ const AI_KEY_IN_APP = /\bEXPO_PUBLIC_\w*(OPENAI|ANTHROPIC|OPENROUTER|GEMINI|LLM)
 // Grep source for a few strings. Backend folders and the app folder only.
 const grepDirs = uniq([...backends.map((b) => path.join(root, b.dir)), ...(expoPick ? [expoPick.dir] : [])]);
 const SRC = /\.(cs|ts|tsx|js|mjs|cjs|json)$|^\.env\.example$/;
-const srcFiles = uniq(grepDirs.flatMap((d) => walk(d, { depth: 7, test: (n) => SRC.test(n) && !/lock/.test(n) })));
+// Asset folders hold images and animation JSON, not code: thousands of them
+// would use up the file limit before src/ is read.
+const srcFiles = uniq(grepDirs.flatMap((d) => walk(d, { depth: 7, test: (n) => SRC.test(n) && !/lock/.test(n), skipDirs: new Set(["assets"]) })));
 const isTestPath = (p) => rel(p).split(path.sep).some((seg, i, all) =>
   /(^|\.)tests?$/i.test(seg) || seg === "__tests__"
   || (i === all.length - 1 && (/[._-](test|spec)s?\.\w+$/i.test(seg) || /Tests?\.cs$/.test(seg))));
+const HOSTED_SERVER_DIRS = ["supabase/functions", "convex", "functions", "netlify/functions"];
 const AI_HOSTS = ["api.anthropic.com", "api.openai.com", "openrouter.ai", "generativelanguage.googleapis.com"];
 let appleServer = null;
 let pushServer = null; // a backend file that sends pushes: Expo's push API, or APNs directly
@@ -238,6 +263,11 @@ let appleRevoke = null;
 // The rating prompt (ask-for-a-rating.md): a requestReview( call in the app's
 // own code, not in tests.
 let reviewCall = null;
+// RevenueCat is set up when the app calls Purchases.configure, not when the
+// package is installed: ticked on the package alone, its blockers never show.
+let rcConfigure = null;
+// Crash reports (crash-reports.md): the Sentry package and a Sentry.init call.
+let sentryInit = null;
 const protect = new Map(); // backend -> the text of its files, for the protection checks below
 let aiServer = null; // a backend file that names an AI host, or a backend with an AI package
 const DELETE_ROUTE = /\bMapDelete\s*\(|\[HttpDelete\b|@Delete\s*\(|\.delete\s*\(\s*["'`]|method\s*:\s*["'`]DELETE["'`]/i;
@@ -251,10 +281,17 @@ for (const f of srcFiles) {
   if (!pushServer && inBackend && /exp\.host|api(\.sandbox)?\.push\.apple\.com|expo-server-sdk/.test(t)) pushServer = rel(f);
   if (!accountDelete && inBackend && DELETE_ROUTE.test(t) && (ACCOUNT_ROUTE.test(t) || /account|user/i.test(path.basename(f)))) accountDelete = rel(f);
   if (!reviewCall && expoPick && f.startsWith(expoPick.dir + path.sep) && /\brequestReview\s*\(/.test(t)) reviewCall = rel(f);
+  if (!sentryInit && expoPick && f.startsWith(expoPick.dir + path.sep) && /\bSentry\.init\s*\(/.test(t)) sentryInit = rel(f);
+  if (!rcConfigure && expoPick && f.startsWith(expoPick.dir + path.sep) && /\bPurchases\.configure\s*\(/.test(t)) rcConfigure = rel(f);
   if (!appleRevoke && inBackend && (/appleid\.apple\.com\/auth\/revoke/.test(t) || (/auth\/revoke/.test(t) && /appleid\.apple\.com/.test(t)))) appleRevoke = rel(f);
   for (const h of AI_HOSTS) if (!ai.endpoints[h] && t.includes(h)) ai.endpoints[h] = rel(f);
   const b = backends.find((x) => f.startsWith(path.join(root, x.dir) + path.sep));
-  if (b) {
+  // A hosted backend's functions run on its servers, not in the app, even
+  // when the app sits at the repo root next to them.
+  const hostedFn = HOSTED_SERVER_DIRS.some((d) => rel(f).startsWith(d + path.sep));
+  if (hostedFn) {
+    if (!aiServer && AI_HOSTS.some((h) => t.includes(h))) aiServer = rel(f);
+  } else if (b) {
     (protect.get(b) ?? protect.set(b, []).get(b)).push(t);
     if (!aiServer && AI_HOSTS.some((h) => t.includes(h))) aiServer = rel(f);
   } else if (expoPick && f.startsWith(expoPick.dir + path.sep) && !ai.inApp) {
@@ -374,9 +411,19 @@ const hasKey = (k) => keySet.has(k);
 
 // Like the tool checks, this reads the Mac, so ONEBOX_DETECT_NO_RUN=1 skips it.
 const xcode = process.env.ONEBOX_DETECT_NO_RUN !== "1" && exists("/Applications/Xcode.app");
-const planPath = path.join(root, "PLAN.md");
+// The plan file. PLAN.md, unless the user kept their own PLAN.md and the
+// plan went to another file with --out: then the root .md file that starts
+// with the onebox mark. Without this, later runs forgot that file.
+function findPlan(dir) {
+  const isOnebox = (f) => { try { return fs.readFileSync(path.join(dir, f), "utf8").startsWith("<!-- onebox-plan v1"); } catch { return false; } };
+  if (isOnebox("PLAN.md")) return "PLAN.md";
+  let names = [];
+  try { names = fs.readdirSync(dir).filter((f) => f.endsWith(".md") && f !== "PLAN.md").sort(); } catch { /* no folder */ }
+  return names.find(isOnebox) ?? "PLAN.md";
+}
+const planPath = path.join(root, findPlan(root));
 const planText = readText(planPath);
-const plan = planText == null ? { exists: false } : { exists: true, format: planText.startsWith("<!-- onebox-plan v1") ? "onebox" : "other" };
+const plan = planText == null ? { exists: false } : { exists: true, file: rel(planPath), format: planText.startsWith("<!-- onebox-plan v1") ? "onebox" : "other" };
 
 // ---------- test scripts ----------
 
@@ -505,7 +552,10 @@ if (expo.appleSignIn?.package) {
   else if (lackA.length) open["guide:sign-in-with-apple"] = `the server checks Apple's token (${appleServer}); for step 6, still missing ${list(lackA)}`;
   else done["guide:sign-in-with-apple"] = `Sign in with Apple is wired in the app; the server checks Apple's token (${appleServer}), deletes the account (${accountDelete}) and revokes Apple's tokens (${appleRevoke})`;
 }
-if (expo.revenuecat) done["guide:revenuecat"] = "react-native-purchases is in the app";
+if (expo.sentry && sentryInit) done["guide:crash-reports"] = `@sentry/react-native is in the app, started in ${sentryInit}`;
+else if (expo.sentry) seen["guide:crash-reports"] = "@sentry/react-native is in the app; no Sentry.init() call found";
+if (expo.revenuecat && rcConfigure) done["guide:revenuecat"] = `react-native-purchases is in the app, configured in ${rcConfigure}`;
+else if (expo.revenuecat) seen["guide:revenuecat"] = "react-native-purchases is in the app; no Purchases.configure() call found";
 if (hasKey("apple.ascKeyId") && hasKey("apple.ascIssuerId")) {
   // The skills take the .p8 key from a path or from a secret reference; the path wins.
   if (hasKey("apple.ascKeyPath") || hasKey("apple.ascKeyRef")) done["guide:app-store-connect-api-key"] = "the App Store Connect key id, issuer id and key are in the onebox config";
@@ -587,6 +637,8 @@ try {
     open["skill:start/check-features"] = `${r.done} of ${r.total} features proven; not yet: ${left.slice(0, 3).join(", ")}${left.length > 3 ? ` and ${left.length - 3} more` : ""}`;
   }
 } catch (e) { if (e?.code !== "ERR_MODULE_NOT_FOUND") notes.push(`could not check FEATURES.md: ${e.message}`); }
+
+for (const c of capped) notes.push(`Stopped reading ${rel(c.dir)} after ${c.limit} files: anything past that point was not seen. Move generated files out of the source folders.`);
 
 const cannotDetect = [
   "whether your Apple Developer membership is active",

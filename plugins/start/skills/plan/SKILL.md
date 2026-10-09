@@ -275,7 +275,7 @@ explain it in a few plain words and link
 `https://onebox.lokkesveen.com/guides/glossary/`.
 
 If the plan is wrong for this app (a wrong tick, a missed item, a question
-the repo already answers), offer to report it: `when-you-are-stuck.md`,
+the repo already answers), offer to report it: `https://onebox.lokkesveen.com/guides/when-you-are-stuck.md`,
 "When to ask a person", says how. Leave out the app's name and hosts.
 
 ## Rules

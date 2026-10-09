@@ -21,7 +21,8 @@
 // The states, from worst to best:
 //   missing   no flow has a `Covers:` line with the feature's id
 //   failed    a flow that covers it failed its last run
-//   unproven  a flow that covers it has never run
+//   unproven  a flow that covers it has never run, or passed with no
+//             Feature: line (then no code change could make it stale)
 //   stale     every flow passed, but a flow or its code changed since
 //   done      every flow that covers it passed on the current code
 //
@@ -95,7 +96,22 @@ const SMALL = new Set("a an the my me i we you your our it its and or of to for 
 function baseId(s) {
   const words = s.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
   const big = words.filter((w) => !SMALL.has(w));
-  return (big.length ? big : words).slice(0, 3).join("-") || "feature";
+  const id = (big.length ? big : words).slice(0, 3).join("-");
+  if (id) return id;
+  // No Latin letters or digits (Japanese, Arabic, ...): an id from the text's
+  // hash, so two such lines do not both become "feature".
+  return "f-" + crypto.createHash("sha1").update(s.normalize("NFC").toLowerCase()).digest("hex").slice(0, 8);
+}
+
+// The plan file. PLAN.md, unless the user kept their own PLAN.md and the
+// plan went to another file with --out: then the root .md file that starts
+// with the onebox mark. Without this, later runs forgot that file.
+function findPlan(dir) {
+  const isOnebox = (f) => { try { return fs.readFileSync(path.join(dir, f), "utf8").startsWith("<!-- onebox-plan v1"); } catch { return false; } };
+  if (isOnebox("PLAN.md")) return "PLAN.md";
+  let names = [];
+  try { names = fs.readdirSync(dir).filter((f) => f.endsWith(".md") && f !== "PLAN.md").sort(); } catch { /* no folder */ }
+  return names.find(isOnebox) ?? "PLAN.md";
 }
 
 // The plan's items that promise a feature: catalog items with `proves`.
@@ -130,14 +146,16 @@ function syncMode(flags) {
   const taken = new Set(old?.features.map((f) => f.id) ?? []);
   const known = new Set(old?.features.map((f) => f.text.toLowerCase()) ?? []);
   const offered = [...(old?.meta.offered ?? old?.features.filter((f) => f.kit).map((f) => f.id) ?? [])];
-  const kit = kitFeatures(repo, flags.plan ?? "PLAN.md").filter((f) => !offered.includes(f.id) && !taken.has(f.id) && taken.add(f.id));
+  const kit = kitFeatures(repo, flags.plan ?? findPlan(repo)).filter((f) => !offered.includes(f.id) && !taken.has(f.id) && taken.add(f.id));
   offered.push(...kit.map((f) => f.id));
-  const app = [];
+  const app = [], skipped = [];
   // A line that is already there, by its words or by its id, is not added
-  // again. The user may have changed its words since.
+  // again. The user may have changed its words since. A skip by id is said
+  // out loud: it can also be a new feature whose first words match an old one.
   for (const s of add) {
     const id = baseId(s);
-    if (known.has(s.toLowerCase()) || taken.has(id)) continue;
+    if (known.has(s.toLowerCase())) continue;
+    if (taken.has(id)) { skipped.push({ id, text: s }); continue; }
     known.add(s.toLowerCase()); taken.add(id);
     app.push({ id, text: s });
   }
@@ -188,6 +206,7 @@ function syncMode(flags) {
   const all = readFeatures(repo).features;
   console.log(`FEATURES.md: ${!old ? "written" : text === old.text ? "unchanged" : "updated"}. ${all.length} features (${all.filter((f) => !f.kit).length} from the app, ${all.filter((f) => f.kit).length} from the plan).`);
   for (const f of [...app, ...kit]) console.log(`  added ${f.id}: ${f.text}`);
+  for (const f of skipped) console.log(`  NOT added: "${f.text}" gets the id ${f.id}, which a line already has. If it is a new feature, start it with other words.`);
 }
 
 // ---------- flows ----------
@@ -269,7 +288,10 @@ export function checkFeatures(repoDir = ".") {
     let run = null;
     try { run = JSON.parse(fs.readFileSync(runFile(repo, fl.path), "utf8")); } catch {}
     const now = fingerprint(repo, fl);
-    const state = !run ? "unproven" : run.result !== "pass" ? "failed" : run.fingerprint !== now ? "stale" : "done";
+    // Without a Feature line the fingerprint covers the flow file only, so no
+    // code change could ever make the pass stale. Such a pass does not count.
+    const state = !run ? "unproven" : run.result !== "pass" ? "failed" : !fl.paths.length ? "unproven"
+      : run.fingerprint !== now ? "stale" : "done";
     flowState.set(fl.path, {
       flow: fl.path, title: fl.title, covers: fl.covers, state,
       lastRun: run ? { result: run.result, step: run.step ?? null, note: run.note ?? null, commit: run.commit ?? null, date: run.date ?? null } : null,
@@ -310,7 +332,12 @@ function sayFor(features, flowState) {
       const s = flowOf("failed");
       return `Next: fix "${gap.name}". ${name(s)} failed${s.lastRun.step ? ` at step ${s.lastRun.step}` : ""}. Continue?`;
     }
-    case "unproven": return `Next: run ${name(flowOf("unproven"))} to prove "${gap.name}". Continue?`;
+    case "unproven": {
+      const s = flowOf("unproven");
+      return s.noFeatureLine && s.lastRun
+        ? `Next: add a Feature: line to ${name(s)} that names the code it tests, then run it again. Continue?`
+        : `Next: run ${name(s)} to prove "${gap.name}". Continue?`;
+    }
     case "stale": return `Next: run ${name(flowOf("stale"))} again. "${gap.name}" changed since it passed. Continue?`;
     default: return "Every feature works: each one has a flow that passed on the current code.";
   }
@@ -358,7 +385,10 @@ function recordMode(flags) {
 
 function die(msg, code = 2) { process.stderr.write(`features.mjs: ${msg}\n`); process.exit(code); }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
+// Compare real paths: run through a symlink, argv[1] and import.meta.url
+// differ, and every mode would print nothing and exit 0 ("all done").
+const realArgv1 = (() => { try { return fs.realpathSync(process.argv[1]); } catch { return path.resolve(process.argv[1] ?? ""); } })();
+if (process.argv[1] && fs.realpathSync(fileURLToPath(import.meta.url)) === realArgv1) {
   const [mode, ...rest] = process.argv.slice(2);
   const flags = {};
   for (let i = 0; i < rest.length; i++) {

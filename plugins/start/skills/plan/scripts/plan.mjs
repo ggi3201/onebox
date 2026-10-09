@@ -32,6 +32,7 @@
 // default. Without --detect it runs detect.mjs on the repo. Same input, same file.
 // Node 18+, no dependencies.
 
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
@@ -74,8 +75,19 @@ for (let i = 1; i < argv.length; i++) {
   if (["dry-run", "convert", "all", "list"].includes(k)) flags[k] = true;
   else { if (argv[i + 1] == null) die(`${a} needs a value`); flags[k] = argv[++i]; }
 }
+// The plan file. PLAN.md, unless the user kept their own PLAN.md and the
+// plan went to another file with --out: then the root .md file that starts
+// with the onebox mark. Without this, later runs forgot that file.
+function findPlan(dir) {
+  const isOnebox = (f) => { try { return fs.readFileSync(path.join(dir, f), "utf8").startsWith("<!-- onebox-plan v1"); } catch { return false; } };
+  if (isOnebox("PLAN.md")) return "PLAN.md";
+  let names = [];
+  try { names = fs.readdirSync(dir).filter((f) => f.endsWith(".md") && f !== "PLAN.md").sort(); } catch { /* no folder */ }
+  return names.find(isOnebox) ?? "PLAN.md";
+}
 const repo = path.resolve(flags.repo ?? ".");
-const outPath = path.resolve(repo, flags.out ?? "PLAN.md");
+if (!fs.existsSync(repo)) die(`--repo ${repo} does not exist`);
+const outPath = path.resolve(repo, flags.out ?? findPlan(repo));
 
 const readArg = (v) => (v === "-" ? fs.readFileSync(0, "utf8") : v.startsWith("@") ? fs.readFileSync(v.slice(1), "utf8") : v);
 
@@ -94,18 +106,19 @@ function loadDetect() {
 const Q = new Map(catalog.questions.map((q) => [q.id, q]));
 const optLabel = (q, id) => q.options.find((o) => o.id === id)?.label ?? id;
 
-function normalize(qid, v) {
+function normalize(qid, v, where = "") {
   const q = Q.get(qid);
   if (!q) die(`unknown question "${qid}". Known: ${[...Q.keys()].join(", ")}`);
   const ids = q.options.map((o) => o.id);
   if (q.multi) {
     const arr = (Array.isArray(v) ? v : v == null || v === "" ? [] : [v]).filter((x) => x !== "none");
-    for (const x of arr) if (!ids.includes(x)) die(`"${x}" is not an option of ${qid}. Options: ${ids.join(", ")}`);
+    for (const x of arr) if (!ids.includes(x)) die(`${where}"${x}" is not an option of ${qid}. Options: ${ids.join(", ")}`);
     return ids.filter((x) => arr.includes(x)); // catalog order, no duplicates
   }
-  if (!ids.includes(v)) die(`"${v}" is not an option of ${qid}. Options: ${ids.join(", ")}`);
+  if (!ids.includes(v)) die(`${where}"${v}" is not an option of ${qid}. Options: ${ids.join(", ")}`);
   return v;
 }
+const fromHeader = () => `${path.relative(repo, outPath) || outPath}, first line: `;
 function parseAnswers(raw) {
   if (!raw) return {};
   let j;
@@ -120,7 +133,7 @@ function resolveAnswers(explicit, old, detect) {
     const det = d && ["high", "likely"].includes(d.confidence) ? normalize(q.id, d.value) : undefined;
     let v, s;
     if (q.id in explicit) [v, s] = [explicit[q.id], "you"];
-    else if (old?.answers && q.id in old.answers && old.sources?.[q.id] === "you") [v, s] = [normalize(q.id, old.answers[q.id]), "you"];
+    else if (old?.answers && q.id in old.answers && old.sources?.[q.id] === "you") [v, s] = [normalize(q.id, old.answers[q.id], fromHeader()), "you"];
     else if (det !== undefined) [v, s] = [det, "detected"];
     else [v, s] = [normalize(q.id, q.default), "default"];
     answers[q.id] = v; sources[q.id] = s;
@@ -186,7 +199,7 @@ function questionsMode() {
   const state = [];
   for (const q of catalog.questions) {
     if (q.id in known) continue;
-    if (old?.sources?.[q.id] === "you" && q.id in (old.answers ?? {})) { known[q.id] = normalize(q.id, old.answers[q.id]); continue; }
+    if (old?.sources?.[q.id] === "you" && q.id in (old.answers ?? {})) { known[q.id] = normalize(q.id, old.answers[q.id], fromHeader()); continue; }
     const d = detect.answers?.[q.id];
     if (d?.confidence === "high") {
       known[q.id] = normalize(q.id, d.value);
@@ -310,7 +323,10 @@ function readOldPlan() {
   if (!text.startsWith(MARK)) return { foreign: true, text };
   const first = text.slice(0, text.indexOf("\n") >>> 0);
   let meta = {};
-  try { meta = JSON.parse(first.slice(MARK.length, first.lastIndexOf(" -->"))); } catch {}
+  try { meta = JSON.parse(first.slice(MARK.length, first.lastIndexOf(" -->"))); } catch {
+    // Say it: a silent reset would drop every answer the user gave.
+    process.stderr.write(`plan.mjs: the first line of ${path.relative(repo, outPath) || outPath} does not parse, so its answers are not read. Give them again with --answers, or fix that line.\n`);
+  }
   return { foreign: false, text, meta };
 }
 
@@ -327,7 +343,12 @@ const GEN_RE = [
 // A block keeps the blank lines before and after its text: they are the
 // user's too. mergeBlanks() below puts them back without doubling the
 // planner's own blank lines.
-function parseOld(text, staticLines, genHeadings) {
+// A short hash of a line the planner wrote, kept in the header (meta.gen).
+// After a plugin update changes a line's words, the next run still knows the
+// old words were the planner's, not the user's, and drops them.
+const genHash = (heading, line) => crypto.createHash("sha1").update(`${heading}\n${line}`).digest("hex").slice(0, 10);
+
+function parseOld(text, isStatic, genHeadings) {
   const lines = text.split("\n").slice(1);
   const items = new Map();
   const blocks = [];
@@ -352,7 +373,7 @@ function parseOld(text, staticLines, genHeadings) {
       continue;
     }
     if (genHeadings.has(line)) { flush(); heading = line; anchor = { type: "heading" }; occ = new Map(); curItem = null; continue; }
-    if (GEN_RE.some((r) => r.test(line)) || staticLines.has(`${heading}\n${line}`)) {
+    if (GEN_RE.some((r) => r.test(line)) || isStatic(heading, line)) {
       flush();
       const n = (occ.get(line) ?? 0) + 1; occ.set(line, n);
       anchor = { type: "line", text: line, n };
@@ -413,7 +434,9 @@ function buildPlan({ readonly = false } = {}) {
   if (old?.meta?.answers) {
     try { addStatic(render(old.meta.answers, old.meta.sources ?? {}, {}).secs); } catch {}
   }
-  const parsed = old && !old.foreign ? parseOld(old.text, staticLines, genHeadings) : { items: new Map(), blocks: [] };
+  const oldGen = new Set(Array.isArray(old?.meta?.gen) ? old.meta.gen : []);
+  const isStatic = (h, l) => staticLines.has(`${h}\n${l}`) || oldGen.has(genHash(h, l));
+  const parsed = old && !old.foreign ? parseOld(old.text, isStatic, genHeadings) : { items: new Map(), blocks: [] };
   if (old?.foreign) parsed.blocks.push({ heading: KEPT, anchor: { type: "kept" }, lines: old.text.replace(/\s+$/, "").split("\n") });
 
   // Build the output, section by section, placing the user's blocks.
@@ -480,7 +503,8 @@ function buildPlan({ readonly = false } = {}) {
   kept.push(...blocksFor(() => true).flatMap(userLines));
   if (kept.length) out.push("", KEPT, "", KEPT_INTRO, "", ...kept);
 
-  const meta = { answers, sources, auto: autoKeys };
+  const gen = [...new Set(secs.flatMap((sec) => sec.lines.filter((l) => !l.item && l.text.trim()).map((l) => genHash(sec.heading, l.text))))];
+  const meta = { answers, sources, auto: autoKeys, gen };
   const file = `${MARK}${JSON.stringify(meta)} -->\n${mergeBlanks(out)}\n`;
   return { detect, old, answers, sources, items, plugins, keys, file, doneCount, next, left, newlyDone, tickedKeys };
 }
