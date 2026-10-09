@@ -4,8 +4,10 @@
 //
 //   node scripts/versions.mjs check [--base origin/main]
 //       Fails when a plugin changed since the base and its version did not go
-//       up, when a new version has no entry in CHANGELOG.md, or when
-//       plugin.json and marketplace.json disagree.
+//       up (a skill moved from one plugin to another counts for both), when
+//       a new version has no entry in CHANGELOG.md, when plugin.json and
+//       marketplace.json disagree, or when a plugin folder has no entry in
+//       marketplace.json. A removed plugin is skipped.
 //   node scripts/versions.mjs bump <plugin> [patch|minor]
 //       Raises the version in both files, and adds an empty entry for it to
 //       CHANGELOG.md. patch (the default) for a fix, minor for a new skill.
@@ -118,11 +120,24 @@ const changelogGap = (p, version) => {
 function check(base) {
   const errors = [];
   const market = readJson(MARKET);
+  const listed = new Set(market.plugins.map((e) => e.name));
   for (const entry of market.plugins) {
+    if (!fs.existsSync(path.join(root, pluginFile(entry.name)))) {
+      errors.push(`${entry.name}: marketplace.json lists it, but ${pluginFile(entry.name)} does not exist`);
+      continue;
+    }
     const own = readJson(pluginFile(entry.name)).version;
     if (own !== entry.version) {
       errors.push(`${entry.name}: plugin.json says ${own}, marketplace.json says ${entry.version}`);
     }
+  }
+  // Every plugin folder with tracked files needs an entry, or /plugin install
+  // cannot find it. A plain file directly under plugins/ is not a plugin.
+  const folders = new Set(
+    git("ls-files", "plugins/").split("\n").filter((f) => f.split("/").length > 2).map((f) => f.split("/")[1]),
+  );
+  for (const p of folders) {
+    if (!listed.has(p)) errors.push(`${p}: plugins/${p}/ has files, but ${MARKET} has no entry for it`);
   }
 
   for (const [file, text] of Object.entries(codexFiles())) {
@@ -133,22 +148,29 @@ function check(base) {
   }
 
   // The Codex manifests are made from plugin.json, so a change to them alone
-  // needs no new version.
+  // needs no new version. --no-renames: a file moved from one plugin to another
+  // is a delete in the first and an add in the second, so both count.
   const since = git("merge-base", "HEAD", base);
   const changed = new Set(
-    git("diff", "--name-only", since, "--", "plugins/", ":(exclude)plugins/*/.codex-plugin/*")
+    git("diff", "--no-renames", "--name-only", since, "--", "plugins/", ":(exclude)plugins/*/.codex-plugin/*")
       .split("\n")
-      .filter(Boolean)
+      .filter((f) => f.split("/").length > 2)
       .map((f) => f.split("/")[1]),
   );
-  for (const p of changed) {
+  for (const p of [...changed]) {
+    // A removed plugin has no plugin.json and no version to raise.
+    if (!fs.existsSync(path.join(root, pluginFile(p)))) {
+      changed.delete(p);
+      continue;
+    }
     let before = null; // a new plugin: any version is new
     try {
       before = JSON.parse(git("show", `${since}:${pluginFile(p)}`)).version;
     } catch {}
     const now = readJson(pluginFile(p)).version;
     if (before && !newer(now, before)) {
-      errors.push(`${p}: files changed since ${base}, but the version is still ${now}. Run: node scripts/versions.mjs bump ${p}`);
+      const state = now === before ? `the version is still ${now}` : `the version went down from ${before} to ${now}`;
+      errors.push(`${p}: files changed since ${base}, but ${state}. Run: node scripts/versions.mjs bump ${p}`);
       continue;
     }
     const gap = changelogGap(p, now);
