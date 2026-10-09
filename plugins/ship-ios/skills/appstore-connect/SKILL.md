@@ -16,7 +16,7 @@ The script reads the key from the onebox config (see https://github.com/ggi3201/
 
 - `apple.ascKeyId` and `apple.ascIssuerId`
 - `apple.ascKeyPath` (path to the `.p8` file), or `apple.ascKeyRef` (a secret
-  reference to the `.p8` text, read with `secrets.tool`)
+  reference to the `.p8` text, read as CONFIG.md "Secrets" says)
 
 It also accepts `ASC_KEY_ID`, `ASC_ISSUER_ID` and `ASC_KEY_PATH` env vars, or
 the common `~/.appstoreconnect/config.json` (`key_id`, `issuer_id`, `key_path`).

@@ -50,12 +50,21 @@ Prices checked on 2026-09-28.
 If not, start with `.env` files on your Mac, and move the app secrets to
 Doppler when you add staging or GitHub Actions.
 
-The onebox skills read secrets through the onebox config
-(`~/.config/onebox/config.json`), key `secrets.tool`: `env`, `doppler` or
-`1password`. See
-[CONFIG.md](https://github.com/ggi3201/onebox/blob/main/CONFIG.md). With
-Infisical or Bitwarden, load the secrets into the environment and use `env`:
-`infisical run -- <command>` or `bws run -- <command>`.
+## How the skills read a secret
+
+Whatever tool you pick, the skills look in three places, in this order
+([CONFIG.md](https://github.com/ggi3201/onebox/blob/main/CONFIG.md),
+"Secrets"):
+
+1. **The environment.** Start your agent through your tool, and it has every
+   secret: `doppler run -- claude`, `op run --env-file=agent.env -- claude`,
+   `infisical run -- claude`, `bws run -- claude`. You approve a prompt once,
+   when it starts, never in the middle of a run. This works with any tool.
+2. **Your command** in the onebox config (`~/.config/onebox/config.json`),
+   `secrets.command`: one shell command that prints a secret, with `{ref}`
+   where its name goes. `"secrets": { "tool": "doppler" }` and
+   `"secrets": { "tool": "1password" }` are ready-made commands.
+3. **A `.env` file**, the nearest one walking up from the folder.
 
 ## 1Password: a separate vault for your agent
 
@@ -82,8 +91,9 @@ plan, check your account settings first.
    ```
 
    It asks for the token. Paste it there, not in the chat.
-4. **Give agents a helper** that uses the token for one command only. Put it
-   in `~/.zshenv`, so the shells agents start also have it:
+4. **Give agents a helper** for their own commands. It uses the token for one
+   command only. Put it in `~/.zshenv`, so the shells agents start also have
+   it:
 
    ```sh
    opa() { OP_SERVICE_ACCOUNT_TOKEN="$(security find-generic-password -s agent-op -a service-account-token -w)" op "$@"; }
@@ -99,8 +109,15 @@ plan, check your account settings first.
    it to the command. If an item is not in agent-secrets, ask me to move it.
    ```
 
-6. **Point the onebox config at it:** `"secrets": { "tool": "1password" }`,
-   and use `op://agent-secrets/...` references for each key.
+6. **Point the onebox config at it.** The skills' scripts run in `/bin/sh`,
+   where `opa` does not exist, so give them the same command in full:
+
+   ```json
+   "secrets": { "command": "OP_SERVICE_ACCOUNT_TOKEN=$(security find-generic-password -s agent-op -a service-account-token -w) op read {ref}" }
+   ```
+
+   Then use `op://agent-secrets/...` references for each key. Or start your
+   agent with `op run`, and keep plain names.
 
 On the box and in GitHub Actions there is no Keychain. Use a second service
 account for each, so you can revoke one without breaking the others:
@@ -121,7 +138,8 @@ account for each, so you can revoke one without breaking the others:
    (`doppler configs tokens create`). A token for `stg` cannot read `prd`.
    `box:staging-env` shows the exact steps.
 4. Set `"secrets": { "tool": "doppler", "doppler": { "project": "<project>", "config": "dev" } }`
-   in the onebox config.
+   in the onebox config. Or start your agent with `doppler run -- claude`:
+   then every secret is in its environment, and the skills need no config.
 
 ## Where the values go
 
@@ -146,6 +164,9 @@ account for each, so you can revoke one without breaking the others:
 
 - **The agent hangs on a 1Password command.** It used plain `op`, which waits
   for Touch ID. Use `opa`.
+- **A skill says "the secrets command ... did not answer in 60 s".** Your
+  command waits for a prompt, such as Touch ID. Use the service-account
+  command (1Password, step 6), or start the agent through your tool.
 - **Your own `op` shows only one vault.** `OP_SERVICE_ACCOUNT_TOKEN` is
   exported somewhere in your shell profile. Remove the export and keep the
   `opa` function.

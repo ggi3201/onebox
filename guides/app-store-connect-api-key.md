@@ -73,9 +73,11 @@ If you keep secrets in a secrets manager instead of on disk, store the
   "apple": { "ascKeyId": "ABC123DEFG", "ascIssuerId": "...", "ascKeyRef": "op://vault/asc-key/private-key" } }
 ```
 
-`secrets.tool` can be `env` (the reference is an environment variable name),
-`doppler` or `1password`. See
-[CONFIG.md](https://github.com/ggi3201/onebox/blob/main/CONFIG.md).
+The reference is read from the environment first, then with your
+`secrets.command` (`secrets.tool` `doppler` and `1password` are ready-made),
+then from the nearest `.env`. Kept on one line, the key's line breaks can be
+written as `\n`. See
+[CONFIG.md](https://github.com/ggi3201/onebox/blob/main/CONFIG.md), "Secrets".
 
 The key ID and issuer ID are not secrets on their own, but together with the
 key they are. Keep all three out of public repos.

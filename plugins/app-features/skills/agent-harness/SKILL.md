@@ -45,11 +45,12 @@ cfg() { jq -s '.[0] * .[1]' ~/.config/onebox/config.json .onebox.json 2>/dev/nul
   || cat ~/.config/onebox/config.json 2>/dev/null || echo '{}'; }
 BASE=$(cfg | jq -r '.llm.baseUrl // "https://api.openai.com/v1"')
 MODEL=$(cfg | jq -r '.llm.model // empty'); KEYREF=$(cfg | jq -r '.llm.keyRef // "LLM_API_KEY"')
-TOOL=$(cfg | jq -r '.secrets.tool // "env"')
 ```
 
 No key yet: send the user to `https://onebox.lokkesveen.com/guides/llm-api-key.md`. Read the key by
-reference (see https://github.com/ggi3201/onebox/blob/main/CONFIG.md), put it in a variable, never print it.
+reference the way CONFIG.md "Secrets" says (https://github.com/ggi3201/onebox/blob/main/CONFIG.md):
+`$KEYREF` from the environment, else `secrets.command` with the reference in
+place of `{ref}`, else the nearest `.env`. Put it in a variable, never print it.
 
 ## Before you touch anything
 

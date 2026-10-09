@@ -17,7 +17,7 @@
 // ASC_* env vars, or ~/.appstoreconnect/config.json).
 // The key is only read into memory and signed locally; it is never printed.
 import fs from 'fs'; import path from 'path'; import os from 'os'; import crypto from 'crypto';
-import { execFileSync } from 'child_process';
+import { readSecret } from './secret.mjs';
 
 const EDITABLE = ['PREPARE_FOR_SUBMISSION', 'DEVELOPER_REJECTED', 'REJECTED', 'METADATA_REJECTED', 'INVALID_BINARY'];
 
@@ -29,7 +29,7 @@ const EDITABLE = ['PREPARE_FOR_SUBMISSION', 'DEVELOPER_REJECTED', 'REJECTED', 'M
 // Credentials, first match wins:
 //   1. ASC_KEY_ID, ASC_ISSUER_ID and ASC_KEY_PATH (or ASC_PRIVATE_KEY, the .p8 text)
 //   2. onebox config: apple.ascKeyId, apple.ascIssuerId, and apple.ascKeyPath
-//      or apple.ascKeyRef (a secret reference read with secrets.tool)
+//      or apple.ascKeyRef (a secret reference, read as CONFIG.md "Secrets" says)
 //   3. ~/.appstoreconnect/config.json with { key_id, issuer_id, key_path }
 function oneboxConfig() {
   const read = f => { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch { return {}; } };
@@ -46,28 +46,6 @@ function oneboxConfig() {
   }
   return merge(read(path.join(os.homedir(), '.config/onebox/config.json')), project);
 }
-function dotenvValue(name) {
-  for (let d = process.cwd(); ; d = path.dirname(d)) {
-    const f = path.join(d, '.env');
-    if (fs.existsSync(f)) {
-      const m = fs.readFileSync(f, 'utf8').match(new RegExp(`^\\s*(?:export\\s+)?${name}\\s*=\\s*(.*)$`, 'm'));
-      if (m) return m[1].trim().replace(/^(['"])([\s\S]*)\1$/, '$2');
-    }
-    if (path.dirname(d) === d) return undefined;
-  }
-}
-function readSecret(ref, cfg) {
-  const tool = cfg.secrets?.tool || 'env';
-  if (tool === 'doppler') {
-    const d = cfg.secrets?.doppler || {};
-    const args = ['secrets', 'get', ref, '--plain'];
-    if (d.project) args.push('-p', d.project);
-    if (d.config) args.push('-c', d.config);
-    return execFileSync('doppler', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] });
-  }
-  if (tool === '1password') return execFileSync('op', ['read', ref], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] });
-  return process.env[ref] ?? dotenvValue(ref);
-}
 function ascCreds() {
   const home = p => (p || '').replace(/^~(?=$|\/)/, os.homedir());
   const pem = s => s && s.replace(/\\n/g, '\n').trim() + '\n';
@@ -76,8 +54,8 @@ function ascCreds() {
     return { keyId: e.ASC_KEY_ID, issuer: e.ASC_ISSUER_ID, key: e.ASC_PRIVATE_KEY ? pem(e.ASC_PRIVATE_KEY) : fs.readFileSync(home(e.ASC_KEY_PATH)) };
   const cfg = oneboxConfig(), a = cfg.apple || {};
   if (a.ascKeyId && a.ascIssuerId && (a.ascKeyPath || a.ascKeyRef)) {
-    const key = a.ascKeyPath ? fs.readFileSync(home(a.ascKeyPath)) : pem(readSecret(a.ascKeyRef, cfg));
-    if (!key || !String(key).includes('PRIVATE KEY')) throw new Error(`apple.ascKeyRef "${a.ascKeyRef}" did not resolve to a .p8 key (secrets.tool=${cfg.secrets?.tool || 'env'}).`);
+    const key = a.ascKeyPath ? fs.readFileSync(home(a.ascKeyPath)) : pem(readSecret(cfg, a.ascKeyRef));
+    if (!key || !String(key).includes('PRIVATE KEY')) throw new Error(`apple.ascKeyRef "${a.ascKeyRef}" did not resolve to a .p8 key.`);
     return { keyId: a.ascKeyId, issuer: a.ascIssuerId, key };
   }
   const legacy = path.join(os.homedir(), '.appstoreconnect/config.json');
