@@ -2,6 +2,7 @@ using System.Security.Claims;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Agent;
+using MyApp.Api.Data;
 
 namespace MyApp.Api.Jobs;
 

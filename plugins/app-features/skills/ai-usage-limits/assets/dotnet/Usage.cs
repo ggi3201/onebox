@@ -2,6 +2,7 @@ using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Agent;
 using Npgsql;
+using MyApp.Api.Data;
 
 namespace MyApp.Api.Usage;
 
@@ -32,6 +33,20 @@ public sealed class ModelPricing(IConfiguration config)
     /// table. Over-counting is the safe direction; free is the one answer that
     /// cannot be right.
     /// </summary>
+    /// <summary>
+    /// Call once at start-up. With a budget on and no prices, every run's cost
+    /// throws inside the recorder, which logs and goes on: nothing is counted
+    /// and the budget never stops anyone. Fail the start instead.
+    /// </summary>
+    public static void EnsureConfigured(IConfiguration config)
+    {
+        var usd = config.GetValue("Usage:MonthlyBudgetUsd", UsageService.DefaultMonthlyUsd);
+        if (usd > 0 && !config.GetSection("Usage:Prices").GetChildren().Any())
+            throw new InvalidOperationException(
+                "Usage:Prices is empty, so no run would be counted against Usage:MonthlyBudgetUsd. " +
+                "Run scripts/prices.sh and add your models.");
+    }
+
     public Rates RatesFor(string model)
     {
         var table = config.GetSection("Usage:Prices").GetChildren()
@@ -91,6 +106,7 @@ public sealed record UsageSnapshot(string Month, int Runs, long CostMicros, long
 ///   builder.Services.AddScoped&lt;ModelPricing&gt;();
 ///   builder.Services.AddScoped&lt;UsageService&gt;();
 ///   builder.Services.AddScoped&lt;IUsageRecorder&gt;(sp => sp.GetRequiredService&lt;UsageService&gt;());
+///   ModelPricing.EnsureConfigured(builder.Configuration);   // fails the start on an empty price table
 /// </summary>
 public sealed class UsageService(AppDb db, IConfiguration config, ModelPricing pricing) : IUsageRecorder
 {

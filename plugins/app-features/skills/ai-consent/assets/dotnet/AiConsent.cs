@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Usage;
+using MyApp.Api.Data;
 
 namespace MyApp.Api.Consent;
 

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using MyApp.Api.Data;
 
 namespace MyApp.Api.Jobs;
 
