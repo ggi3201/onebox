@@ -302,6 +302,15 @@ update.
 
 ## box
 
+### 0.1.7 (2026-10-09)
+
+- `box-setup`: the restore steps work on a new box. They restore
+  `/etc/cloudflared` before the `tunnel` phase, so the same tunnel runs and DNS
+  stays; connect as the database's own superuser, not `postgres`; wait for
+  Postgres's real start, not a fixed `sleep`; and give root a new SSH key for
+  an `sftp:` backup. Keep `backup.env` and the restic password in your
+  password manager: a restore needs both.
+
 ### 0.1.6 (2026-10-09)
 
 - `box-setup`: a box that already serves apps gets fixed in place, not set up

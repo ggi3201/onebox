@@ -117,7 +117,16 @@ REF=$(cfg | jq -r '.box.cloudflareTokenRef // "CLOUDFLARE_API_TOKEN"')
 Edit `/etc/onebox/backup.env` on the box: set `RESTIC_REPOSITORY` (for example
 `sftp:user@backup-host:/onebox` or an S3-compatible bucket). Put a long random
 password in `/etc/onebox/restic-password` (mode 600) and **store the same
-password off the box**. Without it the backup cannot be read. Then:
+password and `backup.env` off the box**, in your password manager. Without
+them the backup cannot be found or read. For an `sftp:` target, root needs
+an SSH key that the backup host accepts:
+
+```bash
+ssh "$BOX" "sudo test -f /root/.ssh/id_ed25519 || sudo ssh-keygen -t ed25519 -N '' -f /root/.ssh/id_ed25519; sudo cat /root/.ssh/id_ed25519.pub"
+ssh "$BOX" 'sudo ssh <user>@<backup-host> true'    # after adding the key there; accepts the host key
+```
+
+Then:
 
 ```bash
 ssh "$BOX" 'sudo onebox-backup --init && sudo onebox-backup && sudo onebox-backup --list'
