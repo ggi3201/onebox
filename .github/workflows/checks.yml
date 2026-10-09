@@ -54,3 +54,15 @@ jobs:
             echo "== scripts/secret-copies.sh check"
             bash scripts/secret-copies.sh check
           fi
+
+  # The app-features C#, copied into an API shaped like new-app's, with every
+  # analyzer warning an error. Its own job: it needs .NET and NuGet.
+  dotnet-assets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+      - name: Build the app-features .NET assets
+        run: bash scripts/dotnet-assets.sh

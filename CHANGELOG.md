@@ -421,6 +421,37 @@ update.
 
 ## app-features
 
+### 0.2.3 (2026-10-09)
+
+- `agent-harness`: tracing exports chat runs. Before, a chat run in a request
+  exported nothing: ASP.NET Core's request activity is not recorded, and the
+  sampler dropped every span under it. The run now starts as a root span when
+  the request is not traced, and tool spans name the run as their parent, so
+  they keep it across each `yield`. Copy `AgentTelemetry.cs` and the
+  `StartTool` line in `AgentLoop.cs` into your API again.
+- `agent-harness`: the chat request's timezone and item id have size caps,
+  and a client can no longer send the server-only `background` view. The last
+  turn must be the person's, and a photo must be JPEG, PNG, WebP or GIF with
+  valid base64: these got a 200 and then a vague provider error. The SSE
+  keep-alive now comes every 15 s, not up to 30 s. With `APP_EVAL=1` and no
+  key, the evals fail instead of passing.
+- `ai-usage-limits`: `ModelPricing.EnsureConfigured` fails the start when a
+  budget is set and `Usage:Prices` is empty; before, nothing was counted. A
+  `:` in a model id is written and read as `_` (`.NET` config splits on `:`).
+  `IAiConsentCheck` moved to `agent-harness`'s `AgentSeams.cs`, so
+  `ai-consent` and `ai-usage-limits` each build alone.
+- `ai-consent`: the server accepts only consent versions up to the current
+  text's.
+- `durable-jobs`: register handlers with `AddJobHandler<T>(kind, safeToRetry)`;
+  `Kind` and `SafeToRetry` left `IJobHandler`. A handler that needs a missing
+  model key gives 503 `notConfigured` for its own kind, and no longer breaks
+  every job route and the worker. The worker acts as the job's owner through
+  `IJobUser`. A timeout inside a job fails it, instead of leaving it Running.
+- `chat-feature`: a message the server refused is marked "Not sent" and left
+  out of later requests. Before, it broke the chat until a reset.
+- The C# now imports `MyApp.Api.Data`, where new-app puts `AppDb`, and CI
+  builds it in an API shaped like new-app's.
+
 ### 0.2.2 (2026-10-09)
 
 - Every skill ends with the next step from your plan, as one question.

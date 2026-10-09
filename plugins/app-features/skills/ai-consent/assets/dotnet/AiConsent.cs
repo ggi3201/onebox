@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
-using MyApp.Api.Usage;
+using MyApp.Api.Agent;
+using MyApp.Api.Data;
 
 namespace MyApp.Api.Consent;
 
@@ -66,9 +67,13 @@ public static class AiConsentEndpoints
             return Results.Ok(new { version = row?.Version, grantedAt = row?.GrantedAt });
         });
 
-        group.MapPost("/", async (ConsentBody body, ClaimsPrincipal user, AppDb db, CancellationToken ct) =>
+        group.MapPost("/", async (ConsentBody body, ClaimsPrincipal user, AppDb db, IConfiguration config, CancellationToken ct) =>
         {
-            if (body.Version < 1) return Results.BadRequest(new { code = "badRequest", message = "version is required" });
+            // Only a text that exists: a version above the current one would
+            // count as consent to every later text, unread.
+            var current = config.GetValue("AiConsent:Version", 1);
+            if (body.Version < 1 || body.Version > current)
+                return Results.BadRequest(new { code = "badRequest", message = $"version must be 1 to {current}" });
             var id = user.FindFirstValue("sub")!;
             var row = await db.Set<AiConsentRecord>().FirstOrDefaultAsync(c => c.UserId == id, ct);
             if (row is null) db.Add(new AiConsentRecord { UserId = id, Version = body.Version, GrantedAt = DateTime.UtcNow });

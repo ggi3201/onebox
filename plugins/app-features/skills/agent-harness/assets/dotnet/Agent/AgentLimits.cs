@@ -20,6 +20,14 @@ public static class AgentLimits
     public const int MaxContentChars = 16_000;
     public const int MaxTotalChars = 60_000;
 
+    /// <summary>
+    /// The view and the timezone go into the system prompt too. IANA zone ids
+    /// are short ("America/Argentina/ComodRivadavia" is about the longest), and
+    /// an item id is an id.
+    /// </summary>
+    public const int MaxTimezoneChars = 64;
+    public const int MaxIdChars = 128;
+
     /// <summary>A base64 photo, about 4 MB decoded. The client sends about 200 KB.</summary>
     public const int MaxImageChars = 5_500_000;
 
@@ -49,7 +57,29 @@ public static class AgentLimits
     public static string? Violation(AgentRequest request)
     {
         if (request.Messages is null || request.Messages.Count == 0) return "no messages";
+
+        // Everything a request puts in the prompt has a cap, not only the
+        // messages. A 4 MB timezone is a 4 MB prompt.
+        // A missing one is allowed: the prompt then uses the server's clock.
+        if (request.Timezone is { Length: > 0 } tz
+            && (tz.Length > MaxTimezoneChars || !tz.All(c => char.IsAsciiLetterOrDigit(c) || c is '/' or '_' or '-' or '+')))
+            return "a timezone that is not a zone id";
+        switch (request.View)
+        {
+            case ItemView v when string.IsNullOrEmpty(v.ItemId) || v.ItemId.Length > MaxIdChars:
+                return "an item id over the size limit";
+            // Only a scheduled job on the server says "nobody asked". From a
+            // client it would be a free-text task in the system prompt.
+            case BackgroundView:
+                return "a view only the server may set";
+        }
+
         if (request.Messages.Count > MaxMessages) return $"more than {MaxMessages} messages";
+
+        // Refuse here what the provider would refuse after the 200 is sent:
+        // the person would see a vague provider error instead of this reason.
+        if (request.View is null) return "no view";
+        if (request.Messages[^1].Role != "user") return "the last message is not from the person";
 
         long prose = 0;
         foreach (var turn in request.Messages)
@@ -62,15 +92,23 @@ public static class AgentLimits
             // A photo from the phone, never a URL. The provider fetches a URL
             // on your key, and the size cap above measures the string, not what
             // it points at.
-            if (!string.IsNullOrEmpty(turn.Image)
-                && (!turn.Image.StartsWith("data:image/", StringComparison.OrdinalIgnoreCase)
-                    || !turn.Image.Contains(";base64,", StringComparison.Ordinal)))
+            if (!string.IsNullOrEmpty(turn.Image) && !IsPhoto(turn.Image))
                 return "an image that is not a photo";
 
             prose += content.Length;
         }
 
         return prose > MaxTotalChars ? "a conversation over the size limit" : null;
+    }
+
+    /// <summary>A JPEG, PNG, WebP or GIF data URL with valid base64: what every vision API takes.</summary>
+    private static bool IsPhoto(string image)
+    {
+        var comma = image.IndexOf(";base64,", StringComparison.Ordinal);
+        if (comma < 0) return false;
+        var type = image[..comma];
+        return type is "data:image/jpeg" or "data:image/png" or "data:image/webp" or "data:image/gif"
+            && System.Buffers.Text.Base64.IsValid(image.AsSpan(comma + ";base64,".Length));
     }
 }
 

@@ -147,9 +147,9 @@ public static class SystemPrompt
         {
             return TimeZoneInfo.ConvertTime(now, TimeZoneInfo.FindSystemTimeZoneById(timezone));
         }
-        catch (Exception e) when (e is TimeZoneNotFoundException or InvalidTimeZoneException)
+        catch (Exception e) when (e is TimeZoneNotFoundException or InvalidTimeZoneException or ArgumentException)
         {
-            return now; // An unknown zone id from a newer OS is not worth failing a run.
+            return now; // An unknown or missing zone id is not worth failing a run.
         }
     }
 }

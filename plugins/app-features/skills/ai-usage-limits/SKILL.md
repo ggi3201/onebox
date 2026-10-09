@@ -41,7 +41,9 @@ limit, a lower daily cap, and the app-wide budget as the real backstop.
    listed rate, never at zero.
 2. **Budget.** Copy `assets/dotnet/Usage.cs`. Map `UserUsage` in the
    DbContext (`UserUsageModel.Map(b)`), add a migration, and register
-   `ModelPricing`, `UsageService` and `IUsageRecorder` AFTER `AddAgent`. Set
+   `ModelPricing`, `UsageService` and `IUsageRecorder` AFTER `AddAgent`.
+   Call `ModelPricing.EnsureConfigured(builder.Configuration)`: with a budget
+   and an empty `Usage:Prices`, nothing would be counted. Set
    `Usage:MonthlyBudgetUsd` with the user; `references/pricing.md` shows how
    to pick it.
 3. **The gate.** Copy `assets/dotnet/AiAccess.cs`. Implement `ISubscriptions`
@@ -81,8 +83,10 @@ limit, a lower daily cap, and the app-wide budget as the real backstop.
    characters only for a call that never reported (the harness does this).
 2. Money in integer microdollars; one atomic upsert per run.
 3. Cached tokens are a subset of input tokens. Never add them on top.
-4. The budget check runs before a run, so one run can overshoot. That is fine;
-   it bounds the month, not the run.
+4. The budget check runs before a run, and the cost is added after it. So
+   every run in flight can overshoot: up to `MaxConcurrentPerUser` chats (3)
+   plus the user's running jobs, each one full run. That is fine; it bounds
+   the month, not the run. Lower the concurrency if your runs are dear.
 5. Zero or negative budget means "no ceiling", not "refuse everyone".
 6. Refusals happen before the stream opens and carry a `code`.
 7. In-memory limits (the rate limiter, the concurrency slot) work for ONE API

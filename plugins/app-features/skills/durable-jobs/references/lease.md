@@ -36,7 +36,7 @@ So an expired lease FAILS the job with "It was interrupted. Please start it
 again." The person can start it again; a duplicate is worse than a retry tap.
 
 Only a handler that is truly idempotent (it creates nothing, or checks first)
-sets `SafeToRetry = true`; then an expired lease re-queues it, up to three attempts.
+registers it with `safeToRetry: true`; then an expired lease re-queues it, up to three attempts.
 
 ## Refund once
 

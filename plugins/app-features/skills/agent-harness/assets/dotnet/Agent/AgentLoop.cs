@@ -274,7 +274,7 @@ public sealed partial class AgentLoop(
 
                 ToolResult result;
                 var arguments = c.Arguments.ToString();
-                using (var span = AgentTelemetry.StartTool(name, c.Id!))
+                using (var span = AgentTelemetry.StartTool(name, c.Id!, run))
                 {
                     result = await Execute(offered, name, arguments, context, ct);
                     AgentTelemetry.RecordToolResult(span, arguments.Length, result.Failed);

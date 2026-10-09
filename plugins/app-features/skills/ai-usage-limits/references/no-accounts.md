@@ -2,8 +2,7 @@
 
 Without sign-in there is no user id. This skill keys the gate, the budget
 and the `agent` rate limit on the token's `sub`. With no token, the rate
-limit puts everyone in one `"anonymous"` bucket, and the budget has no one
-to count.
+limit counts per client IP, and the budget has no one to count.
 
 Be honest with the user: without accounts, AI limits can only count per
 device and per IP, and a person can reset both. A reinstall or a script

@@ -8,7 +8,8 @@
 # The ids are OpenRouter's. If you call a provider directly, rename each key to
 # the exact string in your Llm__Model (for example claude-sonnet-5). Prices are
 # the provider's list prices as OpenRouter publishes them; check the provider's
-# own page before you set a budget on them.
+# own page before you set a budget on them. A ":" in an id becomes "_": .NET
+# configuration reads ":" as a section separator. ModelPricing does the same.
 set -euo pipefail
 
 command -v jq >/dev/null || { echo "needs jq" >&2; exit 1; }
@@ -26,7 +27,7 @@ jq --argjson ids "$(printf '%s\n' "$@" | jq -R . | jq -s .)" '
   [ .data[] | select(.id as $id | $ids | index($id)) ] as $found
   | ($ids - [ $found[].id ]) as $missing
   | if ($missing | length) > 0 then error("not on OpenRouter: \($missing | join(", "))") else . end
-  | { Usage: { Prices: ( $found | map({ key: .id, value: {
+  | { Usage: { Prices: ( $found | map({ key: (.id | gsub(":"; "_")), value: {
         Input: m(.pricing.prompt),
         CachedInput: m(.pricing.input_cache_read // .pricing.prompt),
         Output: m(.pricing.completion) } }) | from_entries ) } }

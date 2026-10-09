@@ -65,6 +65,7 @@ public static partial class AgentChatEndpoint
         // One writer at a time: the keep-alive timer and the event loop share
         // the response body.
         var gate = new SemaphoreSlim(1, 1);
+        long lastWrite = Environment.TickCount64;   // read by the keep-alive task
         async Task Write(string frame)
         {
             await gate.WaitAsync(ct);
@@ -72,20 +73,22 @@ public static partial class AgentChatEndpoint
             {
                 await response.WriteAsync(frame, ct);
                 await response.Body.FlushAsync(ct);
+                Volatile.Write(ref lastWrite, Environment.TickCount64);
             }
             finally { gate.Release(); }
         }
 
         await Write(Sse.KeepAlive); // commits 200 and the headers at once
-        var lastWrite = DateTime.UtcNow;
         using var stopKeepAlive = CancellationTokenSource.CreateLinkedTokenSource(ct);
         var keepAlive = Task.Run(async () =>
         {
-            using var timer = new PeriodicTimer(AgentLimits.KeepAliveEvery);
+            // Check every second. A timer at the keep-alive period itself lets
+            // the gap grow to twice that: a tick just after an event skips.
+            using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
             try
             {
                 while (await timer.WaitForNextTickAsync(stopKeepAlive.Token))
-                    if (DateTime.UtcNow - lastWrite >= AgentLimits.KeepAliveEvery)
+                    if (Environment.TickCount64 - Volatile.Read(ref lastWrite) >= AgentLimits.KeepAliveEvery.TotalMilliseconds)
                         await Write(Sse.KeepAlive);
             }
             catch (OperationCanceledException) { }
@@ -97,7 +100,6 @@ public static partial class AgentChatEndpoint
             await foreach (var evt in loop.RunAsync(request, userId, ct))
             {
                 await Write(Sse.Frame(evt));
-                lastWrite = DateTime.UtcNow;
             }
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)

@@ -65,11 +65,19 @@ public class AgentEvalTests
 
     private sealed record Run(List<string> Tools, int Proposals, string Text);
 
+    /// <summary>
+    /// Without APP_EVAL=1 the evals do not run, and xunit shows them as
+    /// passed: it cannot skip at run time. With APP_EVAL=1 they must run, so a
+    /// missing key FAILS. Asking for evals and getting green without a single
+    /// model call is the worst answer.
+    /// </summary>
     private static bool CanRun(out string why)
     {
-        why = Environment.GetEnvironmentVariable("APP_EVAL") != "1" ? "set APP_EVAL=1 to spend money on evals"
-            : string.IsNullOrEmpty(Environment.GetEnvironmentVariable("Llm__ApiKey")) ? "no Llm__ApiKey" : "";
-        return why.Length == 0;
+        why = "";
+        if (Environment.GetEnvironmentVariable("APP_EVAL") != "1") { why = "set APP_EVAL=1 to spend money on evals"; return false; }
+        if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("Llm__ApiKey")))
+            Assert.Fail("APP_EVAL=1, but Llm__ApiKey is not set: the evals cannot run.");
+        return true;
     }
 
     private static async Task<Run> Chat(string text, ViewContext view)

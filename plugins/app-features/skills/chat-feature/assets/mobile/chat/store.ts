@@ -44,6 +44,12 @@ export interface Message {
   image?: string;
   /** Why the answer ended, when it did not end normally. */
   cut?: Exclude<FinishReason, 'stop'>;
+  /**
+   * The server refused this turn before it ran (too long, for example). It
+   * stays on screen, marked, but is never sent again: with it in the history,
+   * every later message would be refused too.
+   */
+  notSent?: boolean;
 }
 
 interface ChatState {
@@ -93,13 +99,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
      */
     const history = [
       ...get().messages
-        .filter((m) => m.content.trim().length > 0)
+        .filter((m) => m.content.trim().length > 0 && !m.notSent)
         .map((m) => ({ role: m.role, content: m.content })),
       { role: 'user' as const, content: trimmed, image: attachment?.dataUrl },
     ].slice(-MAX_HISTORY);
 
+    const turnId = `local_${Date.now()}`;
     set((s) => ({
-      messages: [...s.messages, { ...blank(`local_${Date.now()}`, 'user'), content: trimmed, streaming: false, image: attachment?.uri }],
+      messages: [...s.messages, { ...blank(turnId, 'user'), content: trimmed, streaming: false, image: attachment?.uri }],
       running: true,
       error: null,
     }));
@@ -158,7 +165,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
       if (!controller.signal.aborted) {
         const refusal = refusalOf(cause);
         if (refusal.code === 'consentRequired') await chatConfig.consentRefused();
-        set({ error: refusal });
+        // Refused before it ran: keep it out of every later request.
+        set((s) => ({
+          error: refusal,
+          messages: s.messages.map((m) => (m.id === turnId ? { ...m, notSent: true } : m)),
+        }));
       }
     } finally {
       if (inFlight === controller) inFlight = null;

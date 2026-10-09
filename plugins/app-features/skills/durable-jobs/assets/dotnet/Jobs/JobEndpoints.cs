@@ -2,6 +2,7 @@ using System.Security.Claims;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Agent;
+using MyApp.Api.Data;
 
 namespace MyApp.Api.Jobs;
 
@@ -13,7 +14,7 @@ namespace MyApp.Api.Jobs;
 /// Give polling its own, looser rate limit. Charging polls to the AI bucket
 /// starves the AI features themselves.
 /// </summary>
-public static class JobEndpoints
+public static partial class JobEndpoints
 {
     public static RouteGroupBuilder MapJobs(this IEndpointRouteBuilder app)
     {
@@ -33,15 +34,29 @@ public static class JobEndpoints
         j.Result is null ? null : JsonDocument.Parse(j.Result).RootElement, j.Error, j.CreatedAt, j.CompletedAt);
 
     private static async Task<IResult> Start(string kind, StartBody body, ClaimsPrincipal user, AppDb db,
-        IEnumerable<IJobHandler> handlers, IServiceProvider services, CancellationToken ct)
+        IEnumerable<JobKind> kinds, IServiceProvider services, ILoggerFactory logs, CancellationToken ct)
     {
         // The token's "sub". The API sets MapInboundClaims = false
         // (backend.md, "Protect the API", step 7), so it is not ClaimTypes.NameIdentifier.
         var userId = user.FindFirstValue("sub");
         if (userId is null) return Results.Unauthorized();
 
-        var handler = handlers.FirstOrDefault(h => h.Kind == kind);
-        if (handler is null) return Results.NotFound();
+        if (!kinds.Any(k => k.Kind == kind)) return Results.NotFound();
+
+        // Built now, and only this kind. A handler that needs a setting the
+        // server lacks (the model key) gives a 503 for its own kind; the other
+        // kinds and the cheap refusals keep working.
+        IJobHandler handler;
+        try
+        {
+            handler = services.GetRequiredKeyedService<IJobHandler>(kind);
+        }
+        catch (InvalidOperationException e)
+        {
+            LogNotConfigured(logs.CreateLogger("MyApp.Api.Jobs"), e, kind);
+            return Results.Json(new { code = "notConfigured", message = "This is not set up on the server yet." },
+                statusCode: StatusCodes.Status503ServiceUnavailable);
+        }
         if (handler.Validate(body.Input) is { } bad) return Results.BadRequest(new { code = "badRequest", message = bad });
 
         // The same gate as the chat (subscription, budget, consent), when the
@@ -102,4 +117,7 @@ public static class JobEndpoints
         var exists = await db.Set<Job>().AsNoTracking().AnyAsync(j => j.Id == id && j.UserId == userId, ct);
         return exists ? Results.NoContent() : Results.NotFound();
     }
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Job kind {Kind} cannot start: its handler could not be built")]
+    private static partial void LogNotConfigured(ILogger log, Exception e, string kind);
 }

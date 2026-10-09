@@ -34,8 +34,15 @@ public static class AgentTelemetry
     /// <summary>One span per run, parent of every tool call.</summary>
     public static Activity? StartRun(string runId, string userId, string model, string viewKind)
     {
+        // ASP.NET Core starts an activity for every request, for log
+        // correlation, even when nothing records it. The default sampler
+        // follows the parent, so under that unrecorded activity it drops the
+        // run and every span below it: a chat exports nothing. Start the run
+        // as a root then. A request that is traced itself stays the parent.
+        var outer = Activity.Current;
+        if (outer is { Recorded: false }) Activity.Current = null;
         var a = Source.StartActivity($"chat {model}", ActivityKind.Client);
-        if (a is null) return null;
+        if (a is null) { Activity.Current = outer; return null; }
         a.SetTag("gen_ai.operation.name", "chat");
         a.SetTag("gen_ai.request.model", model);
         a.SetTag("gen_ai.conversation.id", runId);
@@ -46,9 +53,16 @@ public static class AgentTelemetry
         return a;
     }
 
-    public static Activity? StartTool(string toolName, string callId)
+    /// <summary>
+    /// Pass the run. The loop is an async iterator, and Activity.Current does
+    /// not survive a <c>yield</c>: without an explicit parent, a tool span
+    /// started after one lands under the request instead of the run.
+    /// </summary>
+    public static Activity? StartTool(string toolName, string callId, Activity? run)
     {
-        var a = Source.StartActivity($"execute_tool {toolName}", ActivityKind.Internal);
+        var a = run is null
+            ? Source.StartActivity($"execute_tool {toolName}", ActivityKind.Internal)
+            : Source.StartActivity($"execute_tool {toolName}", ActivityKind.Internal, run.Context);
         if (a is null) return null;
         a.SetTag("gen_ai.operation.name", "execute_tool");
         a.SetTag("gen_ai.tool.name", toolName);
