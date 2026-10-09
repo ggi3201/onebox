@@ -14,7 +14,7 @@ import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { dotenvValue, secretCommand } from "./secret.mjs";
+import { dotenvValue, secretCommand, userSecretsCommand } from "./secret.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const TIMEOUT = 5; // seconds, when a check names none
@@ -122,13 +122,13 @@ async function secretExists(name, ctx) {
   const command = secretCommand(ctx.config, name);
   if (command) {
     const tool = get(ctx.config, "secrets.tool");
-    if (!get(ctx.config, "secrets.command") && tool === "1password")
+    if (!userSecretsCommand() && tool === "1password")
       return { status: "unknown", why: "cannot check 1Password secrets without a prompt; confirm by hand" };
     // stdout goes to /dev/null: the value never reaches this process.
     const r = await run(`( ${command} ) >/dev/null`, { cwd: ctx.repo, timeout: 8, stderr: true });
     if (r.code === 0) return { status: "ok" };
     if (r.timedOut) return { status: "unknown", why: "your secrets command did not answer in 8 s" };
-    if (tool === "doppler" && !get(ctx.config, "secrets.command")) {
+    if (tool === "doppler" && !userSecretsCommand()) {
       if (r.code != null && /could not find|not found|does not exist/i.test(r.err ?? "")) return { status: "missing", why: "not in Doppler" };
       return { status: "unknown", why: "Doppler could not be asked (not installed, not signed in, or offline)" };
     }
@@ -141,7 +141,7 @@ async function secretExists(name, ctx) {
 }
 
 async function secretsCli(ctx) {
-  const custom = get(ctx.config, "secrets.command");
+  const custom = userSecretsCommand();
   if (custom) {
     const bin = String(custom).trim().split(/\s+/)[0];
     const r = await run('command -v "$B" >/dev/null 2>&1', { cwd: ctx.repo, env: { B: bin } });

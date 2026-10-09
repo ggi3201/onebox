@@ -37,6 +37,9 @@ A script reads a reference in this order. The first match wins:
    `"command": "security find-generic-password -s {ref} -w"`. The command runs
    in `/bin/sh`, not your login shell, so shell functions are not there. A
    command that waits for a prompt is stopped after 60 seconds.
+   `secrets.command` is read only from `~/.config/onebox/config.json`. In a
+   repo's `.onebox.json` it is ignored: a cloned repo must not run commands on
+   your Mac.
 3. **The nearest `.env` file**, walking up from the current folder. Keep it
    git-ignored.
 
@@ -56,7 +59,7 @@ it to a file other than the one the user asked for, and never put it in a URL.
 {
   "secrets": {
     "tool": "env",                        // env | doppler | 1password
-    "command": "",                        // or your own: a shell command with {ref} that prints the secret
+    "command": "",                        // or your own: a shell command with {ref} that prints the secret (user config only)
     "doppler": { "project": "", "config": "" }
   },
 

@@ -3,8 +3,10 @@
 // First match wins:
 //   1. The environment variable named by the reference. It is there when you
 //      start the agent through your secrets tool (`doppler run -- claude`).
-//   2. Your command: `secrets.command` in the onebox config, with {ref} in it.
-//      `secrets.tool` "doppler" or "1password" is a ready-made command.
+//   2. Your command: `secrets.command` in ~/.config/onebox/config.json, with
+//      {ref} in it. Never from a repo's .onebox.json: a cloned repo must not be
+//      able to run a command on your Mac. `secrets.tool` "doppler" or
+//      "1password" is a ready-made command, and may come from either file.
 //   3. The reference in the nearest .env file, walking up from the folder.
 //
 // The value is returned, never printed. Do not edit a copy inside a skill:
@@ -12,15 +14,27 @@
 
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 
 const NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const quote = (s) => `'${String(s).replace(/'/g, `'\\''`)}'`;
 
-/** The shell command that prints the secret, from the config, or null. */
+/** secrets.command from your own config only, never from a repo's .onebox.json. */
+export function userSecretsCommand() {
+  try {
+    const file = path.join(os.homedir(), ".config", "onebox", "config.json");
+    const command = JSON.parse(fs.readFileSync(file, "utf8"))?.secrets?.command;
+    return typeof command === "string" && command.trim() ? command : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The shell command that prints the secret, or null. */
 export function secretCommand(cfg, ref) {
   const s = cfg?.secrets ?? {};
-  let template = s.command;
+  let template = userSecretsCommand();
   if (!template && s.tool === "doppler") {
     template = "doppler secrets get {ref} --plain";
     if (s.doppler?.project) template += ` -p ${quote(s.doppler.project)}`;

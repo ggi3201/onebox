@@ -7,8 +7,10 @@
 # First match wins (CONFIG.md, "Secrets"):
 #   1. The environment variable named by the reference. It is there when you
 #      start the agent through your secrets tool (`doppler run -- claude`).
-#   2. Your command: `secrets.command` in the onebox config, with {ref} in it.
-#      `secrets.tool` "doppler" or "1password" is a ready-made command.
+#   2. Your command: `secrets.command` in ~/.config/onebox/config.json, with
+#      {ref} in it. Never from a repo's .onebox.json: a cloned repo must not be
+#      able to run a command on your Mac. `secrets.tool` "doppler" or
+#      "1password" is a ready-made command, and may come from either file.
 #   3. The reference in the nearest .env file, walking up from the folder.
 #
 # Runs on: your Mac (or wherever the secrets tool is signed in).
@@ -28,7 +30,7 @@ is_name=0; [[ "$REF" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] && is_name=1
 if [ "$is_name" = 1 ] && [ -n "${!REF:-}" ]; then printf '%s' "${!REF}"; exit 0; fi
 
 # 2. Your command.
-CMD="$(cfg | jq -r '.secrets.command // empty')"
+CMD="$(jq -r '.secrets.command // empty' ~/.config/onebox/config.json 2>/dev/null || true)"
 if [ -z "$CMD" ]; then
   case "$(cfg | jq -r '.secrets.tool // "env"')" in
     doppler)
