@@ -9,6 +9,13 @@ type Plugin = { id: string; letter: string; title: string; runsOn: string; blurb
 
 export const PLUGINS: Plugin[] = [
   {
+    id: "start",
+    letter: "S",
+    title: "Start",
+    runsOn: "Your Mac",
+    blurb: "Install this first. It makes the repo, writes your plan and says what is next.",
+  },
+  {
     id: "ship-ios",
     letter: "A",
     title: "Ship iOS",
@@ -46,6 +53,7 @@ export const PLUGINS: Plugin[] = [
 ];
 
 const TAGLINES: Record<string, string> = {
+  "plan": "Looks at your app, asks only what it cannot see, and writes PLAN.md with the next step.",
   "new-app": "A new repo in the layout every other skill expects, with the checks already green.",
   "check-features": "Checks that every feature you asked for has a flow that passed on the current code.",
   "app-store-ready": "Tells you why Apple will reject your app, before Apple does.",

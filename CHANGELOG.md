@@ -1,11 +1,19 @@
 # Changelog
 
 What changed in each onebox plugin, newest version first. To get a new
-version, run this in Claude Code, then restart it:
+version, run this in a shell (`/plugin update` is not a command inside a
+Claude Code session), then type `/reload-plugins` in your session:
 
 ```
-/plugin marketplace update onebox
-/plugin update <plugin>@onebox
+claude plugin marketplace update onebox
+claude plugin update <plugin>@onebox
+```
+
+In Codex:
+
+```
+codex plugin marketplace upgrade onebox
+codex plugin add <plugin>@onebox
 ```
 
 A plugin updates only when its version went up. Guides are not in a plugin:

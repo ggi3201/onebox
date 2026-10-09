@@ -63,7 +63,7 @@ In Claude Code:
 /plugin install start@onebox
 ```
 
-In Codex (this works once the repo is public):
+In Codex:
 
 ```
 codex plugin marketplace add ggi3201/onebox
@@ -75,6 +75,9 @@ Then open your agent in an empty folder and describe your idea. Or run
 and what is next. Run `/start:plan` again after each step. It ticks what you
 finished.
 
+In Codex, a skill starts with `$` instead of `/`: `$start:new-app`,
+`$start:plan`.
+
 Other agents (Cursor, Gemini CLI and more):
 
 ```
@@ -84,14 +87,23 @@ npx skills add ggi3201/onebox
 The skills are plain `SKILL.md` files, so any agent that reads them can use
 them. I build and test with Claude Code.
 
-To get fixes later:
+To get fixes later, in Claude Code, run this in a shell (`/plugin update` is not
+a command inside a session):
 
 ```
-/plugin marketplace update onebox
-/plugin update <plugin>@onebox
+claude plugin marketplace update onebox
+claude plugin update <plugin>@onebox
 ```
 
-Then restart Claude Code. A plugin updates only when its version went up.
+Then type `/reload-plugins` in your Claude Code session, or restart it. The
+`/plugin` screen can do the same. In Codex:
+
+```
+codex plugin marketplace upgrade onebox
+codex plugin add <plugin>@onebox
+```
+
+A plugin updates only when its version went up.
 [CHANGELOG.md](CHANGELOG.md) says what changed in each version.
 
 ## The route
@@ -107,7 +119,7 @@ and terms pages that App Store Connect and your paywall link to.
 
 ## What is in the box
 
-26 skills in 6 plugins, and 30 guides. Install the `start` plugin first. It
+26 skills in 6 plugins, and 33 guides. Install the `start` plugin first. It
 tells you which of the others you need.
 
 | Plugin | Runs on | What it does | Skills |
