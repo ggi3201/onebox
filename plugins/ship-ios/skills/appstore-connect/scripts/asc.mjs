@@ -124,7 +124,9 @@ async function all(p) { // follow pagination
 async function appOf(ref) {
   if (!ref) throw new Error('--app <bundleId|appId> is required');
   const r = /^\d+$/.test(ref) ? await api('GET', `/v1/apps/${ref}`) : await api('GET', '/v1/apps' + q({ 'filter[bundleId]': ref }));
-  const a = Array.isArray(r.data) ? r.data.find(x => x.attributes.bundleId === ref) || r.data[0] : r.data;
+  // Exact match only: the filter can also return myapp.staging for myapp, and
+  // submit or release must never act on the wrong app.
+  const a = Array.isArray(r.data) ? r.data.find(x => x.attributes.bundleId === ref) : r.data;
   if (!a) throw new Error(`App not found: ${ref}. Apps must be created in the App Store Connect web UI (POST /v1/apps is not allowed).`);
   return a;
 }

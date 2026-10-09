@@ -228,6 +228,13 @@ update.
 
 ## ship-ios
 
+### 0.1.8 (2026-10-09)
+
+- `app-store-screenshots` and `appstore-connect`: `--app <bundle id>` acts only
+  on the app with exactly that bundle id. Before, `replace` could delete the
+  screenshots of `myapp.staging` when you meant `myapp`, and `submit` or
+  `release` could fall back to the first app the filter returned.
+
 ### 0.1.7 (2026-10-09)
 
 - Every skill ends with the next step from your plan, as one question.

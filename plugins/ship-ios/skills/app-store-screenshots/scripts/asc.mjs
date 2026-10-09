@@ -120,8 +120,11 @@ async function replace() {
   if (!files.length || files.length > 10) throw new Error(`Need 1-10 images in ${dir}, found ${files.length}`);
 
   const q = /^\d+$/.test(args.app) ? `/v1/apps/${args.app}` : `/v1/apps?filter[bundleId]=${encodeURIComponent(args.app)}`;
-  const res = await api('GET', q); const app = Array.isArray(res.data) ? res.data[0] : res.data;
-  if (!app) throw new Error('App not found: ' + args.app);
+  // The bundleId filter can also return other apps (myapp.staging for myapp).
+  // Only an exact match may lose its screenshots.
+  const res = await api('GET', q);
+  const app = Array.isArray(res.data) ? res.data.find(a => a.attributes.bundleId === args.app) : res.data;
+  if (!app) throw new Error(`No app with bundle id exactly ${args.app}. Run "node asc.mjs list" and pass the bundle id or the app id from it.`);
   const vs = (await versionsOf(app.id)).filter(v => args.version ? v.attributes.versionString === args.version : EDITABLE.includes(v.attributes.appStoreState));
   if (vs.length !== 1) throw new Error(`Expected one editable version, found ${vs.length}: ${vs.map(v => v.attributes.versionString).join(', ')}. Pass --version.`);
   const v = vs[0];
