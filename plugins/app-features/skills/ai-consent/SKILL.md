@@ -73,3 +73,10 @@ must name them.
   `AiConsent:Version` on the server, together. Everyone is asked again.
 - Never pre-tick, never hide "Not now", never make the whole app depend on the
   yes. Features without AI keep working.
+
+## Finish
+
+End with one line: the next step, as one question. "Next: <step>. Continue?".
+"Yes" must be enough. Take the step from the app's plan (`/start:plan`). If
+something blocks it, name only that one thing, in plain words, and offer the
+fix.

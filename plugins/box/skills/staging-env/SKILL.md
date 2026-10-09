@@ -136,3 +136,10 @@ Full list with fixes: `references/gotchas.md`. The short version:
 Removing the volume (`down -v`) deletes the staging data: ask first. Then
 remove the hostname: its ingress entry (see `box:expose-service`
 `references/topology.md`) and its DNS record. Delete the staging secrets last.
+
+## Finish
+
+End with one line: the next step, as one question. "Next: <step>. Continue?".
+"Yes" must be enough. Take the step from the app's plan (`/start:plan`). If
+something blocks it, name only that one thing, in plain words, and offer the
+fix.

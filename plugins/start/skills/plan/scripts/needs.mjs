@@ -165,6 +165,36 @@ async function secretsCli(ctx) {
   return { status: "unknown", why: `unknown secrets.tool "${tool}"` };
 }
 
+// ---------- plugins: Claude Code and Codex keep separate lists ----------
+
+function inClaudeList(id, repo) {
+  const j = readJson(path.join(os.homedir(), ".claude", "plugins", "installed_plugins.json"));
+  if (!j) return null;
+  const entries = [j.plugins?.[id] ?? []].flat();
+  // A project or local install counts only in its own folder.
+  return entries.some((e) => !e?.scope || e.scope === "user" || (e.projectPath && path.resolve(repo).startsWith(path.resolve(e.projectPath))));
+}
+
+function inCodexConfig(id) {
+  let text;
+  try { text = fs.readFileSync(path.join(process.env.CODEX_HOME || path.join(os.homedir(), ".codex"), "config.toml"), "utf8"); } catch { return null; }
+  return text.includes(`[plugins."${id}"]`);
+}
+
+function pluginInstalled(id, ctx) {
+  // Claude Code sets CLAUDECODE in the shells it starts.
+  if (process.env.CLAUDECODE) {
+    const has = inClaudeList(id, ctx.repo);
+    if (has === null) return { status: "unknown", why: "cannot read Claude Code's plugin list" };
+    return has ? { status: "ok" } : { status: "missing", why: `${id} is not installed in Claude Code` };
+  }
+  const codex = inCodexConfig(id);
+  if (codex) return { status: "ok" };
+  if (inClaudeList(id, ctx.repo)) return { status: "unknown", why: `${id} is in Claude Code; in another agent, check its own plugin list` };
+  if (codex === false) return { status: "missing", why: `${id} is not installed in Codex` };
+  return { status: "unknown", why: "cannot tell which agent runs this, or read its plugin list" };
+}
+
 // ---------- one check ----------
 
 async function evaluate(c, ctx) {
@@ -227,13 +257,7 @@ async function evaluate(c, ctx) {
     const miss = ["secrets.doppler.project", "secrets.doppler.config"].filter((k) => get(ctx.config, k) === undefined);
     return miss.length ? { status: "missing", why: `not set: ${miss.join(", ")}` } : { status: "ok" };
   }
-  if (c.plugin) {
-    const f = path.join(os.homedir(), ".claude", "plugins", "installed_plugins.json");
-    if (!fs.existsSync(f)) return { status: "skip", why: "no Claude Code plugin list on this machine" };
-    const j = readJson(f);
-    if (!j) return { status: "unknown", why: "cannot read Claude Code's plugin list" };
-    return Object.keys(j.plugins ?? {}).includes(`${c.plugin}@onebox`) ? { status: "ok" } : { status: "missing", why: `${c.plugin}@onebox is not installed` };
-  }
+  if (c.plugin) return pluginInstalled(`${c.plugin}@onebox`, ctx);
   if (c.planItem) {
     const k = c.planItem;
     return ctx.detect?.done?.[k] || ctx.detect?.seen?.[k] || ctx.ticked?.has(k) ? { status: "ok" } : { status: "missing", why: `the plan does not show ${k} as done` };

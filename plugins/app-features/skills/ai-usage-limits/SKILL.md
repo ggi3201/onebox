@@ -88,6 +88,13 @@ limit, a lower daily cap, and the app-wide budget as the real backstop.
 7. In-memory limits (the rate limiter, the concurrency slot) work for ONE API
    instance. With two, move them to Postgres or Redis.
 
+## Finish
+
+End with one line: the next step, as one question. "Next: <step>. Continue?".
+"Yes" must be enough. Take the step from the app's plan (`/start:plan`). If
+something blocks it, name only that one thing, in plain words, and offer the
+fix.
+
 ## References
 
 - `references/pricing.md`: choosing a price and a budget from measured cost.

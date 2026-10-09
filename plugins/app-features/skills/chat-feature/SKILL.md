@@ -81,3 +81,10 @@ grep -rln "getAccessToken\|authToken\|Bearer" --include=*.ts --include=*.tsx src
    so the app shows the paywall or the server's sentence, not "HTTP 429".
 
 More, with the reasons: `references/streaming.md` and `references/ux.md`.
+
+## Finish
+
+End with one line: the next step, as one question. "Next: <step>. Continue?".
+"Yes" must be enough. Take the step from the app's plan (`/start:plan`). If
+something blocks it, name only that one thing, in plain words, and offer the
+fix.

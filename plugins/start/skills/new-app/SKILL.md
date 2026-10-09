@@ -151,16 +151,25 @@ API, the repo root without one. Run every `npx expo` and `eas` command there.
      `references/files.md`, "The Expo app", says.
 3. **App config.** Follow `expo-app.md` steps 2, 3, 4, 5, 6, 7 and 9: the
    bundle id, `app.json`, the API URL module, `expo-dev-client`, `eas.json`
-   with three profiles, remote versions, `expo-secure-store`. Set `scheme` to
-   the slug. Set `supportsTablet: false`. With "Sign in with Apple: Later",
-   leave out `usesAppleSignIn` and its plugin.
+   with three profiles, remote versions, `expo-secure-store`. Set `slug`,
+   `name` and `scheme` to the app's slug (the template says `mobile`). Set
+   `supportsTablet: false`. With "Sign in with Apple: Later", leave out
+   `usesAppleSignIn` and its plugin.
+   - `eas.json` gets `cli` and `build` only. No `submit` block and no
+     RevenueCat key: their values come from later steps, and a placeholder
+     such as `"ascAppId": "1234567890"` makes the plan think the app is
+     already on TestFlight.
    - The API URL module (`expo-app.md` step 4) is for an API in the repo
      only. Hosted or no server: skip step 4. No `src/config/api.ts`, and no
      `EXPO_PUBLIC_API_URL` in `eas.json`. Never put a placeholder URL in.
      A hosted backend gets its URL later, from its own step in the plan.
 4. **Link to Expo.** Ask the user to run `eas login` once in their own
-   terminal if `eas whoami` fails. Then run `eas init` from the Expo app's
-   folder (`apps/mobile` when there is an API; never the repo root then).
+   terminal if `eas whoami` fails. Then run
+   `eas init --non-interactive --force` from the Expo app's folder
+   (`apps/mobile` when there is an API; never the repo root then). In an
+   agent's shell `eas init` needs both flags, and `--force` links any Expo
+   project that already has this slug. So check the output: it must say it
+   created a project. If it linked an existing one, stop and ask the user.
 5. **App checks.** Follow `agent-test-loop.md` steps 1, 2, 4 and 7: strict
    TypeScript, ESLint, one test runner, one Metro port per app and per
    worktree. The Metro script goes in the app folder's `scripts/`

@@ -133,3 +133,10 @@ The script never submits for review. Tell the user where the backup is.
 - **Work on copies.** Never modify the user's original captures.
 - **Outward actions need an explicit request.** Uploading to App Store
   Connect is one. Deleting screenshots is permanent, so back up first.
+
+## Finish
+
+End with one line: the next step, as one question. "Next: <step>. Continue?".
+"Yes" must be enough. Take the step from the app's plan (`/start:plan`). If
+something blocks it, name only that one thing, in plain words, and offer the
+fix.

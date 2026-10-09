@@ -160,3 +160,10 @@ Must not change:  the one or two things a viewer would notice drifting
   to see the exact request being built.
 - **`probe` only works for kie.ai** — check fal.ai's or Replicate's own
   dashboard for balance on those providers.
+
+## Finish
+
+End with one line: the next step, as one question. "Next: <step>. Continue?".
+"Yes" must be enough. Take the step from the app's plan (`/start:plan`). If
+something blocks it, name only that one thing, in plain words, and offer the
+fix.

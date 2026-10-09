@@ -194,3 +194,10 @@ builds see nothing. In a real run this took about five minutes.
   files on disk.
 - Dry run first, show the checks, publish on an explicit yes.
 - Write what changed in `-m`. It is the only record of what users got.
+
+## Finish
+
+End with one line: the next step, as one question. "Next: <step>. Continue?".
+"Yes" must be enough. Take the step from the app's plan (`/start:plan`). If
+something blocks it, name only that one thing, in plain words, and offer the
+fix.

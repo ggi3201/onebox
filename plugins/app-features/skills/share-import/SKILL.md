@@ -67,6 +67,13 @@ preprocessor.
    saw, past bot walls. Prefer it to fetching the URL again.
 3. Hold the page in memory (`sharedPage.ts`), not in router params.
 
+## Finish
+
+End with one line: the next step, as one question. "Next: <step>. Continue?".
+"Yes" must be enough. Take the step from the app's plan (`/start:plan`). If
+something blocks it, name only that one thing, in plain words, and offer the
+fix.
+
 ## References
 
 - `references/share-extension.md`: the plugin block and the iOS traps.

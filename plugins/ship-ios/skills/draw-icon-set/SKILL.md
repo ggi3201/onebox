@@ -95,3 +95,10 @@ components with state or logic, check in the real app renderer.
 
 A worked example of a full family, with cues and repairs per subject:
 `references/example-garments.md`.
+
+## Finish
+
+End with one line: the next step, as one question. "Next: <step>. Continue?".
+"Yes" must be enough. Take the step from the app's plan (`/start:plan`). If
+something blocks it, name only that one thing, in plain words, and offer the
+fix.

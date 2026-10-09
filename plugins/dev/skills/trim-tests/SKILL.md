@@ -164,3 +164,10 @@ Hand-made bugs: 14 tried, 14 caught
 Protected regression tests touched: none
 Flaky tests: 1 fixed (...)
 ```
+
+## Finish
+
+End with one line: the next step, as one question. "Next: <step>. Continue?".
+"Yes" must be enough. Take the step from the app's plan (`/start:plan`). If
+something blocks it, name only that one thing, in plain words, and offer the
+fix.

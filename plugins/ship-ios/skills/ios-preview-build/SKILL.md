@@ -152,3 +152,10 @@ build. Do not assume the URL is right because the build succeeded.
 - A preview build is not proof that TestFlight works. Payments in particular
   must be checked with a sandbox purchase on a TestFlight or preview build,
   not in the simulator alone.
+
+## Finish
+
+End with one line: the next step, as one question. "Next: <step>. Continue?".
+"Yes" must be enough. Take the step from the app's plan (`/start:plan`). If
+something blocks it, name only that one thing, in plain words, and offer the
+fix.

@@ -14,6 +14,15 @@ update.
 
 ## start
 
+### 0.2.11 (2026-10-09)
+
+- `/start:plan` checks plugin installs in the agent that runs it: Claude Code
+  (a project install counts only in its folder) or Codex, and its fix says
+  how to install in both.
+- `/start:new-app` sets the app's slug and name, writes `eas.json` without
+  placeholders, and runs `eas init` so it works in an agent's shell. The plan
+  no longer reads the guides' placeholder `ascAppId` as an App Store record.
+
 ### 0.2.10 (2026-10-09)
 
 - The tools check asks for Node 22.13 or later, which Expo SDK 57 needs.
@@ -206,6 +215,10 @@ update.
 
 ## ship-ios
 
+### 0.1.7 (2026-10-09)
+
+- Every skill ends with the next step from your plan, as one question.
+
 ### 0.1.6 (2026-10-09)
 
 - `expo-local-build` and `app-store-ready` check that Xcode fits the Expo SDK:
@@ -269,6 +282,10 @@ update.
 
 ## box
 
+### 0.1.5 (2026-10-09)
+
+- Every skill ends with the next step from your plan, as one question.
+
 ### 0.1.4 (2026-10-09)
 
 - Secrets are read the same way in every script: the environment variable,
@@ -307,6 +324,10 @@ update.
 
 ## dev
 
+### 0.1.5 (2026-10-09)
+
+- Every skill ends with the next step from your plan, as one question.
+
 ### 0.1.4 (2026-10-04)
 
 - A flow can name the features it proves with a `Covers:` line, and the
@@ -336,6 +357,10 @@ update.
   Simulator. `/dev:trim-tests` cuts a bloated test suite.
 
 ## app-features
+
+### 0.2.2 (2026-10-09)
+
+- Every skill ends with the next step from your plan, as one question.
 
 ### 0.2.1 (2026-10-09)
 
@@ -378,6 +403,10 @@ update.
   consent, background jobs, and import from the share sheet.
 
 ## content
+
+### 0.1.3 (2026-10-09)
+
+- Every skill ends with the next step from your plan, as one question.
 
 ### 0.1.2 (2026-10-09)
 

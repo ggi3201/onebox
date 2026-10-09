@@ -128,7 +128,8 @@ if (expoPick) {
   const apiUrlIn = profiles.filter((p) => Object.keys(build[p]?.env ?? {}).some((k) => /URL|API/i.test(k)));
   const devClientProfile = profiles.some((p) => build[p]?.developmentClient === true);
   const submits = Object.values(eas?.submit ?? {});
-  const ascAppId = submits.some((s) => s?.ios?.ascAppId);
+  // A real Apple ID is numeric. 1234567890 is the guides' placeholder.
+  const ascAppId = submits.some((s) => /^\d{6,}$/.test(String(s?.ios?.ascAppId ?? "")) && String(s.ios.ascAppId) !== "1234567890");
   // The team id can sit in the app config or in eas.json's submit profile.
   const appleTeamId = cfg.ios?.appleTeamId || /appleTeamId\s*:\s*['"`]/.test(dynText) ? "app config"
     : submits.some((s) => s?.ios?.appleTeamId) ? "eas.json" : false;
