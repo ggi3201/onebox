@@ -13,9 +13,11 @@ real credits; see **Cost** below before generating a batch.
 
 The key comes from config, never from a value typed into a prompt:
 
-- `secrets.tool` in `~/.config/onebox/config.json` (`env` by default,
-  `doppler` or `1password` also supported — see https://github.com/ggi3201/onebox/blob/main/CONFIG.md)
-- `images.keyRef` (default `KIE_AI_API_KEY`)
+- `media.providers.kie.keyRef` (default `KIE_AI_API_KEY`; the old
+  `images.keyRef` still works)
+- read as every onebox script reads a secret: the environment, then
+  `secrets.command`, then the nearest `.env`
+  (https://github.com/ggi3201/onebox/blob/main/CONFIG.md, "Secrets")
 
 The common case needs no config file: set `KIE_AI_API_KEY` in the
 environment, or drop it in a `.env` file anywhere from your project up to
@@ -126,7 +128,7 @@ spend if anything else is using the same key concurrently. Never loop
 ## Troubleshooting
 
 - **`ERROR: could not resolve the kie.ai key`** — follow `https://onebox.lokkesveen.com/guides/kie-ai.md`,
-  or check `secrets.tool`/`images.keyRef` in your onebox config.
+  or check `media.providers.kie.keyRef` and `secrets` in your onebox config.
 - **`createTask` error naming no field** — usually a missing required field
   (`aspect_ratio`, `quality`, `output_format` for a still) or an
   unconfirmed aspect ratio; see above.

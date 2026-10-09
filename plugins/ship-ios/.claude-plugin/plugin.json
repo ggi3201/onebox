@@ -1,7 +1,7 @@
 {
   "name": "ship-ios",
   "description": "Take an Expo iOS app from 'works on my phone' to TestFlight and the App Store: readiness checks, local builds, preview builds, App Store Connect, screenshots and icons.",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "author": { "name": "Geir-Stian Løkkesveen" },
   "license": "MIT"
 }

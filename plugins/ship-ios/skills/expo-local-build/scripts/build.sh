@@ -46,25 +46,10 @@ cfg() { jq -s '.[0] * .[1]' ~/.config/onebox/config.json .onebox.json 2>/dev/nul
   || cat ~/.config/onebox/config.json 2>/dev/null || cat .onebox.json 2>/dev/null || echo '{}'; }
 c() { cfg | jq -r "$1 // empty"; }
 
-# Read a secret by reference, the way CONFIG.md says. Prints to stdout: only
-# ever call it inside $(...) and put the result in a variable.
-secret() {
-  local ref="$1" tool; tool="$(c '.secrets.tool')"; tool="${tool:-env}"
-  case "$tool" in
-    env)
-      if [ -n "${!ref:-}" ]; then printf '%s' "${!ref}"; return; fi
-      local d="$PWD"
-      while [ "$d" != "/" ]; do
-        if [ -f "$d/.env" ] && grep -qE "^[[:space:]]*(export[[:space:]]+)?$ref=" "$d/.env"; then
-          grep -E "^[[:space:]]*(export[[:space:]]+)?$ref=" "$d/.env" | tail -1 | sed -E "s/^[^=]*=//; s/^['\"]//; s/['\"]$//"; return
-        fi
-        d="$(dirname "$d")"
-      done ;;
-    doppler) doppler secrets get "$ref" --plain -p "$(c '.secrets.doppler.project')" -c "$(c '.secrets.doppler.config')" ;;
-    1password) op read "$ref" ;;
-    *) die "Unknown secrets.tool: $tool" ;;
-  esac
-}
+# Read a secret by reference, the way CONFIG.md says ("Secrets"). Prints to
+# stdout: only ever call it inside $(...) and put the result in a variable.
+SCRIPTS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+secret() { "$SCRIPTS/secret.sh" "$1"; }
 
 # ---- 1. Find the mobile project -------------------------------------------
 [ -n "$DIR" ] && cd "$DIR"
@@ -190,8 +175,10 @@ if [ -n "$KID" ] && [ -n "$ISS" ]; then
     # eas needs a file path. Write the key to a private temp file for this run
     # only, and delete it on exit.
     KDIR="$(mktemp -d)"; KPATH="$KDIR/AuthKey_$KID.p8"; CLEANUP+=("$KDIR")
-    ( umask 077; secret "$KREF" > "$KPATH" )
-    grep -q "PRIVATE KEY" "$KPATH" || die "apple.ascKeyRef did not resolve to a .p8 key."
+    # A key kept on one line in .env or the environment has \n for its line
+    # breaks. asc.mjs turns them back into line breaks, so do the same here.
+    ( umask 077; { secret "$KREF"; echo; } | perl -pe 's/\\n/\n/g' > "$KPATH" ) || die "could not read apple.ascKeyRef ($KREF)."
+    openssl pkey -noout -in "$KPATH" 2>/dev/null || die "apple.ascKeyRef did not resolve to a readable .p8 key."
   fi
   if [ -n "$KPATH" ]; then export EXPO_ASC_API_KEY_PATH="$KPATH" EXPO_ASC_KEY_ID="$KID" EXPO_ASC_ISSUER_ID="$ISS"; fi
 fi

@@ -1,6 +1,6 @@
 {
   "name": "start",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "description": "Start here. Looks at your app, asks what it cannot see, and writes PLAN.md: the steps, guides and onebox plugins your app needs, in order. No app yet: new-app makes the repo first.",
   "author": {
     "name": "Geir-Stian Løkkesveen"

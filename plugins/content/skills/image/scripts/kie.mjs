@@ -34,18 +34,17 @@
  *          https://onebox.lokkesveen.com/guides/kie-ai.md before your first call.
  *
  * KEY
- *   Resolved per CONFIG.md: `secrets.tool` (env | doppler | 1password) and
- *   `images.keyRef` (default env var KIE_AI_API_KEY) from
- *   ~/.config/onebox/config.json, overridden by ./.onebox.json. The common
- *   case needs no config file at all: set KIE_AI_API_KEY in the environment,
- *   or put it in a .env file anywhere from the current directory up to $HOME.
+ *   The reference is media.providers.kie.keyRef (or the old images.keyRef),
+ *   default KIE_AI_API_KEY, from ~/.config/onebox/config.json, overridden by
+ *   ./.onebox.json. It is read as CONFIG.md, "Secrets", says: the environment,
+ *   then secrets.command, then the nearest .env. The common case needs no
+ *   config file at all: KIE_AI_API_KEY in the environment or in a .env file.
  *   The key is never printed, never logged, never put in a URL.
  */
 
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
-import { execFileSync } from "node:child_process";
 import {
   resolveProviderName as resolveMediaProvider,
   loadProviderKey,
@@ -96,61 +95,10 @@ function loadConfig() {
 }
 
 // ------------------------------------------------------------- secret ----
-function findInEnvFile(varName, start) {
-  let dir = path.resolve(start);
-  for (let i = 0; i < 8; i++) {
-    const p = path.join(dir, ".env");
-    if (fs.existsSync(p)) {
-      const re = new RegExp(`^\\s*${varName}\\s*=\\s*(.+?)\\s*$`);
-      for (const line of fs.readFileSync(p, "utf8").split(/\r?\n/)) {
-        const m = line.match(re);
-        if (m) return m[1].replace(/^["']|["']$/g, "");
-      }
-    }
-    const up = path.dirname(dir);
-    if (up === dir) break;
-    dir = up;
-  }
-  return null;
-}
-
-// Loads the kie.ai key. Never prints it — callers put it straight into a
-// header. Resolution order follows CONFIG.md's secrets table exactly.
+// Loads the kie.ai key: media.providers.kie.keyRef, else the old images.keyRef,
+// else KIE_AI_API_KEY, read as CONFIG.md says. Never prints it.
 function loadKey() {
-  const cfg = loadConfig();
-  const tool = cfg?.secrets?.tool || "env";
-  const ref = cfg?.images?.keyRef || "KIE_AI_API_KEY";
-
-  if (tool === "doppler") {
-    const { project = "", config = "" } = cfg?.secrets?.doppler || {};
-    try {
-      return execFileSync(
-        "doppler", ["secrets", "get", ref, "--plain", "-p", project, "-c", config],
-        { encoding: "utf8" },
-      ).trim();
-    } catch (err) {
-      throw new Error(`doppler could not read ${ref} (project=${project}, config=${config}): ${err.message}`);
-    }
-  }
-
-  if (tool === "1password") {
-    try {
-      return execFileSync("op", ["read", ref], { encoding: "utf8" }).trim();
-    } catch (err) {
-      throw new Error(`\`op read ${ref}\` failed: ${err.message}`);
-    }
-  }
-
-  // env (default): the environment first, then a .env file walking up from cwd.
-  if (process.env[ref]) return process.env[ref];
-  const fromEnvFile = findInEnvFile(ref, process.cwd());
-  if (fromEnvFile) return fromEnvFile;
-
-  throw new Error(
-    `could not resolve the kie.ai key — looked for env var ${ref} and a .env ` +
-    `entry for it. Set images.keyRef / secrets.tool in your onebox config if ` +
-    `the key lives somewhere else. See https://onebox.lokkesveen.com/guides/kie-ai.md.`,
-  );
+  return loadProviderKey(loadConfig(), "kie");
 }
 
 // Built lazily, once, and only by commands that actually call the API — so

@@ -14,6 +14,7 @@ import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { dotenvValue, secretCommand } from "./secret.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const TIMEOUT = 5; // seconds, when a check names none
@@ -116,38 +117,36 @@ const cmpVersion = (a, b) => {
 // ---------- secrets: existence only ----------
 
 async function secretExists(name, ctx) {
-  const tool = get(ctx.config, "secrets.tool") ?? "env";
-  if (tool === "1password") return { status: "unknown", why: "cannot check 1Password secrets without a prompt; confirm by hand" };
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) return { status: "unknown", why: "the secret reference is not a plain name" };
-  if (tool === "env") {
-    if (process.env[name]) return { status: "ok" };
-    // The nearest .env, walking up from the repo (CONFIG.md).
-    for (let d = ctx.repo; ; d = path.dirname(d)) {
-      const f = path.join(d, ".env");
-      if (fs.existsSync(f)) {
-        let text = "";
-        try { text = fs.readFileSync(f, "utf8"); } catch { return { status: "unknown", why: "cannot read the nearest .env" }; }
-        const m = new RegExp(`^\\s*(?:export\\s+)?${name}\\s*=\\s*(.*)$`, "m").exec(text);
-        const has = !!m && m[1].trim().replace(/^(["'])(.*)\1$/, "$2").trim() !== "";
-        return has ? { status: "ok" } : { status: "missing", why: "not in the environment or the nearest .env" };
-      }
-      if (path.dirname(d) === d) return { status: "missing", why: "not in the environment, and no .env file" };
-    }
-  }
-  if (tool === "doppler") {
-    const P = get(ctx.config, "secrets.doppler.project"), C = get(ctx.config, "secrets.doppler.config");
-    if (!P || !C) return { status: "unknown", why: "no Doppler project and config in the onebox config" };
-    // stdout is /dev/null twice over: the value never reaches this process.
-    const r = await run('doppler secrets get "$N" --plain -p "$P" -c "$C" >/dev/null', { cwd: ctx.repo, env: { N: name, P: String(P), C: String(C) }, timeout: 8, stderr: true });
+  // The same order the scripts read in (secret.mjs, CONFIG.md "Secrets").
+  if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(name) && process.env[name]) return { status: "ok" };
+  const command = secretCommand(ctx.config, name);
+  if (command) {
+    const tool = get(ctx.config, "secrets.tool");
+    if (!get(ctx.config, "secrets.command") && tool === "1password")
+      return { status: "unknown", why: "cannot check 1Password secrets without a prompt; confirm by hand" };
+    // stdout goes to /dev/null: the value never reaches this process.
+    const r = await run(`( ${command} ) >/dev/null`, { cwd: ctx.repo, timeout: 8, stderr: true });
     if (r.code === 0) return { status: "ok" };
-    if (r.timedOut) return { status: "unknown", why: "Doppler did not answer in 8 s" };
-    if (r.code != null && /could not find|not found|does not exist/i.test(r.err ?? "")) return { status: "missing", why: "not in Doppler" };
-    return { status: "unknown", why: "Doppler could not be asked (not installed, not signed in, or offline)" };
+    if (r.timedOut) return { status: "unknown", why: "your secrets command did not answer in 8 s" };
+    if (tool === "doppler" && !get(ctx.config, "secrets.command")) {
+      if (r.code != null && /could not find|not found|does not exist/i.test(r.err ?? "")) return { status: "missing", why: "not in Doppler" };
+      return { status: "unknown", why: "Doppler could not be asked (not installed, not signed in, or offline)" };
+    }
+    return { status: "missing", why: "your secrets command could not read it (missing, or not signed in)" };
   }
-  return { status: "unknown", why: `unknown secrets.tool "${tool}"` };
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) return { status: "unknown", why: "the secret reference is not a plain name" };
+  let found = null;
+  try { found = dotenvValue(name, ctx.repo); } catch { return { status: "unknown", why: "cannot read the nearest .env" }; }
+  return found ? { status: "ok" } : { status: "missing", why: "not in the environment, your secrets command or a .env file" };
 }
 
 async function secretsCli(ctx) {
+  const custom = get(ctx.config, "secrets.command");
+  if (custom) {
+    const bin = String(custom).trim().split(/\s+/)[0];
+    const r = await run('command -v "$B" >/dev/null 2>&1', { cwd: ctx.repo, env: { B: bin } });
+    return r.code === 0 ? { status: "ok" } : { status: "missing", why: `${bin}, from secrets.command, is not installed` };
+  }
   const tool = get(ctx.config, "secrets.tool") ?? "env";
   if (tool === "env") return { status: "ok" };
   if (tool === "1password") {

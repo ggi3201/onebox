@@ -16,13 +16,33 @@ public repo; add `.onebox.json` to `.gitignore` if it holds anything private.
 
 ## Secrets
 
-The config never holds a secret value. It holds a **reference**:
+The config never holds a secret value. It holds a **reference**: a name like
+`"KIE_AI_API_KEY"`, or whatever your secrets tool understands, such as
+`"op://vault/item/field"`.
 
-| `secrets.tool` | A reference looks like | How a skill reads it |
-|---|---|---|
-| `env` (default) | `"KIE_AI_API_KEY"` | `$KIE_AI_API_KEY`, else the nearest `.env` walking up from the cwd |
-| `doppler` | `"KIE_AI_API_KEY"` | `doppler secrets get KIE_AI_API_KEY --plain -p <secrets.doppler.project> -c <secrets.doppler.config>` |
-| `1password` | `"op://vault/item/field"` | `op read "op://vault/item/field"` |
+A script reads a reference in this order. The first match wins:
+
+1. **The environment variable** with that name. Start your agent through your
+   secrets tool, and every secret is there: `doppler run -- claude`,
+   `op run --env-file=agent.env -- claude`, `infisical run -- claude`.
+2. **Your command**, `secrets.command`: a shell command that prints the
+   secret, with `{ref}` where the reference goes. Two are ready-made:
+
+   | `secrets.tool` | The command |
+   |---|---|
+   | `doppler` | `doppler secrets get {ref} --plain -p <secrets.doppler.project> -c <secrets.doppler.config>` |
+   | `1password` | `op read {ref}` |
+
+   Any other tool is one line, for example the macOS Keychain:
+   `"command": "security find-generic-password -s {ref} -w"`. The command runs
+   in `/bin/sh`, not your login shell, so shell functions are not there. A
+   command that waits for a prompt is stopped after 60 seconds.
+3. **The nearest `.env` file**, walking up from the current folder. Keep it
+   git-ignored.
+
+When none of these has it, the script stops and says so. Every script uses one
+reader: `scripts/shared/secret.mjs` and `secret.sh`, copied into each skill
+that needs one (`bash scripts/secret-copies.sh sync`).
 
 Which tool to pick, and how to give an agent its own 1Password vault:
 https://onebox.lokkesveen.com/guides/secrets/
@@ -36,6 +56,7 @@ it to a file other than the one the user asked for, and never put it in a URL.
 {
   "secrets": {
     "tool": "env",                        // env | doppler | 1password
+    "command": "",                        // or your own: a shell command with {ref} that prints the secret
     "doppler": { "project": "", "config": "" }
   },
 

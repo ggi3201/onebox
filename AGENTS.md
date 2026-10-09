@@ -30,6 +30,7 @@ node plugins/start/skills/plan/scripts/plan.mjs write --answers '{"stage":"idea"
 bash scripts/plan-notes-check.sh         # a re-run keeps the user's notes byte for byte
 bash scripts/features-check.sh            # the feature check gives the same answer for the same files
 bash scripts/plan-protect-check.sh        # the backend is ticked only when protected; AI answer conflicts
+bash scripts/secret-copies.sh check       # every skill's copy of the secret reader matches scripts/shared/
 git diff origin/main | grep -nE '/Users/|/home/|\b10\.[0-9]+\.[0-9]+\.[0-9]+\b'   # must print nothing
 ```
 

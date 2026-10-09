@@ -65,8 +65,8 @@ every onebox skill reads a secret. See
 
 - Default: put it in the environment as `KIE_AI_API_KEY`, or in a `.env`
   file anywhere from your project directory up to your home directory.
-- To use a different variable name or a different secrets tool (`doppler`,
-  `1password`), set these in `~/.config/onebox/config.json`:
+- To use a different variable name or a secrets tool, set these in
+  `~/.config/onebox/config.json`:
   ```jsonc
   {
     "secrets": { "tool": "env" },
@@ -77,14 +77,12 @@ every onebox skill reads a secret. See
     }
   }
   ```
-  The older `images.provider` and `images.keyRef` keys still work for
-  `content:image`, but `content:video` reads only `media`.
-- With `secrets.tool: "doppler"`, `keyRef` is the Doppler secret name. The
-  skill reads it with
-  `doppler secrets get <keyRef> --plain -p <project> -c <config>`, using
-  `secrets.doppler.project` and `secrets.doppler.config` from the same file.
-- With `secrets.tool: "1password"`, `keyRef` is a full reference like
-  `op://vault/item/field`. The skill reads it with `op read <keyRef>`.
+  The older `images.provider` and `images.keyRef` keys still work.
+- The key is read in this order: the environment variable named by `keyRef`,
+  then your `secrets.command` (`secrets.tool` `doppler` and `1password` are
+  ready-made ones), then the nearest `.env`. With 1Password, `keyRef` is a
+  full reference like `op://vault/item/field`. See
+  [CONFIG.md](https://github.com/ggi3201/onebox/blob/main/CONFIG.md), "Secrets".
 
 ## Check it works
 

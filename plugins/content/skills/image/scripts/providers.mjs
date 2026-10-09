@@ -30,7 +30,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
-import { execFileSync } from "node:child_process";
+import { readSecret } from "./secret.mjs";
 
 // ------------------------------------------------------------- config ----
 function readJsonSafe(file) {
@@ -85,59 +85,10 @@ export function resolveKeyRef(cfg, providerName) {
 }
 
 // ------------------------------------------------------------- secret ----
-function findInEnvFile(varName, start) {
-  let dir = path.resolve(start);
-  for (let i = 0; i < 8; i++) {
-    const p = path.join(dir, ".env");
-    if (fs.existsSync(p)) {
-      const re = new RegExp(`^\\s*${varName}\\s*=\\s*(.+?)\\s*$`);
-      for (const line of fs.readFileSync(p, "utf8").split(/\r?\n/)) {
-        const m = line.match(re);
-        if (m) return m[1].replace(/^["']|["']$/g, "");
-      }
-    }
-    const up = path.dirname(dir);
-    if (up === dir) break;
-    dir = up;
-  }
-  return null;
-}
-
-// Resolves a secret reference per CONFIG.md's `secrets.tool` table. Never
-// prints the value — callers put it straight into a header.
+// Reads a secret reference (CONFIG.md, "Secrets"): the environment, then your
+// secrets command, then the nearest .env. Never prints the value.
 export function loadSecret(cfg, ref) {
-  const tool = cfg?.secrets?.tool || "env";
-
-  if (tool === "doppler") {
-    const { project = "", config = "" } = cfg?.secrets?.doppler || {};
-    try {
-      return execFileSync(
-        "doppler", ["secrets", "get", ref, "--plain", "-p", project, "-c", config],
-        { encoding: "utf8" },
-      ).trim();
-    } catch (err) {
-      throw new Error(`doppler could not read ${ref} (project=${project}, config=${config}): ${err.message}`);
-    }
-  }
-
-  if (tool === "1password") {
-    try {
-      return execFileSync("op", ["read", ref], { encoding: "utf8" }).trim();
-    } catch (err) {
-      throw new Error(`\`op read ${ref}\` failed: ${err.message}`);
-    }
-  }
-
-  // env (default): the environment first, then a .env file walking up from cwd.
-  if (process.env[ref]) return process.env[ref];
-  const fromEnvFile = findInEnvFile(ref, process.cwd());
-  if (fromEnvFile) return fromEnvFile;
-
-  throw new Error(
-    `could not resolve secret ${ref} — looked for an env var and a .env entry ` +
-    `for it. Set media.providers.<provider>.keyRef / secrets.tool in your ` +
-    `onebox config if it lives somewhere else. See https://onebox.lokkesveen.com/guides/media-providers.md.`,
-  );
+  return readSecret(cfg, ref);
 }
 
 // Loads the key for a resolved provider, by name, lazily (only call this

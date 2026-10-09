@@ -14,6 +14,11 @@ update.
 
 ## start
 
+### 0.2.8 (2026-10-09)
+
+- `/start:plan` checks a secret the same way the scripts read it, including
+  your `secrets.command`.
+
 ### 0.2.7 (2026-10-09)
 
 - The plan's "Import from a shared link" step no longer needs an LLM key or
@@ -192,6 +197,16 @@ update.
 
 ## ship-ios
 
+### 0.1.4 (2026-10-09)
+
+- Secrets are read the same way in every script: the environment variable,
+  then your `secrets.command` (any tool; `doppler` and `1password` are
+  ready-made), then the nearest `.env`. A command that waits for a prompt
+  stops after 60 s with a clear message, instead of hanging. CONFIG.md,
+  "Secrets".
+- `expo-local-build` writes a working `.p8` key from a secret kept on one line
+  with `\n` for its line breaks, and checks it before the build.
+
 ### 0.1.3 (2026-10-01)
 
 - `/ship-ios:app-store-ready` checks that your privacy policy and support
@@ -222,6 +237,14 @@ update.
   store listing, and publish EAS updates.
 
 ## box
+
+### 0.1.4 (2026-10-09)
+
+- Secrets are read the same way in every script: the environment variable,
+  then your `secrets.command` (any tool; `doppler` and `1password` are
+  ready-made), then the nearest `.env`. A command that waits for a prompt
+  stops after 60 s with a clear message, instead of hanging. CONFIG.md,
+  "Secrets".
 
 ### 0.1.3 (2026-10-07)
 
@@ -283,6 +306,10 @@ update.
 
 ## app-features
 
+### 0.2.1 (2026-10-09)
+
+- `agent-harness` reads the smoke-test key as CONFIG.md "Secrets" says.
+
 ### 0.2.0 (2026-10-09)
 
 - `/app-features:share-import` is now the share extension only: a page shared
@@ -320,6 +347,15 @@ update.
   consent, background jobs, and import from the share sheet.
 
 ## content
+
+### 0.1.1 (2026-10-09)
+
+- Secrets are read the same way in every script: the environment variable,
+  then your `secrets.command` (any tool; `doppler` and `1password` are
+  ready-made), then the nearest `.env`. A command that waits for a prompt
+  stops after 60 s with a clear message, instead of hanging. CONFIG.md,
+  "Secrets".
+- `/content:image` reads `media.providers.kie.keyRef`, like `/content:video`.
 
 ### 0.1.0 (2026-09-28)
 
