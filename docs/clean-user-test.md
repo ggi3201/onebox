@@ -61,8 +61,9 @@ curl -fsSL https://claude.ai/install.sh | bash
 Close Terminal, open it again, then type `claude` and press Enter. Log in with
 your Claude account when it asks.
 
-**c. Log in to GitHub.** The onebox repository is private, so GitHub must know
-you. This uses the GitHub command-line tool, `gh`. It comes from Homebrew: in
+**c. Log in to GitHub.** The onebox repository is public, so installing the
+plugins needs no login. You need one to open issues for the stuck places. This
+uses the GitHub command-line tool, `gh`. It comes from Homebrew: in
 this test it is one of the shared tools from step a. On a real clean Mac you
 install it yourself. First install [Homebrew](https://brew.sh) (its page shows
 the install command and, at the end, two "Next steps" lines to add `brew` to
@@ -74,8 +75,8 @@ gh auth login
 gh auth setup-git
 ```
 
-Choose GitHub.com, HTTPS, and "Login with a web browser". Use an account that
-can read `ggi3201/onebox`.
+Choose GitHub.com, HTTPS, and "Login with a web browser". Any GitHub account
+works.
 
 **d. Make an empty folder and start Claude Code in it:**
 
@@ -139,7 +140,7 @@ Take a screenshot at each stuck place: Cmd+Shift+4.
 Each stuck place becomes an issue. If you can, open them yourself with the
 dogfood template (`.github/ISSUE_TEMPLATE/dogfood.md`), and add the screenshot.
 Write "the app" or `myapp`, never a real name, host or account: the issues are
-public one day. Or send `notes.md` and the screenshots to the owner.
+public. Or send `notes.md` and the screenshots to the owner.
 
 The owner cleans up: System Settings → Users & Groups → `onebox-test` → Delete
 User. Choose "Delete the home folder". That removes everything the test made.
