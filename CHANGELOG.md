@@ -295,6 +295,16 @@ update.
 
 ## box
 
+### 0.1.6 (2026-10-09)
+
+- `box-setup`: a box that already serves apps gets fixed in place, not set up
+  again (`references/adopt.md`). It covers databases on all interfaces, an
+  open Traefik dashboard, an unpinned Traefik, turning on ufw with an undo
+  timer, and keeping your own backups or moving to `onebox-backup`.
+- `box-setup check`: warns when Traefik runs with `api.insecure` or with an
+  image that has no version, such as `traefik:latest`. The version check now
+  covers a Traefik set up by hand too.
+
 ### 0.1.5 (2026-10-09)
 
 - Every skill ends with the next step from your plan, as one question.
