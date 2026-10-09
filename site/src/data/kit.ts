@@ -70,7 +70,7 @@ const TAGLINES: Record<string, string> = {
   "ai-usage-limits": "A monthly budget per user, so one account cannot run up your model bill.",
   "ai-consent": "The AI consent step App Review asks for, enforced on the server too.",
   "durable-jobs": "Slow work as a background job that survives restarts, with cancel and refunds.",
-  "share-import": "Share a page into your app and get a record back, without the model making things up.",
+  "share-import": "Share a page from Safari into your app, with its data, ready to import.",
 };
 
 export type Skill = { name: string; plugin: string; line: string };

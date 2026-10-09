@@ -7,7 +7,7 @@ namespace MyApp.Api.Jobs;
 /// Runs queued jobs, one at a time per API instance, inside the API process.
 ///
 ///   builder.Services.AddHostedService&lt;JobWorker&gt;();
-///   builder.Services.AddScoped&lt;IJobHandler, ImportHandler&gt;();
+///   builder.Services.AddScoped&lt;IJobHandler, MyImportHandler&gt;();   // one per job kind
 ///
 /// At-most-once for jobs with side effects: a worker that dies mid-job leaves
 /// a lease that expires, and the sweep FAILS that job (or re-queues it when

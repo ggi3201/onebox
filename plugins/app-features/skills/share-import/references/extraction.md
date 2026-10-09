@@ -1,4 +1,15 @@
-# Getting the content out
+# On the server: getting a record out of a shared page
+
+The skill ships no server code: each app's import is different. These are the
+lessons from building one. Run the import as a job if it calls a model or
+fetches pages (`app-features:durable-jobs`), and count its model calls against
+the user's budget (`app-features:ai-usage-limits`).
+
+Every fetch of a user's URL, redirects and images too, goes through a guarded
+client: `https://onebox.lokkesveen.com/guides/backend.md`, step 5 "Fetch URLs
+safely". Cap the bytes you read, and cut the HTML to a few hundred KB before
+any regular expression runs on it: a large or malformed page must not keep the
+worker busy.
 
 ## The ladder
 
@@ -34,9 +45,13 @@ consent text if you use one.
 
 ## One structured call
 
+- Never invent. `found: false` plus a reason is a valid answer, and the job
+  fails with that sentence. A prompt that said "if there is none, create one
+  from the title" produced fake imports.
+- Keep the job input small: text and JSON, not a photo. Upload photos first.
 - Force a tool with a JSON Schema (`tool_choice` = that function). It works on
   every OpenAI-compatible provider; `response_format` is ignored by some.
-- `found: false` plus a reason is a valid answer. Say so in the prompt.
+- Say in the prompt that `found: false` is allowed.
 - Validate in code. On a bad answer, send the error back once and retry once.
 - The text is data: tell the model to ignore instructions inside it.
 - Keep the author's words, amounts and units. Converting units is a separate,

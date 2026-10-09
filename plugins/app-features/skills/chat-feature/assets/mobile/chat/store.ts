@@ -155,7 +155,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
     } catch (cause) {
       // A failure before the stream opened never reaches runError. Both paths
       // must end the same way, or the input stays disabled for good.
-      if (!controller.signal.aborted) set({ error: refusalOf(cause) });
+      if (!controller.signal.aborted) {
+        const refusal = refusalOf(cause);
+        if (refusal.code === 'consentRequired') await chatConfig.consentRefused();
+        set({ error: refusal });
+      }
     } finally {
       if (inFlight === controller) inFlight = null;
       set((s) => ({ running: false, messages: s.messages.map((m) => (m.streaming ? { ...m, streaming: false } : m)) }));
@@ -263,7 +267,7 @@ export function explainError(code: AgentErrorCode, message: string): string {
     case 'entitlementRequired': return message || 'This is part of the paid plan.';
     // Must not read like the rate limit: waiting a minute does not help.
     case 'budgetExhausted': return message || 'You have used this month’s allowance.';
-    case 'consentRequired': return 'Allow AI features in Settings to use this.';
+    case 'consentRequired': return 'Send again, and allow AI features when asked.';
     case 'providerError':
     case 'unknown': return message || 'That did not work. Try again.';
   }

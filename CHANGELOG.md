@@ -14,6 +14,11 @@ update.
 
 ## start
 
+### 0.2.7 (2026-10-09)
+
+- The plan's "Import from a shared link" step no longer needs an LLM key or
+  your own box: it is the share extension.
+
 ### 0.2.6 (2026-10-07)
 
 - `/start:new-app`: the root `.gitignore` keeps `.env` and `.env.*` (the
@@ -277,6 +282,18 @@ update.
   Simulator. `/dev:trim-tests` cuts a bloated test suite.
 
 ## app-features
+
+### 0.2.0 (2026-10-09)
+
+- `/app-features:share-import` is now the share extension only: a page shared
+  from Safari opens your import screen with its link, text and JSON-LD. The
+  example server import (a recipe job with a model call) is gone; its lessons
+  stay as advice in `references/extraction.md`. Sharing the same link twice
+  now works.
+- `/app-features:ai-consent`: the first AI call after "Agree" waits until the
+  server has the yes. When the API still answers `consentRequired`, call the
+  new `consentRefused()` and the next AI action asks again. The chat feature
+  has a `consentRefused` slot in `config.ts`.
 
 ### 0.1.3 (2026-10-07)
 
