@@ -612,9 +612,9 @@ jobs:
   mobile:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4       # before setup-node, or its pnpm cache fails
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6       # before setup-node, or its pnpm cache fails
+      - uses: actions/setup-node@v7
         with: { node-version-file: .node-version, cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
@@ -624,8 +624,8 @@ jobs:
   api:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
         with: { dotnet-version: "10.0.x" }
       - run: dotnet build apps/api/MyApp.sln -c Release -warnaserror
       - run: dotnet test apps/api/MyApp.sln -c Release --no-build
@@ -649,7 +649,9 @@ With an API in the repo:
 
 - `apps/mobile`: the Expo app. `apps/api`: the API.
 - Before you change the app, read `apps/mobile/AGENTS.md`. It is Expo's
-  guide for this SDK.
+  guide for this SDK. Where it says to build in the cloud with
+  `npx eas-cli@latest`, this repo's rule wins: build on the Mac with the
+  global `eas` (`ship-ios:expo-local-build`).
 - Run Expo and EAS commands only from `apps/mobile`. The root `app.config.js`
   throws on purpose.
 - `apps/mobile/ios/` is generated. Change `app.json` or a config plugin, then
@@ -675,7 +677,9 @@ root, so put this block at its top:
 
 - The Expo app is the repo root. There is no API in this repo.
 - Before you change the app, read the Expo part further down in this file.
-  It is Expo's guide for this SDK.
+  It is Expo's guide for this SDK. Where it says to build in the cloud with
+  `npx eas-cli@latest`, this repo's rule wins: build on the Mac with the
+  global `eas` (`ship-ios:expo-local-build`).
 - Run Expo and EAS commands from the repo root.
 - `ios/` and `android/` are generated. Change `app.json` or a config plugin,
   then rebuild.

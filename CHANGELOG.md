@@ -22,6 +22,20 @@ update.
 
 ## start
 
+### 0.2.14 (2026-10-09)
+
+- `new-app`: the links to the test-loop snippet and the CocoaPods pitfalls
+  work in an installed plugin. The questionnaire's bundle identifier follows
+  the name the user picks, and the slug line is always said. The domain
+  option is gone: a user with a domain types it under "Other".
+- `new-app`: CI uses checkout v7, setup-node v7, setup-dotnet v6 and
+  pnpm/action-setup v6. AGENTS.md says that local builds with the global
+  `eas` win over Expo's `npx eas-cli@latest` advice. The Node API gets a test
+  for the trusted-proxy path.
+- `plan`: the Node floor is 22.18 (a Node API runs `src/server.ts`
+  directly). The pnpm fix first removes a corepack pnpm, which made
+  `npm install -g pnpm` fail with `EEXIST`.
+
 ### 0.2.13 (2026-10-09)
 
 - `plan` detection: `app.json` and `eas.json` with comments or trailing
@@ -248,6 +262,13 @@ update.
   `/start:new-app` makes a new app repo in the layout the kit expects.
 
 ## ship-ios
+
+### 0.1.10 (2026-10-09)
+
+- `app-store-ready`: a placeholder API URL (`https://api.example.com`) in
+  `eas.json` build env, a committed `.env` or the app code is BLOCKED. It
+  passed before, and a TestFlight build then called a host that does not
+  exist.
 
 ### 0.1.9 (2026-10-09)
 

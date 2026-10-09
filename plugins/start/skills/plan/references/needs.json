@@ -35,7 +35,7 @@
       "id": "node",
       "label": "Node.js",
       "kind": "tool",
-      "check": { "run": "node -v", "version": { "min": "22.13" } },
+      "check": { "run": "node -v", "version": { "min": "22.18" } },
       "fix": "brew install node@22 && brew link --overwrite --force node@22",
       "takes": "about 2 minutes",
       "safe": true,
@@ -47,7 +47,7 @@
       "kind": "tool",
       "after": ["node"],
       "check": { "run": "pnpm -v", "version": { "major": 10 }, "timeout": 8 },
-      "fix": "npm install -g pnpm@10",
+      "fix": "corepack disable pnpm 2>/dev/null; npm install -g pnpm@10 (the first part removes a corepack pnpm, which makes the install fail with EEXIST)",
       "takes": "under a minute",
       "safe": true,
       "guide": "https://onebox.lokkesveen.com/guides/tools/#everyone-needs-these"

@@ -84,22 +84,24 @@ question the user already answered.
   the idea (for example "Warranty Keeper"). Say in the question that App Store
   names must be unique.
 - **Bundle identifier.** Say in the question that it can never change after
-  the first upload (`expo-app.md`, step 2). Options:
+  the first upload (`expo-app.md`, step 2), and that a user with a domain
+  types `com.<their domain reversed>.<slug>` under "Other". Options:
   - `com.<domain reversed>.<slug>` (recommended), when `box.domain` is set.
-  - "I have a domain": the user types the reversed pattern under "Other".
   - `com.example.<slug>`, "I have no domain yet": change it before the first
     upload to Apple. The Simulator build does not need the real one.
+  The options use the slug of the first suggested name: the answers come
+  back together, so they cannot follow the name the user picks.
 - **Server:** "Own box, .NET API (recommended)", "Own box, Node API",
   "Hosted (Supabase, Convex, Firebase)", "No server".
 - **Sign in with Apple now:** "Yes (recommended)", "Later".
 
 **The slug** is not a question. Make it from the app name: lowercase letters
 and digits, no spaces (`warrantykeeper`). It names the folder, the scheme,
-the containers and the solution. Put it in the bundle identifier options. If
-the user types another name, make the slug again, and say the slug and the
-bundle identifier in one line before you build: "Slug: `warrantykeeper`.
-Bundle identifier: `com.example.warrantykeeper`. Tell me if either is
-wrong."
+the containers and the solution. Put it in the bundle identifier options.
+After the answers, make the slug again from the name the user chose, and
+swap it into the bundle identifier they picked. Then always say both in one
+line before you build: "Slug: `warrantykeeper`. Bundle identifier:
+`com.example.warrantykeeper`. Tell me if either is wrong."
 
 Then check the tools (step 0).
 
@@ -202,8 +204,9 @@ API, the repo root without one. Run every `npx expo` and `eas` command there.
    `pnpm test:mobile`.
 9. **AGENTS.md.** The short block in `references/files.md` for this layout,
    then the test-loop block
-   (`plugins/dev/skills/test-loop/assets/AGENTS.snippet.md`; without the
-   `dev` plugin, fetch it from GitHub). Delete its lines for steps this repo
+   (the `dev:test-loop` skill's `assets/AGENTS.snippet.md`; without the
+   `dev` plugin, fetch
+   `https://raw.githubusercontent.com/ggi3201/onebox/main/plugins/dev/skills/test-loop/assets/AGENTS.snippet.md`). Delete its lines for steps this repo
    does not have. With an API, link `CLAUDE.md` to it with
    `ln -s AGENTS.md CLAUDE.md`. Without an API, the template's `AGENTS.md`
    and `CLAUDE.md` are already at the root: put the blocks at the top of that
@@ -256,7 +259,9 @@ minutes. Take a screenshot and read it.
 - The first start of a dev client shows the developer menu sheet. Close it.
 
 Both are normal, not errors. On a CocoaPods or Ruby error, read
-`ship-ios:expo-local-build`, `references/pitfalls.md`. After a failed
+the `ship-ios:expo-local-build` skill's `references/pitfalls.md` (without the
+`ship-ios` plugin:
+`https://raw.githubusercontent.com/ggi3201/onebox/main/plugins/ship-ios/skills/expo-local-build/references/pitfalls.md`). After a failed
 `pod install`, delete the app folder's `ios/` (`apps/mobile/ios` with an API,
 `ios` at the root without) before you try again.
 

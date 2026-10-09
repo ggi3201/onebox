@@ -555,9 +555,10 @@ test("the API runs as a role that row-level security applies to", async () => {
 Add the behaviour test with the first owned table: user A creates a row, user
 B asks for it and gets 404.
 
-`test/protection.test.ts`, the same two tests as for .NET: past the rate
+`test/protection.test.ts`, the two tests from .NET and one more: past the rate
 limit, 429 with `Retry-After`, also with a new `X-Forwarded-For` on each
-request; over the body size limit, 413. Each test builds its own app with one
+request; over the body size limit, 413; and behind a trusted proxy, one bucket
+per client from `X-Forwarded-For`. Each test builds its own app with one
 small limit. The skeleton has no POST route yet, so the test adds one:
 
 ```ts
@@ -595,6 +596,19 @@ test("a body over the size limit gets 413", async () => {
   expect(small.statusCode).toBe(200);
   expect(large.statusCode).toBe(413);
 });
+
+test("behind a trusted proxy, each client gets its own bucket", async () => {
+  // inject() comes from 127.0.0.1. Here that address is the proxy, as Traefik
+  // is in production (step 1), so X-Forwarded-For names the client.
+  const app = await appWith({ RATE_LIMIT_PER_MINUTE: "3", TRUSTED_PROXIES: "127.0.0.1/32" });
+  const send = async (ip: string) =>
+    (await app.inject({ method: "POST", url: "/read-body", payload: {}, headers: { "x-forwarded-for": ip } })).statusCode;
+  const fourClients = [await send("203.0.113.1"), await send("203.0.113.2"), await send("203.0.113.3"), await send("203.0.113.4")];
+  const oneClient = [await send("203.0.113.9"), await send("203.0.113.9"), await send("203.0.113.9"), await send("203.0.113.9")];
+  await app.close();
+  expect(fourClients).toEqual([200, 200, 200, 200]);
+  expect(oneClient).toEqual([200, 200, 200, 429]);
+});
 ```
 
 ## `ci.yml`: the `api` job
@@ -606,9 +620,9 @@ cover the API too, through the root scripts.
   api:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with: { node-version-file: .node-version, cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter api build

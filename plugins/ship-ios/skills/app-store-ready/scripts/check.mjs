@@ -408,7 +408,17 @@ if (envVars.length && eas?.build) {
   if (onlyLocal.length) add('env-in-builds', 'CHECK', `${onlyLocal.join(', ')} are not in eas.json env or a committed .env.`, 'They are inlined at build time. If they live only in .env.local or on your machine, other builds get "". Check EAS: eas env:list --environment production. Also make the app show a clear error when the API URL is empty.');
   else add('env-in-builds', 'OK', `${envVars.length} EXPO_PUBLIC_ variables defined for builds`);
 }
-if (!results.some(r => ['backend-url', 'https'].includes(r.id))) add('backend-url', 'OK', 'No localhost, LAN or http:// URLs in app code');
+// A placeholder API URL (api.example.com) passes the local checks above, and a
+// TestFlight build then calls a host that does not exist. Look in the build
+// profiles' env, the committed .env and the app code.
+const placeholderRe = /https?:\/\/([\w-]+\.)*example\.(com|org|net)\b/i;
+const profileHits = Object.entries(eas?.build || {}).flatMap(([name, p]) =>
+  Object.entries(p?.env || {}).filter(([k, v]) => /^EXPO_PUBLIC_/.test(k) && placeholderRe.test(String(v))).map(([k, v]) => `eas.json build.${name}.env.${k} = ${v}`));
+const envHit = exists('.env') && !gitIgnored('.env') && placeholderRe.test(fs.readFileSync(path.join(DIR, '.env'), 'utf8')) ? ['.env'] : [];
+const codeHits = grep(placeholderRe).filter(r => !devOnly(r));
+const placeholders = [...profileHits, ...envHit, ...codeHits];
+if (placeholders.length) add('backend-url', 'BLOCKED', `A placeholder URL (example.com) for the app to call: ${first(placeholders)}`, 'Set the real API URL for the production profile (EXPO_PUBLIC_API_URL in eas.json env or EAS env). A build with a placeholder calls a host that does not exist.');
+if (!results.some(r => ['backend-url', 'https'].includes(r.id))) add('backend-url', 'OK', 'No localhost, LAN, placeholder or http:// URLs in app code');
 
 // ---- Secrets, tokens and debug switches in the app ----------------------------------------------
 // Everything in EXPO_PUBLIC_* and in the app config's `extra` ships inside the app, readable by anyone.

@@ -281,7 +281,10 @@ Rebuild only when you add or change a native module or a config plugin. The
   the Mac's `apps/mobile/.env.local` (git-ignored). Use the port your local
   API listens on. In the Simulator:
   `EXPO_PUBLIC_API_URL=http://localhost:<api port>`. On a phone, the Mac's
-  LAN address: `EXPO_PUBLIC_API_URL=http://192.168.1.20:<api port>`.
+  LAN address: `EXPO_PUBLIC_API_URL=http://192.168.1.20:<api port>`. The dev
+  API listens on `127.0.0.1` only, so start it on all interfaces for the
+  phone: `HOST=0.0.0.0 pnpm dev:api` (Node), or `applicationUrl`
+  `http://0.0.0.0:<api port>` in the API's `launchSettings.json` (.NET).
 - No API: leave `EXPO_PUBLIC_API_URL` out of every profile.
 - **preview**: a release build for registered devices ("ad hoc"), pointed at
   a real server. For testing on your phone without TestFlight. Register each
