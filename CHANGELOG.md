@@ -380,6 +380,20 @@ update.
 
 ## dev
 
+### 0.1.7 (2026-10-09)
+
+- `test-loop` preflight: one simulator per worktree no longer fails both.
+  Another checkout's simulator is information, unless this checkout has no
+  simulator of its own; then the fix boots a new one instead of taking that
+  one. A project path with a space no longer gives two false FAILs. Every
+  "Rebuild" line keeps this checkout's Metro port.
+- `test-loop`: `assets/metro-port.sh`, with a shebang. The docs call it
+  through `sh`, so it works without an exec bit.
+- `test-loop` discover: finds flow files up to 10 folders deep, such as
+  `apps/mobile/src/features/<f>/<f>.flow.md`.
+- `trim-tests`: one baseline folder per test runner, so Jest and Vitest do not
+  overwrite each other, under `$TMPDIR` (macOS has no `$TMP`).
+
 ### 0.1.6 (2026-10-09)
 
 - `trim-tests` lists junk patterns: tests that cannot fail for the reason

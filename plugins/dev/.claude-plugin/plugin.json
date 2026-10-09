@@ -1,7 +1,7 @@
 {
   "name": "dev",
   "description": "A local feedback loop for coding agents on an Expo / React Native iOS app with an ASP.NET Core or Node backend: lint, strict types, unit and database tests, then a check in the iOS Simulator with proof. Plus a preflight for the wrong-Metro and stale-binary traps, and a skill that trims a bloated test suite.",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "author": { "name": "Geir-Stian Løkkesveen" },
   "license": "MIT"
 }

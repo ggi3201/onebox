@@ -20,7 +20,7 @@ Run these in order after every change. Stop at the first failure and fix it.
    - First run the preflight (the `dev:test-loop` skill,
      `scripts/preflight.mjs`). The simulator must run THIS worktree's Metro.
      Fix every FAIL before you debug.
-   - Metro port for this worktree: `<port command, e.g. scripts/metro-port.sh>`.
+   - Metro port for this worktree: `<port command, e.g. sh scripts/metro-port.sh>`.
      Pass it to `expo start --port` and `expo run:ios --port`.
    - Added or changed a native package, a config plugin, a permission or an
      entitlement? Rebuild (`<ios build command>`). A reload is not enough.

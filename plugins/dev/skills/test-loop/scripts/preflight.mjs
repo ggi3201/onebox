@@ -156,7 +156,10 @@ async function probe(port) {
       const j = await fetch(`http://127.0.0.1:${port}/json/list`, { signal: AbortSignal.timeout(1500) });
       targets = await j.json();
     } catch { /* older Metro */ }
-    return { port, root: root ? real(root) : null, targets };
+    // Expo sends the root encodeURI'd: a space arrives as %20.
+    let decoded = root;
+    try { decoded = root ? decodeURI(root) : root; } catch { /* not encoded */ }
+    return { port, root: decoded ? real(decoded) : null, targets };
   } catch {
     return null;
   }
@@ -178,6 +181,13 @@ function ciMode(p) {
   return { on: /^(1|true)$/i.test(ci), value: ci };
 }
 
+// The rebuild command keeps this checkout's Metro port. A plain
+// `expo run:ios` builds 8081 into the binary, and the app looks for the
+// wrong server, maybe another checkout's.
+const metroPortScript = fs.existsSync(path.join(appDir, "scripts", "metro-port.sh"));
+const rebuild = mine.length ? `npx expo run:ios --port ${mine[0].port}`
+  : metroPortScript ? `npx expo run:ios --port "$(sh scripts/metro-port.sh)"` : "npx expo run:ios";
+
 if (metros.length === 0) info("No Metro server is running.");
 for (const m of metros) {
   const p = ports.get(m.port);
@@ -194,7 +204,7 @@ if (mine.length === 0) {
 } else {
   const connected = mine.flatMap(devicesOf);
   if (connected.length) ok(`This checkout's Metro (:${mine.map((m) => m.port).join(", :")}) has the app connected on: ${[...new Set(connected)].join(", ")}`);
-  else warn(`This checkout's Metro (:${mine[0].port}) has no app connected${bundleId ? ` for ${bundleId}` : ""}. Open the app from this server (press i in the Metro terminal, or open the dev client and pick port ${mine[0].port}).`);
+  else warn(`This checkout's Metro (:${mine[0].port}) has no app connected${bundleId ? ` for ${bundleId}` : ""}. Open the app from this server on a simulator no other checkout uses (open the dev client there and pick port ${mine[0].port}).`);
 }
 for (const m of mine) {
   const pid = ports.get(m.port);
@@ -210,9 +220,16 @@ for (const m of mine) {
   const foreign = [...new Set(m.targets.filter((t) => bundleId && t.appId && t.appId !== bundleId).map((t) => `${t.appId} on ${t.deviceName ?? "?"}`))];
   if (foreign.length) fail(`${foreign.join(", ")} is connected to this checkout's Metro (:${m.port}), but this app is ${bundleId}. Two apps use one Metro port, so that app shows this app's code. Give each app its own port: scripts/metro-port.sh in references/preflight.md.`);
 }
+// Another checkout serving this app is normal with one simulator per
+// worktree. It is a problem only when this checkout has no simulator of its
+// own: then the one you look at runs the other checkout's code.
+const myDevices = new Set(mine.flatMap(devicesOf));
 for (const m of others) {
-  const devs = devicesOf(m);
-  if (devs.length && bundleId) fail(`${devs.join(", ")} run ${bundleId} from another checkout (:${m.port}, ${m.root ?? "unknown root"}). Your edits here will not show on that device.`);
+  const devs = devicesOf(m).filter((d) => !myDevices.has(d));
+  if (!devs.length || !bundleId) continue;
+  const what = `${devs.join(", ")} run ${bundleId} from another checkout (:${m.port}, ${m.root ?? "unknown root"}). Edits here do not show there.`;
+  if (myDevices.size) info(`${what} This checkout uses ${[...myDevices].join(", ")}: test there.`);
+  else fail(`${what} Leave that simulator to the other checkout. Boot another one for this checkout (xcrun simctl boot "<device name>"), and open the app there from this checkout's Metro.`);
 }
 if (others.some((m) => m.port === 8081) && mine.every((m) => m.port !== 8081)) {
   warn("Port 8081 (the default) belongs to another checkout. A plain `expo start` or a fresh dev build will talk to that one.");
@@ -276,7 +293,7 @@ for (const i of targets) {
   if (!syms || syms.length < 100000) { info(`${i.device.name}: binary has few or no symbols (a release build?). Symbol check skipped.`); continue; }
   const absent = native.filter((n) => !UMBRELLA.has(n.name) && !n.pods.some((p) => syms.includes(p) || syms.includes(p.replace(/-/g, "_"))));
   if (!absent.length) ok(`${i.device.name}: every native dependency has code in the installed binary`);
-  else warn(`${i.device.name}: no code found in the installed binary for ${absent.map((a) => a.name).join(", ")}. The binary was likely built before they were added, or by another checkout. Rebuild: npx expo run:ios. (If a rebuild does not clear this, the pod name differs from its symbols; confirm with: nm -U "${bin}" | grep -ci <name>)`);
+  else warn(`${i.device.name}: no code found in the installed binary for ${absent.map((a) => a.name).join(", ")}. The binary was likely built before they were added, or by another checkout. Rebuild: ${rebuild}. (If a rebuild does not clear this, the pod name differs from its symbols; confirm with: nm -U "${bin}" | grep -ci <name>)`);
 }
 
 // 4c. CocoaPods state in ios/, when the folder exists.
@@ -284,10 +301,10 @@ const lockPath = path.join(appDir, "ios", "Podfile.lock");
 if (fs.existsSync(lockPath)) {
   const lock = fs.readFileSync(lockPath, "utf8");
   const missing = native.filter((n) => !n.pods.some((p) => new RegExp(`^  - "?${p.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[ /("]`, "m").test(lock)));
-  if (missing.length) fail(`Native packages not in ios/Podfile.lock: ${missing.map((m) => m.name).join(", ")}. Reload cannot load them. Rebuild: npx expo run:ios`);
+  if (missing.length) fail(`Native packages not in ios/Podfile.lock: ${missing.map((m) => m.name).join(", ")}. Reload cannot load them. Rebuild: ${rebuild}`);
   else ok("Every native dependency is in ios/Podfile.lock");
   const lockT = mtime(lockPath);
-  if (builtAt && lockT > builtAt + 60000) fail(`ios/Podfile.lock (${when(lockT)}) is newer than the installed binary (${when(builtAt)}). Pods changed after the last build. Rebuild: npx expo run:ios`);
+  if (builtAt && lockT > builtAt + 60000) fail(`ios/Podfile.lock (${when(lockT)}) is newer than the installed binary (${when(builtAt)}). Pods changed after the last build. Rebuild: ${rebuild}`);
 } else {
   info("No ios/ folder (Continuous Native Generation). The Podfile check is skipped; the fingerprint check below still works.");
 }
@@ -317,7 +334,7 @@ if (opt.fingerprint || opt.markBuilt) {
     const mark = readJson(markFile);
     if (!mark) info(`Fingerprint ${hash.slice(0, 12)}. No baseline yet. After the next native build, run this script with --mark-built.`);
     else if (mark.hash === hash) ok(`Native fingerprint unchanged since the build marked at ${mark.at.slice(0, 16)} UTC`);
-    else fail(`Native fingerprint changed since the build marked at ${mark.at.slice(0, 16)} UTC. A reload will not pick this up. Rebuild: npx expo run:ios, then run with --mark-built`);
+    else fail(`Native fingerprint changed since the build marked at ${mark.at.slice(0, 16)} UTC. A reload will not pick this up. Rebuild: ${rebuild}, then run with --mark-built`);
   }
 }
 
