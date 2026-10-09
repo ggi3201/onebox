@@ -6,7 +6,8 @@ app. Please report one.
 
 ## Report a problem
 
-Write to [geir@lokkesveen.com](mailto:geir@lokkesveen.com). Do not open a
+[Report it privately on GitHub](https://github.com/ggi3201/onebox/security/advisories/new),
+or write to [geir@lokkesveen.com](mailto:geir@lokkesveen.com). Do not open a
 public issue for a security problem. Say which skill or script, what you did,
 and what happened. I answer as fast as I can, but I build this next to a day
 job.

@@ -1,0 +1,14 @@
+# Once a month, one PR per ecosystem with every update grouped, so the PR list
+# stays short. Security fixes come at once, outside this schedule.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: monthly }
+    groups:
+      actions: { patterns: ["*"] }
+  - package-ecosystem: npm
+    directory: /site
+    schedule: { interval: monthly }
+    groups:
+      site: { patterns: ["*"] }

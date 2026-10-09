@@ -1,5 +1,8 @@
-blank_issues_enabled: true
+blank_issues_enabled: false
 contact_links:
   - name: Stuck on a step? Read this first
     url: https://onebox.lokkesveen.com/guides/when-you-are-stuck/
     about: What to collect before you ask, and which skill to use for which problem.
+  - name: Report a security problem
+    url: https://github.com/ggi3201/onebox/security/advisories/new
+    about: Privately. Do not open a public issue for a security problem.

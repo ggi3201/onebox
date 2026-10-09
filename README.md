@@ -161,7 +161,8 @@ A skill or guide wrong or unclear? [Open an issue](https://github.com/ggi3201/on
 Write "the app" or `myapp`, never a real name, host or account.
 
 Writing a skill? Read [CONTRIBUTING.md](CONTRIBUTING.md) first. It is short.
-Security problems: see [SECURITY.md](SECURITY.md).
+Security problems: see [SECURITY.md](SECURITY.md). Everyone here follows the
+[code of conduct](CODE_OF_CONDUCT.md).
 
 ## Also good
 
