@@ -22,14 +22,40 @@ in Phase 0, right after you join the Apple Developer Program.
 No Mac? You can still build in the EAS cloud (see [expo-eas.md](expo-eas.md)), but you
 cannot run the simulator or do local builds.
 
+## Which Xcode for your Expo SDK
+
+Your app's Expo SDK decides the Xcode, not "the newest". Checked 2026-10-09 at
+https://docs.expo.dev/versions/latest/ and https://expo.dev/changelog/sdk-57.
+
+| Expo SDK | Xcode |
+|---|---|
+| 55 | 26.2 or later, but not 27 |
+| 56 | 26.4 or later, but not 27 |
+| 57 | 26.4 or later. Xcode 27 only with scene support turned on (below) |
+
+**Xcode 27 builds with the iOS 27 SDK, and an app built with it must use the
+UIKit scene life cycle, or it does not launch on iOS 27.** SDK 57 can do that
+from `expo` 57.0.23. Run `npx expo install --fix`, then turn it on in
+`app.json`:
+
+```json
+["expo-build-properties", { "ios": { "enableSceneSupport": true } }]
+```
+
+That entry goes in `expo.plugins` (`npx expo install expo-build-properties`
+first). Then test the app on an iOS 27 device or Simulator before you ship.
+Older SDKs have no scene support: stay on Xcode 26 until you upgrade the SDK.
+
 ## Steps
 
 1. **Install Xcode.**
-   - Easiest: open the **Mac App Store**, search for Xcode, click **Get** /
-     **Install**.
-   - A specific version (for example to match a teammate, or a beta): download
-     it from https://developer.apple.com/download/ (sign in with your Apple
-     Account), unpack it, and move it to `/Applications`.
+   - The Mac App Store installs the newest Xcode (27 now). Use it only if the
+     table above allows it for your SDK.
+   - Otherwise, download the Xcode the table names from
+     https://developer.apple.com/download/ (sign in with your Apple Account),
+     unpack it, and move it to `/Applications`. Two versions can sit side by
+     side, for example `/Applications/Xcode-26.4.app`; point the command-line
+     tools at the one you build with (step 3).
    Your macOS version limits which Xcode you can install. If the App Store
    says your Mac is too old, update macOS first.
 2. **Open Xcode once.** It installs extra components on first launch. Accept
@@ -38,8 +64,8 @@ cannot run the simulator or do local builds.
    sudo xcodebuild -license accept
    ```
 3. **Point the command-line tools at this Xcode.** In Xcode, open
-   **Xcode > Settings… > Locations** and choose the newest version in the
-   **Command Line Tools** menu. Or from a terminal:
+   **Xcode > Settings… > Locations** and choose the version you build with in
+   the **Command Line Tools** menu. Or from a terminal:
    ```bash
    sudo xcode-select -s /Applications/Xcode.app
    ```
@@ -69,7 +95,7 @@ builds run here (`"local"`, the default) or on EAS servers (`"cloud"`).
 ## Check it works
 
 ```bash
-xcodebuild -version        # Xcode 26.x or later
+xcodebuild -version        # the version the table above names for your SDK
 xcode-select -p            # /Applications/Xcode.app/Contents/Developer
 xcrun simctl list runtimes # at least one iOS runtime
 xcrun simctl list devices available
@@ -80,6 +106,10 @@ Then, in your Expo app folder, `npx expo run:ios` should build and open the
 app in the simulator.
 
 ## Common errors
+
+- **The app does not launch on iOS 27** (it closes or stays black), but works
+  on iOS 26. It was built with Xcode 27 without scene support. See "Which
+  Xcode for your Expo SDK".
 
 - **`xcode-select: error: tool 'xcodebuild' requires Xcode, but active
   developer directory ... is a command line tools instance`.** Run

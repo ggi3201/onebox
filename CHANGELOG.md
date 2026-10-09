@@ -14,6 +14,10 @@ update.
 
 ## start
 
+### 0.2.10 (2026-10-09)
+
+- The tools check asks for Node 22.13 or later, which Expo SDK 57 needs.
+
 ### 0.2.9 (2026-10-09)
 
 - `/start:plan` keeps code blocks in your notes, and drops the ticks an old
@@ -201,6 +205,16 @@ update.
   `/start:new-app` makes a new app repo in the layout the kit expects.
 
 ## ship-ios
+
+### 0.1.6 (2026-10-09)
+
+- `expo-local-build` and `app-store-ready` check that Xcode fits the Expo SDK:
+  SDK 56 and 57 need Xcode 26.4 or later, and an app built with Xcode 27 needs
+  scene support (SDK 57, `ios.enableSceneSupport`) or it does not launch on
+  iOS 27.
+- `eas-update` has `--source-maps`, for Sentry.
+- The references note which App Store Connect resources the skills use are
+  deprecated, and what to do when they stop working.
 
 ### 0.1.5 (2026-10-09)
 

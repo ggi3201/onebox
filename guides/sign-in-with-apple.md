@@ -306,7 +306,10 @@ const clientSecret = await new SignJWT({})
 4. Put the `.p8` text straight into your secrets tool as
    `APPLE_SIGNIN_PRIVATE_KEY`. Do not commit it, do not paste it into a chat.
 
-One key can serve several apps in the same team.
+A key belongs to one primary App ID, and works for the apps grouped with it.
+A second app that is its own primary App ID needs its own key, or must be
+grouped with the first app's App ID when you enable Sign in with Apple for it.
+Apple allows two keys per primary App ID.
 
 This is a different key from the App Store Connect API key
 ([app-store-connect-api-key.md](app-store-connect-api-key.md)). They are not interchangeable.
@@ -351,7 +354,9 @@ that list, then sign in.
   on the App ID. See step 1.
 - **`invalid_client` from `auth/token`.** The client secret is wrong: wrong
   Key ID, Team ID or `sub`, the key does not have Sign in with Apple enabled,
-  or the PEM has broken newlines.
+  the key belongs to another app's primary App ID, or the PEM has broken
+  newlines. Token revocation then fails too, so check the log after a test
+  account deletion.
 - **`invalid_grant` from `auth/token`.** The authorization code was already
   used or is older than five minutes. Get a fresh one right before the delete
   call.

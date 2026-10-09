@@ -4,6 +4,7 @@
 #   update.sh --channel production --expect-host api.example.com -m "fix: typo on paywall"
 #   update.sh ... --publish                    # really publish
 #   update.sh ... --publish --rollout 10       # to 10% of users first
+#   update.sh ... --publish --source-maps      # keep dist-update/ with source maps, for Sentry
 #
 # Run it from the Expo app folder (the one with app.json or app.config.* and
 # eas.json). Without --publish it builds the update bundle with the EAS
@@ -11,7 +12,7 @@
 # publishes nothing.
 set -euo pipefail
 
-channel=""; env=""; message=""; publish=0; rollout=""; keep=0; hosts=()
+channel=""; env=""; message=""; publish=0; rollout=""; keep=0; maps=""; hosts=()
 while [ $# -gt 0 ]; do
   case "$1" in
     --channel) channel="$2"; shift 2 ;;
@@ -21,6 +22,7 @@ while [ $# -gt 0 ]; do
     --publish) publish=1; shift ;;
     --rollout) rollout="$2"; shift 2 ;;
     --keep) keep=1; shift ;;
+    --source-maps) maps=" --source-maps"; keep=1; shift ;;
     -h|--help) sed -n '2,12p' "$0"; exit 0 ;;
     *) echo "update.sh: unknown flag $1" >&2; exit 2 ;;
   esac
@@ -69,7 +71,7 @@ rv=$( (npx expo-updates runtimeversion:resolve --platform ios 2>/dev/null || tru
 out="dist-update"
 rm -rf "$out"
 envfile=$(mktemp); printf '%s\n' "$exports" > "$envfile"
-eas env:exec "$env" "set -a; . '$envfile'; set +a; npx expo export --platform ios --output-dir $out" --non-interactive >"$out.log" 2>&1 \
+eas env:exec "$env" "set -a; . '$envfile'; set +a; npx expo export --platform ios --output-dir $out$maps" --non-interactive >"$out.log" 2>&1 \
   || { tail -20 "$out.log" >&2; fail "export failed. Full log: $out.log"; }
 rm -f "$out.log" "$envfile"
 bundle=$(find "$out/_expo/static/js/ios" -type f \( -name '*.hbc' -o -name '*.js' \) | head -1)

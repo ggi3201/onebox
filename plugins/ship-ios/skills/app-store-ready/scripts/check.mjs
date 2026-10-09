@@ -477,8 +477,18 @@ for (let d = path.dirname(DIR), i = 0; i < 3 && d !== path.dirname(d); d = path.
 
 // ---- Toolchain (checked 2026-09-28 at developer.apple.com/news/upcoming-requirements) ----
 try {
-  const xv = execFileSync('xcodebuild', ['-version'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).match(/Xcode (\d+)/)?.[1];
-  if (xv) add('xcode', +xv >= 26 ? 'OK' : 'BLOCKED', `Xcode ${xv} on this Mac`, +xv >= 26 ? undefined : 'Since 2026-04-28 uploads must be built with Xcode 26+ and the iOS 26 SDK. Update Xcode (https://onebox.lokkesveen.com/guides/xcode.md), or build in the EAS cloud with a current image.');
+  const full = execFileSync('xcodebuild', ['-version'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).match(/Xcode (\d+)(?:\.(\d+))?/);
+  const xv = full?.[1], xminor = +(full?.[2] ?? 0);
+  // The Expo SDK decides the Xcode: guides/xcode.md, "Which Xcode for your Expo SDK".
+  const sdk = +String(deps.expo ?? '').replace(/^[^0-9]*/, '').split('.')[0] || null;
+  const configText = ['app.json', 'app.config.ts', 'app.config.js', 'app.config.mjs', 'app.config.cjs'].filter(exists).map(f => fs.readFileSync(path.join(DIR, f), 'utf8')).join('\n');
+  const scene = /enableSceneSupport"?\s*:\s*true/.test(configText);
+  const XGUIDE = 'https://onebox.lokkesveen.com/guides/xcode.md, "Which Xcode for your Expo SDK"';
+  if (xv && +xv < 26) add('xcode', 'BLOCKED', `Xcode ${xv} on this Mac`, 'Since 2026-04-28 uploads must be built with Xcode 26+ and the iOS 26 SDK. Update Xcode (https://onebox.lokkesveen.com/guides/xcode.md), or build in the EAS cloud with a current image.');
+  else if (xv && sdk >= 56 && +xv === 26 && xminor < 4) add('xcode', 'BLOCKED', `Expo SDK ${sdk} needs Xcode 26.4 or later; this Mac has ${xv}.${xminor}.`, XGUIDE);
+  else if (xv && +xv >= 27 && sdk && sdk <= 56) add('xcode', 'BLOCKED', `Xcode ${xv} builds with the iOS 27 SDK, and Expo SDK ${sdk} has no scene support: the app would not launch on iOS 27.`, `Build with Xcode 26.4 or later, or upgrade the SDK. ${XGUIDE}`);
+  else if (xv && +xv >= 27 && sdk === 57 && !scene) add('xcode', 'BLOCKED', `Xcode ${xv} builds with the iOS 27 SDK, and scene support is off: the app would not launch on iOS 27.`, `Turn it on: expo-build-properties ios.enableSceneSupport, with expo 57.0.23 or newer. ${XGUIDE}`);
+  else if (xv) add('xcode', 'OK', `Xcode ${xv}.${xminor} on this Mac${sdk ? `, Expo SDK ${sdk}` : ''}`);
 } catch { add('xcode', 'CHECK', 'No Xcode here. Uploads need Xcode 26+ / iOS 26 SDK (since 2026-04-28).', 'For cloud builds, use a current EAS build image.'); }
 const dt = (expo.plugins || []).map(p => Array.isArray(p) && p[0] === 'expo-build-properties' ? p[1]?.ios?.deploymentTarget : null).find(Boolean);
 if (dt && parseFloat(dt) < 13) add('deployment-target', 'BLOCKED', `iOS deployment target ${dt}; uploads must target iOS 13 or later (since 2026-09-09).`);

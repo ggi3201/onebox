@@ -21,7 +21,7 @@ Install [Homebrew](https://brew.sh) first. Most of the tools below come from it.
 |---|---|---|
 | Xcode | iOS builds, the Simulator, `xcodebuild`, `xcrun` | [xcode.md](xcode.md). The full Xcode, not only the Command Line Tools. |
 | `git` | every repo | comes with Xcode |
-| Node.js 22 or 24 (LTS) | the skills' scripts, Expo, `eas` | `brew install node@22`, or a version manager such as `fnm` |
+| Node.js 22.13 or later, or 24 (LTS) | the skills' scripts, Expo, `eas`. Expo SDK 57 needs 22.13 | `brew install node@22`, or a version manager such as `fnm` |
 | `pnpm` | the package manager in a `/start:new-app` repo | `npm install -g pnpm@10`. Node 25 and newer no longer ship corepack, so the kit does not rely on it. In a repo, pnpm 10 runs the version that `package.json` pins in `packageManager`. |
 | `jq` | reads the onebox config | `brew install jq` |
 | `eas` | Expo builds and updates, also local builds | `npm install -g eas-cli`. See [expo-eas.md](expo-eas.md). |
