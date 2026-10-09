@@ -31,10 +31,11 @@ bash scripts/plan-notes-check.sh         # a re-run keeps the user's notes byte 
 bash scripts/features-check.sh            # the feature check gives the same answer for the same files
 bash scripts/plan-protect-check.sh        # the backend is ticked only when protected; AI answer conflicts
 bash scripts/secret-copies.sh check       # every skill's copy of the secret reader matches scripts/shared/
-git diff origin/main | grep -nE '/Users/|/home/|\b10\.[0-9]+\.[0-9]+\.[0-9]+\b'   # must print nothing
+bash scripts/personal-values-check.sh     # no home path, private address or email in the diff
 ```
 
-The repo is public. A personal value in a diff is a bug (`CONTRIBUTING.md`,
+`.github/workflows/checks.yml` runs all of these on every PR. The repo is
+public. A personal value in a diff is a bug (`CONTRIBUTING.md`,
 rule 1). That includes issue and PR text.
 
 ## What to work on

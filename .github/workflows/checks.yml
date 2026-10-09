@@ -1,0 +1,56 @@
+name: Checks
+
+# Every check from "Checks before a PR" in AGENTS.md (CLAUDE.md), on each PR and
+# on main. They run with an empty HOME, so nothing on a Mac leaks into the
+# result. The site build is in deploy-site.yml.
+#
+# The version check fails a PR that changes a plugin and leaves its version
+# alone (Claude Code updates an installed plugin only when its version
+# changes), and a PR where the Codex manifests no longer match the Claude Code
+# ones.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    env:
+      BASE_REF: ${{ github.base_ref }}
+    steps:
+      - uses: actions/checkout@v7
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: site/.node-version
+      - name: Use an empty HOME
+        run: |
+          home="$(mktemp -d)"
+          echo "HOME=$home" >> "$GITHUB_ENV"
+      - name: Plugin versions
+        if: github.event_name == 'pull_request'
+        run: node scripts/versions.mjs check --base "origin/$BASE_REF"
+      - name: Personal values
+        if: github.event_name == 'pull_request'
+        run: bash scripts/personal-values-check.sh "origin/$BASE_REF"
+      - name: Plan dry run
+        run: node plugins/start/skills/plan/scripts/plan.mjs write --answers '{"stage":"idea"}' --repo "$(mktemp -d)" --dry-run
+      - name: Example plan is up to date
+        run: |
+          bash site/scripts/example-plan.sh
+          git diff --exit-code site/src/data/example-plan.md
+      - name: Script checks
+        run: |
+          shopt -s nullglob
+          for f in scripts/*-check.sh; do
+            echo "== $f"
+            bash "$f"
+          done
+          if [ -f scripts/secret-copies.sh ]; then
+            echo "== scripts/secret-copies.sh check"
+            bash scripts/secret-copies.sh check
+          fi

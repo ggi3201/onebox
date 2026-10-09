@@ -8,8 +8,9 @@
 // It runs one set of commands: the checks of the tools item (`node -v`,
 // `pnpm -v` and the like), the same ones `plan.mjs ready` runs (needs.mjs).
 // They are read-only and non-interactive, and each has a timeout. A check that
-// cannot run never ticks the item. ONEBOX_DETECT_NO_RUN=1 skips them; the
-// repo's own scripts set it, because they run with a fake HOME.
+// cannot run never ticks the item. ONEBOX_DETECT_NO_RUN=1 skips them, and the
+// look for Xcode.app too; the repo's own scripts set it, because they run with
+// a fake HOME.
 //
 // Usage: node detect.mjs [repo-dir]    (default: the current folder)
 // Node 18+, no dependencies.
@@ -371,7 +372,8 @@ const hasKey = (k) => keySet.has(k);
 
 // ---------- the Mac, the plan ----------
 
-const xcode = exists("/Applications/Xcode.app");
+// Like the tool checks, this reads the Mac, so ONEBOX_DETECT_NO_RUN=1 skips it.
+const xcode = process.env.ONEBOX_DETECT_NO_RUN !== "1" && exists("/Applications/Xcode.app");
 const planPath = path.join(root, "PLAN.md");
 const planText = readText(planPath);
 const plan = planText == null ? { exists: false } : { exists: true, format: planText.startsWith("<!-- onebox-plan v1") ? "onebox" : "other" };

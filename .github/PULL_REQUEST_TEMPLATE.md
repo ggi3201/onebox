@@ -14,4 +14,4 @@ Fixes #
 - [ ] `bash scripts/plan-notes-check.sh`
 - [ ] `bash scripts/features-check.sh`
 - [ ] `bash scripts/plan-protect-check.sh`
-- [ ] No personal values in the diff or here: `git diff origin/main | grep -nE '/Users/|/home/|\b10\.[0-9]+\.[0-9]+\.[0-9]+\b'` prints nothing
+- [ ] No personal values in the diff or here: `bash scripts/personal-values-check.sh` prints "ok"
