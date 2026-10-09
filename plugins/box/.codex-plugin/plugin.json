@@ -1,6 +1,6 @@
 {
   "name": "box",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "Run your backend and sites on one cheap box: a mini PC at home or a small VPS, with Docker, Traefik and Cloudflare Tunnel.",
   "author": {
     "name": "Geir-Stian Løkkesveen"

@@ -84,6 +84,10 @@ Other agents (Cursor, Gemini CLI and more):
 npx skills add ggi3201/onebox
 ```
 
+Installed this way, the skills have flat names: `/start:plan` is `plan`, and
+in Claude Code it hides the built-in `/plan`. In Claude Code, install the
+plugins instead (above).
+
 The skills are plain `SKILL.md` files, so any agent that reads them can use
 them. I build and test with Claude Code.
 
