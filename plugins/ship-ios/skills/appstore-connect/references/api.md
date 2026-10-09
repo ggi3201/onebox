@@ -151,9 +151,11 @@ After creation, products sit at `MISSING_METADATA` until the review
 screenshot of the paywall is attached (web UI). That is expected until the
 paywall exists.
 
-Apple keeps about 15% of subscription revenue for members of the App Store
-Small Business Program, and 30% otherwise. The `proceeds` field on a price
-point shows what you get.
+Apple keeps 15% of subscription revenue for members of the App Store Small
+Business Program. For everyone else it keeps 30% in a subscriber's first year
+of paid service, and 15% after that. The `proceeds` field on a price point
+shows what you get. (https://developer.apple.com/app-store/subscriptions/,
+checked 2026-10-09.)
 
 Your first subscription must be submitted for review together with a new app
 version. Select it on the version page before you submit.

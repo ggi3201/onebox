@@ -220,8 +220,9 @@ For a Node API, change three things:
 - `build: { context: ., dockerfile: apps/api/Dockerfile }`. The context is
   the repo root (step 1).
 - `DATABASE_URL: "postgres://myapp:${DATABASE_PASSWORD}@myapp-db:5432/myapp"`,
-  the URL form that `pg` reads. Make that password with
-  `openssl rand -hex 32`: a `/` or `+` from base64 breaks the URL.
+  the URL form that `pg` reads. Make the password with
+  `openssl rand -hex 32` (step 3, below): a `/` or `+` from base64 breaks the
+  URL.
 - The healthcheck: the Node line in the comment.
 
 Why it looks like this:
@@ -282,9 +283,11 @@ Two traps:
   then refuses to start and names the variable. Use `${VAR:-}` only for truly
   optional settings.
 
-Generate a long random value for `JWT_SECRET_KEY` and `DATABASE_PASSWORD`
-(`openssl rand -base64 48`). Put it straight into your secrets tool. Do not
-print it into a chat or a log.
+Generate a long random value for each. Use `openssl rand -base64 48` for
+`JWT_SECRET_KEY`. Use `openssl rand -hex 32` for `DATABASE_PASSWORD`: hex
+works in both forms, the .NET `Password=` string and the Node URL. A `/` or
+`+` from base64 breaks the URL. Put each value straight into your secrets
+tool. Do not print it into a chat or a log.
 
 ### 4. Health endpoint
 
@@ -974,16 +977,18 @@ Check it, with a test user's token in `$T`:
 
 ```bash
 for u in http://127.0.0.1:8080/health http://169.254.169.254/ https://localtest.me/ \
-         'https://httpbin.org/redirect-to?url=http://127.0.0.1:8080/health'; do
+         'https://httpbin.org/redirect-to?url=https://localtest.me/'; do
   curl -s -o /dev/null -w "%{http_code}  $u\n" -H "Authorization: Bearer $T" \
     -H 'Content-Type: application/json' -d "{\"url\":\"$u\"}" https://api.example.com/api/recipes/import
 done
 ```
 
 `localtest.me` is a public name that resolves to `127.0.0.1`. The last URL is
-a public page that redirects to loopback. Every line must fail, and the API
-log must show "Refused". Add a unit test for `IsPublic` with the same
-addresses.
+a public page that redirects, over `https`, to that name. .NET follows an
+`https` to `https` redirect, so only the connect check can stop it. A
+redirect to an `http://` address tests nothing: .NET never follows it. Every
+line must fail, and the API log must show "Refused" for the last two. Add a
+unit test for `IsPublic` with the same addresses.
 
 ### 6. Imported web content is untrusted input to the model
 
@@ -1122,7 +1127,7 @@ app.Use(async (ctx, next) =>
 {
     ctx.Response.OnStarting(() =>
     {
-        if (ctx.Response.ContentType?.StartsWith("text/html") == true)
+        if (ctx.Response.ContentType?.StartsWith("text/html", StringComparison.OrdinalIgnoreCase) == true)
             ctx.Response.Headers.ContentSecurityPolicy =
                 "default-src 'self'; img-src 'self' https: data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'";
         return Task.CompletedTask;
@@ -1136,8 +1141,14 @@ If a web page on another origin calls the API with cookies, never combine
 `AllowCredentials()`). Any website could then call the API as a signed-in
 user. List the real origins.
 
-Check it: `curl -sI https://api.example.com/privacy | grep -iE 'strict-transport|nosniff|content-security'`
-shows all three.
+Check it with a GET. A `MapGet` page answers a HEAD request (`curl -I`) with
+405 and no CSP:
+
+```bash
+curl -s -D - -o /dev/null https://api.example.com/privacy | grep -iE 'strict-transport|nosniff|content-security'
+```
+
+It shows all three.
 
 ### 9. Logs without tokens or personal data
 
@@ -1171,13 +1182,19 @@ Stops: shipping a package with a published hole.
 - **.NET.** NuGet checks packages against the GitHub Advisory Database on
   every restore. For projects that target `net10.0` it checks transitive
   packages too. Make high and critical findings fail the build, in
-  `Directory.Build.props`:
+  `Directory.Build.props`. With `TreatWarningsAsErrors` on (the kit's strict
+  setting), every audit warning is an error, so also keep low (NU1901) and
+  moderate (NU1902) findings as warnings:
 
   ```xml
   <PropertyGroup>
     <WarningsAsErrors>$(WarningsAsErrors);NU1903;NU1904</WarningsAsErrors>
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1901;NU1902</WarningsNotAsErrors>
   </PropertyGroup>
   ```
+
+  Source: https://learn.microsoft.com/en-us/nuget/concepts/auditing-packages,
+  "Warning codes" (checked 2026-10-09).
 
   By hand: `dotnet list package --vulnerable --include-transitive`.
 - **Node.** Add `npm audit --omit=dev --audit-level=high` (or

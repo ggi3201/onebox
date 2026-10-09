@@ -263,6 +263,12 @@ update.
 
 ## ship-ios
 
+### 0.1.12 (2026-10-09)
+
+- `appstore-connect`: the subscription commission is right. Apple keeps 30%
+  in a subscriber's first year and 15% after it for everyone, not only for
+  Small Business Program members.
+
 ### 0.1.11 (2026-10-09)
 
 - `app-store-screenshots`: the `sheet.py` command starts with `<skill-dir>/`.

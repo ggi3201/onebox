@@ -17,7 +17,7 @@
       "name": "ship-ios",
       "source": "./plugins/ship-ios",
       "description": "Take an Expo iOS app from 'works on my phone' to TestFlight and the App Store: readiness checks, local builds, preview builds, App Store Connect, screenshots and icons. Runs on your Mac.",
-      "version": "0.1.11",
+      "version": "0.1.12",
       "license": "MIT"
     },
     {

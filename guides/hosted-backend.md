@@ -81,10 +81,11 @@ given.
   its README says backward compatibility is not guaranteed before v1.0. It
   has an Apple OAuth2 provider (a web flow). I did not find a built-in route
   for the native Apple sheet's ID token.
-- **Neon.** Hosted Postgres that scales to zero. Free: 0.5 GB per project and
-  100 compute-unit hours per project. Paid (Launch): $0.106 per compute-unit
-  hour and $0.35 per GB-month, no monthly minimum. It also offers Neon Auth
-  (managed Better Auth). It is a database first. You still need your server
+- **Neon.** Hosted Postgres that scales to zero. Free: 1 GB of storage per
+  project (20 GB across all projects) and 100 compute-unit hours per project
+  (https://neon.com/pricing, checked 2026-10-09). Paid (Launch): $0.106 per
+  compute-unit hour and $0.35 per GB-month, no monthly minimum. It also
+  offers Neon Auth (managed Better Auth). It is a database first. You still need your server
   code to run somewhere.
 - **PlanetScale Postgres.** Hosted Postgres from $5 a month (single node,
   no high availability) or $15 a month (one primary and two replicas). No

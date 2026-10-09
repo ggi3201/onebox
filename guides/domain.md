@@ -26,9 +26,11 @@ section. Prices move; re-check before you buy.
 ### Cloudflare Registrar (the default for this stack)
 
 Cloudflare sells domains at cost: the registry and ICANN fee, with no markup.
-The renewal price is the same as the registration price, so there is no jump
-in year two. WHOIS privacy is included free. It supports new registrations
-today, not only transfers-in. Cloudflare's own "Register a new domain" docs
+Cloudflare adds no markup at renewal either. For `.com`, `.app` and `.dev`,
+the renewal price is the same as the registration price, so there is no jump
+in year two. A few TLDs renew at a different price: see `.org`, `.io` and
+`.xyz` in the table below. Read the Renewal column. WHOIS privacy is
+included free. It supports new registrations today, not only transfers-in. Cloudflare's own "Register a new domain" docs
 cover this. From 2018 to 2022 it was transfer-only, so older articles are
 wrong on this point.
 
