@@ -67,10 +67,16 @@ eas env:list --environment production --format long   # read the "Environments:"
 eas env:list --environment preview --format long
 ```
 
-If one variable is shared by `preview` and `production`, do **not** run
-`eas env:update --environment preview` on it. That re-scopes it to preview
-only, and production silently loses the value. The next TestFlight build then
-has an empty API URL. Create a separate preview-scoped variable instead:
+If one variable is shared by `preview` and `production`, the preview value
+cannot be added next to it: `eas env:create` answers "already exists". Do
+**not** add `--force`, and do not run `eas env:update` or `eas env:set` on it
+for preview. They can re-scope the shared variable to preview only. Then
+production silently loses the value, and the next TestFlight build has an
+empty API URL.
+
+Instead, ask the user to split it on expo.dev: in the project's environment
+variables, edit the shared variable so it is set for production only. Then
+create the preview one:
 
 ```bash
 eas env:create --name EXPO_PUBLIC_API_URL --value https://staging-api.example.com \
