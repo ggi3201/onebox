@@ -1,6 +1,6 @@
 ---
 name: box-setup
-description: Take a fresh Ubuntu VPS or a fresh mini PC to the baseline the other box skills expect - admin user with SSH keys, password login off, ufw, automatic security updates, Docker, Traefik on the proxy network, a Cloudflare tunnel, nightly backups and a health check. Idempotent, with a dry run, and it refuses to touch a box that already runs Traefik. Use when the user says "set up my server", "set up the VPS", "I just bought a Hetzner box", "prepare the mini PC", "install Docker and Traefik", "harden the server", "set up backups on the box", or asks "is my box healthy" or "check the server".
+description: Take a fresh Ubuntu VPS or a fresh mini PC to the baseline the other box skills expect - admin user with SSH keys, password login off, ufw, automatic security updates, Docker, Traefik on the proxy network, a Cloudflare tunnel, nightly backups and a health check. Idempotent, with a dry run, and it refuses to set up a box that already runs Traefik; that box gets fixed in place instead (adopt). Use when the user says "set up my server", "set up the VPS", "I just bought a Hetzner box", "prepare the mini PC", "install Docker and Traefik", "harden the server", "set up backups on the box", "I already have a server with Traefik", or asks "is my box healthy" or "check the server".
 ---
 
 # Set up the box
@@ -40,6 +40,10 @@ first. It changes nothing. If it reports an existing Traefik, a cloudflared
 config it did not write, or something on port 80/443, it exits with code 3.
 Show the user what it found and stop. Pass `--allow-existing` only after the
 user says yes in chat. `check` is read-only and fine on any box.
+
+That box needs no new setup. Fix it in place: `references/adopt.md`. It runs
+`check`, then fixes each FAIL and WARN one at a time, with the user's yes,
+without breaking what runs.
 
 ## Procedure
 
@@ -137,6 +141,10 @@ line is a real protection, not a formality:
 | no container port on all interfaces | a database or admin UI on the public IP. **Docker-published ports skip ufw**, so ufw's "deny" does not cover them. | remove `ports:`, or bind to `127.0.0.1:`. If a port really must be public, limit it in the provider's firewall. |
 | docker socket only in traefik | a public container with the socket is root on the box. `:ro` does not help: it limits the file, not the API. | remove the socket mount from that service. Tools that need it (backups, updaters) stay off the proxy network. |
 
+On a box set up by hand, the fixes differ: `references/adopt.md`. It also
+covers two warnings only such a box shows: Traefik with `api.insecure`, and a
+Traefik image with no version (`traefik:latest`).
+
 At home, a `0.0.0.0` port is a warning: the router blocks it from the
 internet, but every device on the LAN can reach it. On a VPS with a tunnel it
 is a failure.
@@ -171,6 +179,7 @@ fix.
 
 ## References
 
+- `references/adopt.md` - a box that already serves apps: fix it in place
 - `references/runner.md` - self-hosted GitHub Actions runner, and its risks
 - `references/updates.md` - update Traefik, Docker and cloudflared
 - `references/restore.md` - restore a dump, restore from restic

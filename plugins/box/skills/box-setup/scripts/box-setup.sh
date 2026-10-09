@@ -197,8 +197,8 @@ preflight() {
       say "Continuing because --allow-existing was given."
     else
       say "REFUSING: this box already has a proxy or tunnel. It may be a working server."
-      say "Show this to the user. Re-run with --allow-existing only after a clear yes."
-      say "The read-only 'check' phase works on any box."
+      say "Show this to the user. Do not set it up again: fix it in place with 'check'"
+      say "and references/adopt.md. --allow-existing only after a clear yes."
       exit 3
     fi
   else
@@ -709,13 +709,25 @@ phase_check() {
     if [ -n "$tk" ]; then ok "traefik running ($tk)"; else bad "traefik not running"; fi
     if [ "$tk" = traefik ]; then
       curl -sf --max-time 5 http://127.0.0.1:8081/ping >/dev/null 2>&1 && ok "traefik API on 127.0.0.1:8081" || bad "traefik API not answering"
-      local tv; tv="$(S docker inspect -f '{{.Config.Image}}' traefik 2>/dev/null || true)"; tv="${tv#*:}"
-      case "$tv" in v[0-9]*)
-        [ "$tv" != "${TRAEFIK_IMAGE#*:}" ] && [ "$(printf '%s\n%s\n' "$tv" "${TRAEFIK_IMAGE#*:}" | sort -V | head -1)" = "$tv" ] \
-          && meh "traefik $tv is older than ${TRAEFIK_IMAGE#*:}, the version this kit pins (references/updates.md)" ;;
-      esac
     elif [ -n "$tk" ]; then
-      meh "traefik $tk was not set up by box-setup; its API check is skipped"
+      meh "traefik $tk was not set up by box-setup; its API check is skipped (references/adopt.md)"
+    fi
+    if [ -n "$tk" ]; then
+      local ti tv; ti="$(S docker inspect -f '{{.Config.Image}}' "$tk" 2>/dev/null || true)"
+      case "$ti" in *@sha256:*) tv="" ;; *:*) tv="${ti##*:}" ;; *) tv=latest ;; esac
+      case "$tv" in
+        latest|v3|v2|3|2) meh "traefik image $ti is not pinned to a version; a pull can change it (references/adopt.md)" ;;
+        v[0-9]*)
+          [ "$tv" != "${TRAEFIK_IMAGE#*:}" ] && [ "$(printf '%s\n%s\n' "$tv" "${TRAEFIK_IMAGE#*:}" | sort -V | head -1)" = "$tv" ] \
+            && meh "traefik $tv is older than ${TRAEFIK_IMAGE#*:}, the version this kit pins (references/updates.md)" ;;
+      esac
+      # api.insecure serves the API and dashboard on :8080 with no login, to every
+      # container on the network and to whoever the port is published to.
+      if S docker inspect -f '{{range .Args}}{{println .}}{{end}}' "$tk" 2>/dev/null | grep -qE '^--api\.insecure(=true)?$' \
+         || S docker exec "$tk" cat /etc/traefik/traefik.yml /etc/traefik/traefik.yaml /etc/traefik/traefik.toml 2>/dev/null \
+            | grep -qiE '^\s*insecure\s*[:=]\s*true'; then
+        meh "traefik runs with api.insecure: the dashboard and router list have no protection (references/adopt.md)"
+      fi
     fi
     local open
     open="$(S docker ps --format '{{.Names}} {{.Ports}}' | grep -E '(0\.0\.0\.0|\[::\]|::):[0-9]+->' || true)"
