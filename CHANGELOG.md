@@ -22,6 +22,12 @@ update.
 
 ## start
 
+### 0.2.15 (2026-10-09)
+
+- `new-app`: the `.npmrc` comment gives the current reason for
+  `node-linker=hoisted`: Expo's fallback when isolated installs break a native
+  build. Since SDK 54 Expo also supports isolated installs.
+
 ### 0.2.14 (2026-10-09)
 
 - `new-app`: the links to the test-loop snippet and the CocoaPods pitfalls

@@ -63,7 +63,8 @@ packages:
 `.npmrc`:
 
 ```
-# Metro and CocoaPods do not follow pnpm's symlinked node_modules.
+# Expo's fallback for native builds and packages that break under pnpm's
+# isolated installs (expo-app.md, "Recommended layout").
 node-linker=hoisted
 ```
 
