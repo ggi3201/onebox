@@ -30,12 +30,14 @@ it once you have a question for it. It is optional. The app ships without it.
 | | Free | After the free amount |
 |---|---|---|
 | PostHog Cloud, product analytics | 1,000,000 events a month, no credit card | Pay as you go: 0.00005 USD per event for the 1,000,001st to the 2,000,000th, then less |
-| PostHog, session replay (optional) | 5,000 recordings a month | Pay as you go |
+| PostHog, session replay (optional) | 2,500 mobile recordings a month (the 5,000 on the pricing page are web recordings) | Pay as you go |
+| Projects | 1 project on the free plan | 6 projects on pay-as-you-go |
 | Seats | Your whole team, no per-seat price | |
 
 Checked 2026-10-05 at https://posthog.com/pricing and
-https://posthog.com/docs/product-analytics/pricing. The free amounts reset
-every month. A small app with about ten events stays far below them.
+https://posthog.com/docs/product-analytics/pricing. Replay and projects
+checked 2026-10-09 at https://posthog.com/docs/session-replay/pricing and
+https://posthog.com/pricing. The free amounts reset every month. A small app with about ten events stays far below them.
 
 - **Do not add a payment method** until you need one. The free plan needs no
   card, so it cannot charge you.
@@ -69,7 +71,8 @@ page shows the host the SDK must use. It must say `eu.i.posthog.com`.
 ### 1. Make the account and the project
 
 1. Sign up on the cloud you chose above. Make one **organization** and one
-   **project** for the app. A second project for staging is optional.
+   **project** for the app. The free plan has only 1 project. A second
+   project, for staging, needs the pay-as-you-go plan.
 2. Open the project's settings and set these. PostHog moves its labels
    around, so look for the page for each name. The project is for a phone
    app, so most web features are noise.
@@ -247,14 +250,15 @@ PostHog's touch autocapture never runs. It is off unless you add the
 provider with `captureTouches` on. Leave it off: taps give noise and can
 record what a user touched.
 
-Wire it in the root layout (`app/_layout.tsx`). The tabs and screens of
+Wire it in the root layout (`src/app/_layout.tsx`). The tabs and screens of
 Expo Router do not report themselves, so send the route yourself. Use the
 route pattern (`recipe/[id]`), not the URL: a URL can hold a name or an id of
 something private.
 
 ```tsx
+import { useEffect } from "react";
 import { useSegments } from "expo-router";
-import { initAnalytics, screen } from "../src/analytics";
+import { initAnalytics, screen } from "../analytics";   // src/analytics.ts
 
 // inside the root layout component
 useEffect(() => { void initAnalytics(); }, []);

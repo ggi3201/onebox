@@ -35,8 +35,12 @@ myapp/
 ```
 
 With pnpm, list only `apps/mobile` in `pnpm-workspace.yaml` (a .NET API is
-not a pnpm package), and put `node-linker=hoisted` in `.npmrc`. Metro and
-CocoaPods do not follow pnpm's symlinked `node_modules`.
+not a pnpm package), and put `node-linker=hoisted` in `.npmrc`. From SDK 54,
+Expo supports pnpm's default isolated installs, so hoisted is no longer
+required. Expo names hoisted as the fix when isolated installs break a native
+build or a dependency (https://docs.expo.dev/guides/monorepos/, checked
+2026-10-09). The kit keeps hoisted, Expo's own fallback, so a new app does
+not meet those breaks.
 
 ### Pin pnpm
 
@@ -225,8 +229,12 @@ Rules:
 
 ### 5. A development build, not Expo Go
 
-Expo Go is a ready-made app from the App Store. It is fast for a first
-prototype. It stops working for this setup as soon as you add native modules:
+Expo Go is a ready-made app from Expo. It is fast for a first prototype.
+Expo Go on the App Store stops at SDK 54. For SDK 55 and later, `eas go`
+builds your own Expo Go and sends it to your TestFlight internal testers
+(https://docs.expo.dev/troubleshooting/expo-go-version-mismatch/, checked
+2026-10-09). Expo Go stops working for this setup as soon as you add native
+modules:
 
 - **Sign in with Apple** in Expo Go returns a token for Expo Go's bundle ID,
   not yours. Your server correctly rejects it.

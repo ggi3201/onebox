@@ -22,6 +22,12 @@ update.
 
 ## start
 
+### 0.2.15 (2026-10-09)
+
+- `new-app`: the `.npmrc` comment gives the current reason for
+  `node-linker=hoisted`: Expo's fallback when isolated installs break a native
+  build. Since SDK 54 Expo also supports isolated installs.
+
 ### 0.2.14 (2026-10-09)
 
 - `new-app`: the links to the test-loop snippet and the CocoaPods pitfalls
@@ -262,6 +268,12 @@ update.
   `/start:new-app` makes a new app repo in the layout the kit expects.
 
 ## ship-ios
+
+### 0.1.12 (2026-10-09)
+
+- `appstore-connect`: the subscription commission is right. Apple keeps 30%
+  in a subscriber's first year and 15% after it for everyone, not only for
+  Small Business Program members.
 
 ### 0.1.11 (2026-10-09)
 

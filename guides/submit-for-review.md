@@ -295,9 +295,10 @@ review.
 The version state moves through these steps. Apple emails the account holder
 at each change.
 
-1. **Waiting for Review.** In the queue. Apple says most submissions are
-   reviewed within a day (https://developer.apple.com/distribute/app-review/).
-   A first app can take longer.
+1. **Waiting for Review.** In the queue. Apple says it typically reviews at
+   least 50% of submissions in less than 24 hours and 90% in less than 48
+   hours (https://developer.apple.com/distribute/app-review/, checked
+   2026-10-09). A first app can take longer.
 2. **In Review.** A reviewer has the app. This takes minutes to hours.
 3. Then one of:
    - **Pending Developer Release:** approved, and you chose manual release.

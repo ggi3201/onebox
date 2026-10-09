@@ -53,8 +53,9 @@ your own code (this guide) and the provider's own spend limit stop that bill.
 
 **The limits live in the database**, in one row or document. You change them
 in the dashboard, with no deploy. Start with 30 calls per user a day and an
-app budget you could pay on a bad day, for example $5. The skill
-`app-features:ai-usage-limits` has
+app budget you could pay on a bad day, for example $5. A budget of 0 or less
+means no ceiling, the same as in the box skill. It does not turn AI off. The
+skill `app-features:ai-usage-limits` has
 [a page on choosing a budget](../plugins/app-features/skills/ai-usage-limits/references/pricing.md).
 
 **The cost comes from the provider's usage numbers.** Every Chat Completions
@@ -72,8 +73,8 @@ known only after it. So the budget bounds the day, not each call. That is
 fine.
 
 **A refusal carries a `code` and a sentence.** The app shows the sentence.
-The codes match the box skill `app-features:ai-usage-limits`, so the same app
-code can handle both:
+`budgetExhausted` and `rateLimited` have the same names as on the box
+(`app-features:ai-usage-limits`). The other codes exist only here:
 
 | Code | When | What the user sees |
 |---|---|---|
@@ -139,8 +140,10 @@ declare
 begin
   if uid is null then return 'notSignedIn'; end if;
   select * into lim from public.ai_limits;
-  if (select coalesce(sum(cost_micros), 0) from public.ai_usage where day = today)
-     >= lim.app_daily_budget_micros then
+  -- 0 or less means no ceiling.
+  if lim.app_daily_budget_micros > 0
+     and (select coalesce(sum(cost_micros), 0) from public.ai_usage where day = today)
+         >= lim.app_daily_budget_micros then
     return 'aiUnavailable';
   end if;
   -- The WHERE makes it one atomic step: at the limit, nothing is written.
@@ -334,7 +337,8 @@ export const tryUse = internalMutation({
     if (!limits) throw new Error("Add one aiLimits document first.");
     const day = today();
     const app = await ctx.db.query("aiDays").withIndex("by_day", (q) => q.eq("day", day)).unique();
-    if ((app?.costMicros ?? 0) >= limits.appDailyBudgetMicros) return "aiUnavailable";
+    const budget = limits.appDailyBudgetMicros;   // 0 or less means no ceiling
+    if (budget > 0 && (app?.costMicros ?? 0) >= budget) return "aiUnavailable";
     const { ok } = await rateLimiter.limit(ctx, "ai", { key: userId });
     if (!ok) return "rateLimited";
     const row = await ctx.db.query("aiUsage")
@@ -500,7 +504,8 @@ async function tryUse(uid: string, day: string): Promise<string> {
   return db.runTransaction(async (tx) => {
     const [limits, app, user] = await tx.getAll(limitsRef, dayRef, userRef);
     if (!limits.exists) throw new Error("Add the aiConfig/limits document first.");
-    if ((app.get("costMicros") ?? 0) >= limits.get("appDailyBudgetMicros")) return "aiUnavailable";
+    const budget = limits.get("appDailyBudgetMicros");   // 0 or less means no ceiling
+    if (budget > 0 && (app.get("costMicros") ?? 0) >= budget) return "aiUnavailable";
     if ((user.get("calls") ?? 0) >= limits.get("userDailyCalls")) return "budgetExhausted";
     tx.set(userRef, { calls: FieldValue.increment(1) }, { merge: true });
     return "ok";
@@ -663,8 +668,10 @@ try { await httpsCallable(getFunctions(), "ask")({ prompt }); }
 catch (e: any) { const code = e.details?.code; const message = e.message; }
 ```
 
-The box skill's chat store maps the same codes (`refusalOf` and
-`explainError` in `app-features:ai-usage-limits`).
+On the box, the chat store maps its refusals with `refusalOf` and
+`explainError` (`store.ts` in `app-features:chat-feature`). They know only
+the box's codes. `aiUnavailable`, `tooLong` and `notSignedIn` are not among
+them. If you reuse them here, add those codes, or show the server's sentence.
 
 ## Where the values go
 

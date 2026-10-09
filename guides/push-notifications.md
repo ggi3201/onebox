@@ -50,8 +50,10 @@ APNs accepts pushes only from a server that holds your team's APNs key (a
 `.p8` file). Expo's servers use it for you. Pick one way:
 
 - **Let EAS make it.** On the first build after you add `expo-notifications`,
-  EAS asks "Setup Push Notifications for your project?" and then offers to
-  generate a new Apple Push Notifications service key. Answer yes to both. Or
+  EAS asks "Would you like to set up Push Notifications for your project?"
+  Pick **Yes**. Then it asks "Generate a new Apple Push Notifications service
+  key?" Answer yes. (Prompt text checked 2026-10-09 in the `eas-cli` source,
+  https://github.com/expo/eas-cli.) Or
   run `eas credentials`, pick iOS, then **Push Notifications: Manage your Apple
   Push Notifications Key**.
 - **Make it yourself**, then upload it with `eas credentials`. In the Apple
@@ -93,7 +95,7 @@ support push notifications from SDK 53 on.
 The handler decides what happens when a push arrives **while the app is open**.
 
 ```tsx
-// app/_layout.tsx, at module level, outside any component
+// src/app/_layout.tsx, at module level, outside any component
 import * as Notifications from "expo-notifications";
 
 Notifications.setNotificationHandler({
@@ -109,7 +111,7 @@ Notifications.setNotificationHandler({
 The trap: **there is only one handler.** Each call to
 `setNotificationHandler` removes the one before. If a feature screen or a
 library calls it again, your root handler is gone, and nothing warns you.
-Call it once, in `app/_layout.tsx`. Search the code for a second call:
+Call it once, in `src/app/_layout.tsx`. Search the code for a second call:
 `git grep -n setNotificationHandler`.
 
 Three more facts:
@@ -318,7 +320,7 @@ With Expo Router, open the screen from `data.url`. This also works when the tap
 launched the app:
 
 ```tsx
-// app/_layout.tsx
+// src/app/_layout.tsx
 import { useEffect } from "react";
 import * as Notifications from "expo-notifications";
 import { router } from "expo-router";

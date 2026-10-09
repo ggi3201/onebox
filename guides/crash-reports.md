@@ -16,11 +16,12 @@ TestFlight build. Add Sentry before the first public release.
 | Xcode Organizer crash reports | included in the Apple Developer Program | none |
 | TestFlight feedback | included | none |
 | Sentry | Developer plan: 1 user, 5,000 errors a month, unlimited projects, 30-day history, email alerts | Team plan: 26 USD a month billed annually; unlimited users, 50,000 errors a month, up to 90-day history |
-| PostHog (optional analytics) | 1 million events, 5,000 session recordings and 100,000 exceptions a month; 1 project; no card | Pay-as-you-go: the same free amount each month, then you pay for use above it |
+| PostHog (optional analytics) | 1 million events, 2,500 mobile session recordings and 100,000 exceptions a month; 1 project; no card | Pay-as-you-go: the same free amount each month, then you pay for use above it |
 
 Checked 2026-09-28 at https://sentry.io/pricing/ and
-https://posthog.com/pricing. PostHog's free plan stops at its limits, so it
-cannot charge you by surprise.
+https://posthog.com/pricing. PostHog's mobile replay amount checked
+2026-10-09 at https://posthog.com/docs/session-replay/pricing. PostHog's free
+plan stops at its limits, so it cannot charge you by surprise.
 
 One Sentry account on the free plan covers the app and the API: make one
 project for each.
@@ -71,9 +72,11 @@ code back to your source files with **source maps**.
    change it later, only make a new organization. If your users are in the EU,
    pick EU. Create a **React Native** project. Note the **DSN**, the
    organization slug and the project slug.
-2. **Make an organization auth token** in Sentry's settings, under Auth
-   Tokens. The build uses it to upload source maps. It is a secret. Put it in
-   your secrets tool as `SENTRY_AUTH_TOKEN` ([secrets.md](secrets.md)).
+2. **Make an organization token** in Sentry: **Settings**, **Developer
+   Settings**, **Organization Tokens**
+   (https://docs.sentry.io/account/auth-tokens/, checked 2026-10-09). The
+   build uses it to upload source maps. It is a secret. Put it in your
+   secrets tool as `SENTRY_AUTH_TOKEN` ([secrets.md](secrets.md)).
 3. **Install the SDK** in the app folder:
 
    ```bash
@@ -107,7 +110,7 @@ code back to your source files with **source maps**.
    module.exports = getSentryExpoConfig(__dirname);
    ```
 
-6. **Start Sentry in the root layout** (`app/_layout.tsx`):
+6. **Start Sentry in the root layout** (`src/app/_layout.tsx`):
 
    ```tsx
    import * as Sentry from "@sentry/react-native";
