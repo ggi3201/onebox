@@ -32,6 +32,7 @@ bash scripts/features-check.sh            # the feature check gives the same ans
 bash scripts/plan-protect-check.sh        # the backend is ticked only when protected; AI answer conflicts
 bash scripts/secret-copies.sh check       # every skill's copy of the secret reader matches scripts/shared/
 bash scripts/personal-values-check.sh     # no home path, private address or email in the diff
+bash scripts/dotnet-assets.sh             # the app-features C# builds in a new-app API (needs .NET 10)
 ```
 
 `.github/workflows/checks.yml` runs all of these on every PR. The repo is

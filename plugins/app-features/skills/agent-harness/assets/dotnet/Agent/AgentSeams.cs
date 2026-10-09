@@ -27,6 +27,16 @@ public sealed partial class LogOnlyUsageRecorder(ILogger<LogOnlyUsageRecorder> l
 public sealed record AgentDenial(int Status, string Code, string Message);
 
 /// <summary>
+/// Has this user agreed to send data to the AI provider? The ai-consent skill
+/// implements it; ai-usage-limits' AiAccess asks it. Here, so that each of the
+/// two compiles without the other.
+/// </summary>
+public interface IAiConsentCheck
+{
+    Task<bool> HasConsentedAsync(string userId, CancellationToken ct);
+}
+
+/// <summary>
 /// May this user reach a model right now? Subscription, budget and AI consent
 /// all answer here. The <c>ai-usage-limits</c> and <c>ai-consent</c> skills add
 /// the real checks. The app's own gates are presentation; this is enforcement.

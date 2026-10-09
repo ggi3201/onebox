@@ -40,7 +40,9 @@ must name them.
    start of each one, BEFORE anything is added to the screen or sent. When the
    API answers 403 `consentRequired`, call `consentRefused()`: the next AI
    action asks again. The chat feature's `config.ts` has a slot for each.
-4. **Server.** Copy `assets/dotnet/AiConsent.cs`. Map `AiConsentRecord` in
+4. **Server.** Copy `assets/dotnet/AiConsent.cs`. Its `IAiConsentCheck` lives
+   in `agent-harness`'s `AgentSeams.cs`; without that skill, copy just the
+   interface. Map `AiConsentRecord` in
    the DbContext, add a migration, `app.MapAiConsent()`, and register
    `AiConsentCheck` as `IAiConsentCheck`. `AiAccess` (from `ai-usage-limits`)
    then refuses AI calls with 403 `consentRequired`. Without that skill, call

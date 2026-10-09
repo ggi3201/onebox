@@ -9,12 +9,6 @@ public interface ISubscriptions
     Task<bool> IsActiveAsync(string userId, CancellationToken ct);
 }
 
-/// <summary>Has this user agreed to send data to the AI provider? See the ai-consent skill.</summary>
-public interface IAiConsentCheck
-{
-    Task<bool> HasConsentedAsync(string userId, CancellationToken ct);
-}
-
 /// <summary>
 /// The one server-side gate for EVERY endpoint that reaches a model: the chat,
 /// and any other AI endpoint (a photo reader, an import). The app's own checks

@@ -76,6 +76,11 @@ public static class AgentLimits
 
         if (request.Messages.Count > MaxMessages) return $"more than {MaxMessages} messages";
 
+        // Refuse here what the provider would refuse after the 200 is sent:
+        // the person would see a vague provider error instead of this reason.
+        if (request.View is null) return "no view";
+        if (request.Messages[^1].Role != "user") return "the last message is not from the person";
+
         long prose = 0;
         foreach (var turn in request.Messages)
         {
@@ -87,15 +92,23 @@ public static class AgentLimits
             // A photo from the phone, never a URL. The provider fetches a URL
             // on your key, and the size cap above measures the string, not what
             // it points at.
-            if (!string.IsNullOrEmpty(turn.Image)
-                && (!turn.Image.StartsWith("data:image/", StringComparison.OrdinalIgnoreCase)
-                    || !turn.Image.Contains(";base64,", StringComparison.Ordinal)))
+            if (!string.IsNullOrEmpty(turn.Image) && !IsPhoto(turn.Image))
                 return "an image that is not a photo";
 
             prose += content.Length;
         }
 
         return prose > MaxTotalChars ? "a conversation over the size limit" : null;
+    }
+
+    /// <summary>A JPEG, PNG, WebP or GIF data URL with valid base64: what every vision API takes.</summary>
+    private static bool IsPhoto(string image)
+    {
+        var comma = image.IndexOf(";base64,", StringComparison.Ordinal);
+        if (comma < 0) return false;
+        var type = image[..comma];
+        return type is "data:image/jpeg" or "data:image/png" or "data:image/webp" or "data:image/gif"
+            && System.Buffers.Text.Base64.IsValid(image.AsSpan(comma + ";base64,".Length));
     }
 }
 

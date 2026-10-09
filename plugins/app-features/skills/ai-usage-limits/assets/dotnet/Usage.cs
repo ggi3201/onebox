@@ -54,7 +54,10 @@ public sealed class ModelPricing(IConfiguration config)
                 s.GetValue<decimal>("Input"), s.GetValue<decimal>("CachedInput"), s.GetValue<decimal>("Output")),
                 StringComparer.OrdinalIgnoreCase);
 
-        if (table.TryGetValue(model, out var known)) return known;
+        // ":" separates sections in .NET configuration, so a key such as
+        // "openai/gpt-5:free" would split in two. prices.sh writes it as
+        // "openai/gpt-5_free"; look it up the same way.
+        if (table.TryGetValue(model.Replace(':', '_'), out var known)) return known;
         if (table.Count == 0)
             throw new InvalidOperationException("Usage:Prices is empty. Run scripts/prices.sh and add your models.");
         return new Rates(table.Values.Max(r => r.Input), table.Values.Max(r => r.CachedInput), table.Values.Max(r => r.Output));
