@@ -21,7 +21,8 @@
 // The states, from worst to best:
 //   missing   no flow has a `Covers:` line with the feature's id
 //   failed    a flow that covers it failed its last run
-//   unproven  a flow that covers it has never run
+//   unproven  a flow that covers it has never run, or passed with no
+//             Feature: line (then no code change could make it stale)
 //   stale     every flow passed, but a flow or its code changed since
 //   done      every flow that covers it passed on the current code
 //
@@ -287,7 +288,10 @@ export function checkFeatures(repoDir = ".") {
     let run = null;
     try { run = JSON.parse(fs.readFileSync(runFile(repo, fl.path), "utf8")); } catch {}
     const now = fingerprint(repo, fl);
-    const state = !run ? "unproven" : run.result !== "pass" ? "failed" : run.fingerprint !== now ? "stale" : "done";
+    // Without a Feature line the fingerprint covers the flow file only, so no
+    // code change could ever make the pass stale. Such a pass does not count.
+    const state = !run ? "unproven" : run.result !== "pass" ? "failed" : !fl.paths.length ? "unproven"
+      : run.fingerprint !== now ? "stale" : "done";
     flowState.set(fl.path, {
       flow: fl.path, title: fl.title, covers: fl.covers, state,
       lastRun: run ? { result: run.result, step: run.step ?? null, note: run.note ?? null, commit: run.commit ?? null, date: run.date ?? null } : null,
@@ -328,7 +332,12 @@ function sayFor(features, flowState) {
       const s = flowOf("failed");
       return `Next: fix "${gap.name}". ${name(s)} failed${s.lastRun.step ? ` at step ${s.lastRun.step}` : ""}. Continue?`;
     }
-    case "unproven": return `Next: run ${name(flowOf("unproven"))} to prove "${gap.name}". Continue?`;
+    case "unproven": {
+      const s = flowOf("unproven");
+      return s.noFeatureLine && s.lastRun
+        ? `Next: add a Feature: line to ${name(s)} that names the code it tests, then run it again. Continue?`
+        : `Next: run ${name(s)} to prove "${gap.name}". Continue?`;
+    }
     case "stale": return `Next: run ${name(flowOf("stale"))} again. "${gap.name}" changed since it passed. Continue?`;
     default: return "Every feature works: each one has a flow that passed on the current code.";
   }

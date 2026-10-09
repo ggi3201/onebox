@@ -22,6 +22,27 @@ update.
 
 ## start
 
+### 0.2.13 (2026-10-09)
+
+- `plan` detection: `app.json` and `eas.json` with comments or trailing
+  commas are read. Asset folders are skipped, and a walk that stops at its
+  file limit says so. Firebase counts as a backend only for Firestore,
+  Database, Functions, Auth or Storage, not Crashlytics alone. Supabase,
+  Convex and Firebase functions next to an app at the repo root count as
+  server code. RevenueCat and Sentry are ticked when the app also calls
+  `Purchases.configure()` / `Sentry.init()`.
+- `plan`: a plan written with `--out` is found by later runs, `ready`,
+  detect and `check-features`. RevenueCat comes after the App Store Connect
+  key, and the feature check just before `app-store-ready`. New items:
+  `media-providers` and `draw-icon-set`. Lines the planner wrote are
+  remembered by hash, so after an update its old words are dropped, not kept
+  as your notes. A plan header that does not parse, or a bad answer in it,
+  is named. A missing `--repo` folder is a plain error. The SSH key need
+  accepts any key in `~/.ssh` or in the SSH agent.
+- `check-features`: non-Latin feature lines get their own ids, and a line
+  skipped because its id is taken is named. A pass with no `Feature:` line
+  does not count. A run through a symlink works.
+
 ### 0.2.12 (2026-10-09)
 
 - Internal: the plan's detection no longer looks for Xcode when run with

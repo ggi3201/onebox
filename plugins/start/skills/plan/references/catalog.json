@@ -845,6 +845,19 @@
       }
     },
     {
+      "id": "media-providers",
+      "kind": "guide",
+      "phase": "features",
+      "title": "Pick an image and video provider",
+      "nudge": "Pick a provider for images and video: kie.ai, fal.ai or Replicate",
+      "needs": [],
+      "when": {
+        "ai": [
+          "media"
+        ]
+      }
+    },
+    {
       "id": "kie-ai",
       "kind": "guide",
       "phase": "features",
@@ -1093,6 +1106,17 @@
           "store"
         ]
       }
+    },
+    {
+      "id": "draw-icon-set",
+      "kind": "skill",
+      "plugin": "ship-ios",
+      "phase": "launch",
+      "title": "Custom icons, if the app needs its own",
+      "nudge": "Custom icons in one style, if the app needs its own",
+      "needs": [
+        "plugin-ship-ios"
+      ]
     },
     {
       "id": "app-store-screenshots",

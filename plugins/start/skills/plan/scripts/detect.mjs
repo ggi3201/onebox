@@ -22,6 +22,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { loadNeeds, loadConfig, checkNeeds } from "./needs.mjs";
 
 const root = path.resolve(process.argv[2] ?? ".");
+if (!fs.existsSync(root)) { process.stderr.write(`detect.mjs: ${root} does not exist\n`); process.exit(2); }
 const SKIP = new Set([
   "node_modules", ".git", "ios", "android", "build", "dist", "bin", "obj",
   ".expo", ".next", ".turbo", ".worktrees", "Pods", "coverage", "vendor",
@@ -177,6 +178,7 @@ if (expoPick) {
     updates,
     notifications: !!dp["expo-notifications"],
     storeReview: !!dp["expo-store-review"],
+    sentry: !!dp["@sentry/react-native"],
   };
 }
 
@@ -264,6 +266,8 @@ let reviewCall = null;
 // RevenueCat is set up when the app calls Purchases.configure, not when the
 // package is installed: ticked on the package alone, its blockers never show.
 let rcConfigure = null;
+// Crash reports (crash-reports.md): the Sentry package and a Sentry.init call.
+let sentryInit = null;
 const protect = new Map(); // backend -> the text of its files, for the protection checks below
 let aiServer = null; // a backend file that names an AI host, or a backend with an AI package
 const DELETE_ROUTE = /\bMapDelete\s*\(|\[HttpDelete\b|@Delete\s*\(|\.delete\s*\(\s*["'`]|method\s*:\s*["'`]DELETE["'`]/i;
@@ -277,6 +281,7 @@ for (const f of srcFiles) {
   if (!pushServer && inBackend && /exp\.host|api(\.sandbox)?\.push\.apple\.com|expo-server-sdk/.test(t)) pushServer = rel(f);
   if (!accountDelete && inBackend && DELETE_ROUTE.test(t) && (ACCOUNT_ROUTE.test(t) || /account|user/i.test(path.basename(f)))) accountDelete = rel(f);
   if (!reviewCall && expoPick && f.startsWith(expoPick.dir + path.sep) && /\brequestReview\s*\(/.test(t)) reviewCall = rel(f);
+  if (!sentryInit && expoPick && f.startsWith(expoPick.dir + path.sep) && /\bSentry\.init\s*\(/.test(t)) sentryInit = rel(f);
   if (!rcConfigure && expoPick && f.startsWith(expoPick.dir + path.sep) && /\bPurchases\.configure\s*\(/.test(t)) rcConfigure = rel(f);
   if (!appleRevoke && inBackend && (/appleid\.apple\.com\/auth\/revoke/.test(t) || (/auth\/revoke/.test(t) && /appleid\.apple\.com/.test(t)))) appleRevoke = rel(f);
   for (const h of AI_HOSTS) if (!ai.endpoints[h] && t.includes(h)) ai.endpoints[h] = rel(f);
@@ -547,6 +552,8 @@ if (expo.appleSignIn?.package) {
   else if (lackA.length) open["guide:sign-in-with-apple"] = `the server checks Apple's token (${appleServer}); for step 6, still missing ${list(lackA)}`;
   else done["guide:sign-in-with-apple"] = `Sign in with Apple is wired in the app; the server checks Apple's token (${appleServer}), deletes the account (${accountDelete}) and revokes Apple's tokens (${appleRevoke})`;
 }
+if (expo.sentry && sentryInit) done["guide:crash-reports"] = `@sentry/react-native is in the app, started in ${sentryInit}`;
+else if (expo.sentry) seen["guide:crash-reports"] = "@sentry/react-native is in the app; no Sentry.init() call found";
 if (expo.revenuecat && rcConfigure) done["guide:revenuecat"] = `react-native-purchases is in the app, configured in ${rcConfigure}`;
 else if (expo.revenuecat) seen["guide:revenuecat"] = "react-native-purchases is in the app; no Purchases.configure() call found";
 if (hasKey("apple.ascKeyId") && hasKey("apple.ascIssuerId")) {

@@ -203,7 +203,7 @@
       "label": "An SSH key",
       "kind": "login",
       "problem": "this Mac has no SSH key",
-      "check": { "run": "ls \"$HOME\"/.ssh/id_*.pub >/dev/null 2>&1" },
+      "check": { "run": "ls \"$HOME\"/.ssh/*.pub >/dev/null 2>&1 || ssh-add -L >/dev/null 2>&1" },
       "fix": "make one with `ssh-keygen -t ed25519` in your own terminal",
       "hint": "1 minute, I will show you how",
       "guide": "https://onebox.lokkesveen.com/guides/vps/#1-an-ssh-key-on-your-mac",
@@ -371,17 +371,6 @@
       "fix": "make a Cloudflare API token for DNS, and keep it in your secrets",
       "hint": "3 minutes, I will show you where",
       "guide": "https://onebox.lokkesveen.com/guides/cloudflare/#3-create-the-api-token-for-dns",
-      "yours": true
-    },
-    {
-      "id": "expo-token-ci",
-      "label": "The Expo token for GitHub Actions",
-      "kind": "secret",
-      "after": ["gh-login"],
-      "check": { "run": "out=$(gh secret list 2>/dev/null) || exit 3; printf '%s\\n' \"$out\" | cut -f1 | grep -qx EXPO_TOKEN", "timeout": 6 },
-      "fix": "make an Expo access token, and add it to the repo's GitHub secrets as EXPO_TOKEN",
-      "hint": "I will show you where",
-      "guide": "https://onebox.lokkesveen.com/guides/expo-eas/#steps",
       "yours": true
     },
     {

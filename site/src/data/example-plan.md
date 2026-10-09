@@ -112,6 +112,7 @@ Skills read these from `~/.config/onebox/config.json`, or `.onebox.json` for thi
 
 - [ ] The landing page with privacy, support and terms — skill: /box:new-landing-page <!-- skill:box/new-landing-page -->
 - [ ] The app icon — skill: /ship-ios:draw-app-icon <!-- skill:ship-ios/draw-app-icon -->
+- [ ] Custom icons, if the app needs its own — skill: /ship-ios:draw-icon-set <!-- skill:ship-ios/draw-icon-set -->
 - [ ] Store screenshots from real screens — skill: /ship-ios:app-store-screenshots <!-- skill:ship-ios/app-store-screenshots -->
 - [ ] Store page text that search finds — skill: /ship-ios:store-listing <!-- skill:ship-ios/store-listing -->
 - [ ] Check that every feature works, with proof — skill: /start:check-features <!-- skill:start/check-features -->
