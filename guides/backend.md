@@ -98,9 +98,11 @@ docker build -f apps/api/Dockerfile .
 
 ```dockerfile
 FROM node:24-slim AS build
-RUN corepack enable
 WORKDIR /repo
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+# The pnpm that packageManager pins. Not corepack: Node 25 and newer images
+# have none, and the image follows .node-version.
+RUN npm install -g "$(node -p "require('./package.json').packageManager.split('+')[0]")"
 COPY apps/api/package.json apps/api/
 RUN pnpm install --frozen-lockfile --filter api
 COPY apps/api apps/api

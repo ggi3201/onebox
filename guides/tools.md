@@ -21,8 +21,8 @@ Install [Homebrew](https://brew.sh) first. Most of the tools below come from it.
 |---|---|---|
 | Xcode | iOS builds, the Simulator, `xcodebuild`, `xcrun` | [xcode.md](xcode.md). The full Xcode, not only the Command Line Tools. |
 | `git` | every repo | comes with Xcode |
-| Node.js 22.13 or later, or 24 (LTS) | the skills' scripts, Expo, `eas`. Expo SDK 57 needs 22.13 | `brew install node@22`, or a version manager such as `fnm` |
-| `pnpm` | the package manager in a `/start:new-app` repo | `npm install -g pnpm@10`. Node 25 and newer no longer ship corepack, so the kit does not rely on it. In a repo, pnpm 10 runs the version that `package.json` pins in `packageManager`. |
+| Node.js 22.18 or later, or 24 (LTS) | the skills' scripts, Expo, `eas`. Expo SDK 57 needs 22.13; a Node API from `/start:new-app` runs `src/server.ts` directly, which needs 22.18 | `brew install node@22`, or a version manager such as `fnm` |
+| `pnpm` | the package manager in a `/start:new-app` repo | `corepack disable pnpm 2>/dev/null; npm install -g pnpm@10`. Node 25 and newer no longer ship corepack, so the kit does not rely on it. In a repo, pnpm 10 runs the version that `package.json` pins in `packageManager`. |
 | `jq` | reads the onebox config | `brew install jq` |
 | `eas` | Expo builds and updates, also local builds | `npm install -g eas-cli`. See [expo-eas.md](expo-eas.md). |
 | CocoaPods (`pod`) | local iOS builds | `brew install cocoapods`. See [xcode.md](xcode.md), step 6. |
@@ -98,8 +98,12 @@ On the box, after `box:box-setup`, its `check` phase must end with `0 fail`.
   `sudo xcode-select -s /Applications/Xcode.app`.
 - **`pnpm -v` fails with `Cannot find module ... pnpm.cjs`.** Corepack picked a
   pnpm version it cannot start (pnpm 12). Stop using corepack for pnpm and
-  install it directly: `npm install -g pnpm@10`. If `corepack: command not
-  found`, your Node is 25 or newer and has no corepack; the same command works.
+  install it directly: `corepack disable pnpm; npm install -g pnpm@10`. If
+  `corepack: command not found`, your Node is 25 or newer and has no
+  corepack: run only the second part.
+- **`npm install -g pnpm` fails with `EEXIST`.** Corepack left a `pnpm` file
+  where npm wants to put its own. Run `corepack disable pnpm`, then the
+  install again.
 - **`npx eas-cli` fails with `Cannot find module 'fdir'`.** Use the global
   `eas` from `npm install -g eas-cli`.
 - **`docker info` says it cannot connect.** The Docker app or Colima is not
