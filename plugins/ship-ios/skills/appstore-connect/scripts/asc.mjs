@@ -619,31 +619,44 @@ const commands = {
     const app = await appOf(plan.app || args.app);
     const groups = await all(`/v1/apps/${app.id}/subscriptionGroups` + q({ limit: 50 }));
     let group = groups.find(g => g.attributes.referenceName === plan.group.referenceName);
+    // A re-run finishes what an earlier run left out (it may have stopped at
+    // a bad locale): each step below checks what exists, by locale.
+    const haveLocales = async (p) => DRY || !p ? new Set() : new Set((await all(p + q({ limit: 50 }))).map(l => l.attributes.locale));
     if (group) console.log(`group "${plan.group.referenceName}" exists, id=${group.id}`);
     else {
       group = (await write('POST', '/v1/subscriptionGroups', { data: { type: 'subscriptionGroups', attributes: { referenceName: plan.group.referenceName },
         relationships: { app: { data: { type: 'apps', id: app.id } } } } })).data;
-      for (const l of plan.group.localizations || [])
-        await write('POST', '/v1/subscriptionGroupLocalizations', { data: { type: 'subscriptionGroupLocalizations', attributes: l,
-          relationships: { subscriptionGroup: { data: { type: 'subscriptionGroups', id: group.id } } } } });
+    }
+    const groupLocales = await haveLocales(group.id === '(dry-run)' ? null : `/v1/subscriptionGroups/${group.id}/subscriptionGroupLocalizations`);
+    for (const l of plan.group.localizations || []) {
+      if (groupLocales.has(l.locale)) continue;
+      await write('POST', '/v1/subscriptionGroupLocalizations', { data: { type: 'subscriptionGroupLocalizations', attributes: l,
+        relationships: { subscriptionGroup: { data: { type: 'subscriptionGroups', id: group.id } } } } });
     }
     const existing = DRY || group.id === '(dry-run)' ? [] : await all(`/v1/subscriptionGroups/${group.id}/subscriptions` + q({ limit: 50 }));
     const territories = DRY ? [] : (await all('/v1/territories' + q({ limit: 200 }))).map(t => ({ type: 'territories', id: t.id }));
     for (const s of plan.subscriptions) {
       let sub = existing.find(x => x.attributes.productId === s.productId);
-      if (sub) { console.log(`${s.productId} exists, id=${sub.id}, skipping create`); }
+      const isNew = !sub;
+      if (sub) { console.log(`${s.productId} exists, id=${sub.id}: adding only what is missing`); }
       else {
         sub = (await write('POST', '/v1/subscriptions', { data: { type: 'subscriptions',
           attributes: { name: s.name, productId: s.productId, subscriptionPeriod: s.period, groupLevel: s.level, familySharable: !!s.familySharable, reviewNote: s.reviewNote },
           relationships: { group: { data: { type: 'subscriptionGroups', id: group.id } } } } })).data;
-        for (const l of s.localizations || [])
-          await write('POST', '/v1/subscriptionLocalizations', { data: { type: 'subscriptionLocalizations', attributes: l,
-            relationships: { subscription: { data: { type: 'subscriptions', id: sub.id } } } } });
-        // Availability must exist before a price can be set. Without it the price POST
-        // answers 409 and blames the price point.
+      }
+      const subLocales = await haveLocales(isNew ? null : `/v1/subscriptions/${sub.id}/subscriptionLocalizations`);
+      for (const l of s.localizations || []) {
+        if (subLocales.has(l.locale)) continue;
+        await write('POST', '/v1/subscriptionLocalizations', { data: { type: 'subscriptionLocalizations', attributes: l,
+          relationships: { subscription: { data: { type: 'subscriptions', id: sub.id } } } } });
+      }
+      // Availability must exist before a price can be set. Without it the price POST
+      // answers 409 and blames the price point.
+      let available = false;
+      if (!isNew && !DRY) { try { available = !!(await api('GET', `/v1/subscriptions/${sub.id}/subscriptionAvailability`))?.data; } catch { available = false; } }
+      if (!available)
         await write('POST', '/v1/subscriptionAvailabilities', { data: { type: 'subscriptionAvailabilities', attributes: { availableInNewTerritories: true },
           relationships: { subscription: { data: { type: 'subscriptions', id: sub.id } }, availableTerritories: { data: DRY ? ['(all territories)'] : territories } } } });
-      }
       if (!DRY && sub.attributes?.groupLevel && s.level && sub.attributes.groupLevel !== s.level)
         await write('PATCH', `/v1/subscriptions/${sub.id}`, { data: { type: 'subscriptions', id: sub.id, attributes: { groupLevel: s.level } } });
       if (!s.price) continue;

@@ -228,6 +228,19 @@ update.
 
 ## ship-ios
 
+### 0.1.9 (2026-10-09)
+
+- `app-store-ready`: an icon whose RGBA pixels are all opaque passes; only
+  real transparency fails. The purpose string rule no longer flags its own
+  example: "generic" now means a placeholder, under 30 characters, or "needs
+  access" with no reason.
+- `appstore-connect`: a second `subs-create` run adds the group and product
+  texts and the availability that an earlier run left out, by locale.
+- `expo-local-build`: reads the nearest `.onebox.json`, so a monorepo's file
+  at the repo root counts when you build from `apps/mobile`.
+- `eas-update`: an update still in a rollout is undone with
+  `eas update:revert-update-rollout`; `update:rollback` is for one at 100%.
+
 ### 0.1.8 (2026-10-09)
 
 - `app-store-screenshots` and `appstore-connect`: `--app <bundle id>` acts only

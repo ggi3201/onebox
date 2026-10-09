@@ -12,7 +12,7 @@
 // It changes nothing and sends nothing anywhere. Its one network use is a plain
 // GET of the app's privacy and support pages, when it knows their URLs and the
 // repo has no source for them. --offline skips that. Node 18+, no dependencies.
-import fs from 'fs'; import os from 'os'; import path from 'path'; import { execFileSync } from 'child_process';
+import fs from 'fs'; import os from 'os'; import path from 'path'; import { execFileSync } from 'child_process'; import zlib from 'zlib';
 
 const argv = process.argv.slice(2);
 const DIR = path.resolve(argv.find(a => !a.startsWith('--')) || '.');
@@ -110,9 +110,42 @@ function pngInfo(p) {
   try {
     const b = fs.readFileSync(p);
     if (b.readUInt32BE(0) !== 0x89504e47) return null;
-    const w = b.readUInt32BE(16), h = b.readUInt32BE(20), ct = b[25];
-    return { w, h, alpha: ct === 4 || ct === 6 || b.includes(Buffer.from('tRNS')) };
+    const w = b.readUInt32BE(16), h = b.readUInt32BE(20), depth = b[24], ct = b[25];
+    // An RGBA file whose every pixel is opaque is fine: App Store Connect
+    // rejects real transparency, not the channel. So read the pixels.
+    const alpha = b.includes(Buffer.from('tRNS')) || ((ct === 4 || ct === 6) && !allOpaque(b, w, h, depth, ct));
+    return { w, h, alpha };
   } catch { return null; }
+}
+// True when every alpha byte is 255. 8-bit greyscale+alpha or RGBA only;
+// anything else counts as not opaque, the safe answer.
+function allOpaque(b, w, h, depth, ct) {
+  if (depth !== 8) return false;
+  const idat = [];
+  for (let o = 8; o + 8 <= b.length;) {
+    const len = b.readUInt32BE(o), type = b.toString('latin1', o + 4, o + 8);
+    if (type === 'IDAT') idat.push(b.subarray(o + 8, o + 8 + len));
+    if (type === 'IEND') break;
+    o += 12 + len;
+  }
+  const raw = zlib.inflateSync(Buffer.concat(idat));
+  const bpp = ct === 6 ? 4 : 2, stride = w * bpp;
+  let prev = Buffer.alloc(stride), cur = Buffer.alloc(stride);
+  for (let y = 0; y < h; y++) {
+    const f = raw[y * (stride + 1)], row = raw.subarray(y * (stride + 1) + 1, (y + 1) * (stride + 1));
+    for (let x = 0; x < stride; x++) {
+      const a = x >= bpp ? cur[x - bpp] : 0, up = prev[x], c = x >= bpp ? prev[x - bpp] : 0;
+      let v = row[x];
+      if (f === 1) v += a;
+      else if (f === 2) v += up;
+      else if (f === 3) v += (a + up) >> 1;
+      else if (f === 4) { const pa = Math.abs(up - c), pb = Math.abs(a - c), pc = Math.abs(a + up - 2 * c); v += pa <= pb && pa <= pc ? a : pb <= pc ? up : c; }
+      cur[x] = v & 255;
+    }
+    for (let x = bpp - 1; x < stride; x += bpp) if (cur[x] !== 255) return false;
+    [prev, cur] = [cur, prev];
+  }
+  return true;
 }
 // ios.icon is a path, or { light, dark, tinted } for the iOS 18 variants.
 const iconPath = typeof ios.icon === 'string' ? ios.icon : (ios.icon?.light || expo.icon);
@@ -147,7 +180,10 @@ const PERMS = [
   [['react-native-ble-plx'], 'NSBluetoothAlwaysUsageDescription'],
 ];
 // Generic = Expo's default text, too short, or no "to/so/for/when <purpose>" clause.
-const isGeneric = v => /\$\(PRODUCT_NAME\)|lorem|todo/i.test(v) || v.trim().length < 30 || !/\b(to|so|for|when|while)\s+\w+(\s+\w+){2,}/i.test(v);
+// "Scan a recipe from a cookbook page with your camera." passes: it says what
+// the app does. "This app needs access to your camera." does not.
+const isGeneric = v => /\$\(PRODUCT_NAME\)|lorem|todo/i.test(v) || v.trim().length < 30
+  || (/\b(needs?|requires?|uses?|would like)\b.*\b(access|permission)\b/i.test(v) && !/\b(to|so|for|when|while)\s+\w+(\s+\w+){2,}/i.test(v));
 const usage = Object.entries(plist).filter(([k]) => /^NS\w+UsageDescription$/.test(k));
 for (const [pkgs, key] of PERMS) {
   const used = pkgs.filter(p => deps[p]);
