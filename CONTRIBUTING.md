@@ -1,3 +1,23 @@
+# Contributing to onebox
+
+## Send a change
+
+1. Open an issue first, unless the fix is small (a typo, a broken link). Say
+   what is wrong and what you want to change. The issue forms ask the right
+   questions.
+2. Fork the repo and make a branch.
+3. Make the change. A skill change follows the rules below.
+4. Run the checks in [AGENTS.md](AGENTS.md), "Checks before a PR". CI runs
+   them again on your PR.
+5. Open a PR to `main`. Fill in the template, and put `Fixes #<n>` in it.
+
+The repo is public. Write "the app" or `myapp`, never a real app name, host,
+domain, team ID or secret. That holds for code, issues and PR text.
+
+A PR from a first-time contributor waits for the owner to start CI. `main`
+takes squash merges only. Everyone here follows the
+[code of conduct](CODE_OF_CONDUCT.md).
+
 # Writing a onebox skill
 
 ## Layout

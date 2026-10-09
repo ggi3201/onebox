@@ -1,0 +1,25 @@
+name: Ask for a skill or guide
+description: A step on the way to the App Store that the kit does not cover yet.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: >
+        The repo is public. Write "the app" or myapp, not the real app name,
+        host, domain or team ID.
+  - type: textarea
+    id: step
+    attributes:
+      label: The step
+      description: What you want to do, and where it fits on the way to the App Store.
+    validations: { required: true }
+  - type: textarea
+    id: now
+    attributes:
+      label: What you do now
+      description: How you do this step today, by hand or with another tool.
+  - type: textarea
+    id: plugin
+    attributes:
+      label: Which plugin
+      description: start, ship-ios, box, content, dev, app-features or guides. Leave it empty if you do not know.

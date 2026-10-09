@@ -1,0 +1,3 @@
+# Asks the owner to review every PR, so a PR from outside shows up in the
+# review queue, not only in notifications.
+* @ggi3201
