@@ -15,10 +15,13 @@ services:
     environment:
       # ${VAR:?required} fails the deploy when VAR is missing.
       # A bare ${VAR} would pass an EMPTY string, not an absent variable.
+      # The same names as production's API service (guides/backend.md), with
+      # staging's values. Copy every other variable production has too.
       DATABASE_URL: ${DATABASE_URL:?required}
-      JWT_SECRET: ${JWT_SECRET:?required}     # NOT production's value
-      APP_ENV: staging
-      LOG_LEVEL: ${LOG_LEVEL:-info}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?required}   # NOT production's value
+      # The proxy network's subnet. The API refuses to start without it:
+      # docker network inspect <box.proxyNetwork> -f '{{range .IPAM.Config}}{{.Subnet}}{{end}}'
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:?required}
     depends_on:
       db-stg:
         condition: service_healthy
@@ -27,7 +30,7 @@ services:
       - proxy
     labels:
       - "traefik.enable=true"
-      - "traefik.docker.network=proxy"
+      - "traefik.docker.network=${PROXY_NETWORK:-proxy}"
       - "traefik.http.routers.myapp-api-stg.rule=Host(`api-stg.example.com`)"
       - "traefik.http.routers.myapp-api-stg.service=myapp-api-stg"
       - "traefik.http.routers.myapp-api-stg.entrypoints=websecure"
@@ -62,4 +65,5 @@ volumes:
 
 networks:
   proxy:
+    name: ${PROXY_NETWORK:-proxy}            # box.proxyNetwork
     external: true

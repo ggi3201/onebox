@@ -32,7 +32,8 @@
 #   --config FILE           onebox config JSON [~/.config/onebox/config.json if present]
 #   --type home|vps         box.type [vps]
 #   --user NAME             admin user to create or use [$SUDO_USER, else "admin"]
-#   --pubkey-file PATH      public key(s) to authorize [/root/.ssh/authorized_keys]
+#   --pubkey-file PATH      public key(s) to authorize [the sudo user's authorized_keys,
+#                           else /root/.ssh/authorized_keys]
 #   --apps-dir DIR          box.appsDir [/srv/apps]
 #   --network NAME          box.proxyNetwork [proxy]
 #   --tunnel none|cloudflare box.tunnel [cloudflare]
@@ -58,7 +59,7 @@ PHASE="${1:-}"; [ -n "$PHASE" ] && shift || true
 
 TYPE=vps
 ADMIN="${SUDO_USER:-}"; [ "$ADMIN" = root ] && ADMIN=""; ADMIN="${ADMIN:-admin}"
-PUBKEY_FILE=/root/.ssh/authorized_keys
+PUBKEY_FILE=""
 APPS_DIR=/srv/apps
 NET=proxy
 TUNNEL=cloudflare
@@ -119,6 +120,16 @@ while [ $# -gt 0 ]; do
   esac
   shift
 done
+
+# The keys to authorize: on a mini PC, the install user ran sudo and has the
+# keys from ssh-copy-id; root's file is empty there. On a VPS, root has them.
+if [ -z "$PUBKEY_FILE" ]; then
+  PUBKEY_FILE=/root/.ssh/authorized_keys
+  if [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != root ]; then
+    h="$(getent passwd "$SUDO_USER" | cut -d: -f6 || true)"
+    [ -n "$h" ] && [ -s "$h/.ssh/authorized_keys" ] && PUBKEY_FILE="$h/.ssh/authorized_keys"
+  fi
+fi
 
 case "$TYPE" in home|vps) ;; *) echo "--type must be home or vps" >&2; exit 2 ;; esac
 case "$TUNNEL" in cloudflare|none) ;; *) echo "--tunnel must be cloudflare or none" >&2; exit 2 ;; esac
@@ -438,6 +449,19 @@ http:
         sourceRange: ["$gw/32", "127.0.0.1/32"]
 EOF
 
+  # Who may set X-Forwarded-For. Behind the tunnel, cloudflared on the host
+  # comes in from the gateway. With tunnel none, Cloudflare's edge connects
+  # directly; without its ranges here, every client IP is an edge address and
+  # per-IP limits count per edge, not per user.
+  local trusted="$gw/32,127.0.0.1/32,::1/128" cf
+  if [ "$TUNNEL" = none ]; then
+    cf="$({ curl -fsS --max-time 10 https://www.cloudflare.com/ips-v4 && echo && curl -fsS --max-time 10 https://www.cloudflare.com/ips-v6; } 2>/dev/null \
+      | grep -E '^[0-9a-fA-F:.]+/[0-9]+$' | paste -sd, - || true)"
+    [ -n "$cf" ] || die "could not fetch Cloudflare's IP ranges (www.cloudflare.com/ips-v4, ips-v6)"
+    trusted="$trusted,$cf"
+    say "trusting Cloudflare's IP ranges for X-Forwarded-For (tunnel none)"
+  fi
+
   # With a tunnel, nothing needs to reach 80/443 from outside. On a VPS the
   # ports bind to 127.0.0.1, because Docker-published ports skip ufw. At home
   # the router already blocks inbound, and LAN-only hostnames need the LAN IP.
@@ -465,8 +489,8 @@ services:
       - --entrypoints.web.http.redirections.entrypoint.to=websecure
       - --entrypoints.web.http.redirections.entrypoint.scheme=https
       - --entrypoints.websecure.address=:443
-      # Trust the tunnel hop, or every client IP becomes $gw.
-      - --entrypoints.websecure.forwardedHeaders.trustedIPs=$gw/32,127.0.0.1/32,::1/128
+      # Trust the tunnel hop (or Cloudflare's edge), or every client IP becomes theirs.
+      - --entrypoints.websecure.forwardedHeaders.trustedIPs=$trusted
       - --entrypoints.traefik.address=:8081
       - --api=true
       - --api.dashboard=true
@@ -783,11 +807,18 @@ phase_check() {
     if [ -n "$other" ]; then meh "onebox backup timer not enabled; other backup timers: ${other% }. Check they cover every volume"
     else bad "backup timer not enabled"; fi
   fi
-  if [ -f "$last" ]; then
-    local age=$(( $(date +%s) - $(stat -c %Y "$last") ))
-    grep -q '^ok' "$last" && [ "$age" -lt 129600 ] && ok "last backup ok, $((age/3600)) h ago" \
-      || bad "last backup: $(head -1 "$last"), $((age/3600)) h ago"
-    grep -q 'offsite=none' "$last" && meh "backups stay on this box (no RESTIC_REPOSITORY)"
+  # /var/backups/onebox is root-only: read the status as root, or say it could
+  # not be read. Never report "no backup yet" for a status we could not see.
+  local status=""
+  if ! S test -r /var/backups/onebox >/dev/null 2>&1; then
+    meh "backup status not read: run check with sudo"
+  elif S test -f "$last"; then
+    status="$(S cat "$last")"
+    local age=$(( $(date +%s) - $(S stat -c %Y "$last") ))
+    case "$status" in ok*) [ "$age" -lt 129600 ] && ok "last backup ok, $((age/3600)) h ago" \
+      || bad "last backup: ${status%%$'\n'*}, $((age/3600)) h ago" ;;
+      *) bad "last backup: ${status%%$'\n'*}, $((age/3600)) h ago" ;; esac
+    case "$status" in *offsite=none*) meh "backups stay on this box (no RESTIC_REPOSITORY)" ;; esac
   elif systemctl is-enabled onebox-backup.timer >/dev/null 2>&1; then
     meh "no backup has run yet (run: sudo onebox-backup)"
   fi

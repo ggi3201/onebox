@@ -108,8 +108,15 @@ store it in the staging secrets as `STG_BASIC_AUTH`, not in the repo:
 - "traefik.http.routers.myapp-web-stg.middlewares=myapp-stg-auth,myapp-stg-noindex"
 ```
 
-Compose substitutes the variable once, so the `$` signs inside the hash stay as
-they are. Do not put basic auth on the API router: the app does not send it.
+From the environment (`doppler run`, `op run`), the `$` signs inside the hash
+stay as they are. **From an env file, single-quote the value:**
+
+```bash
+STG_BASIC_AUTH='qa:$2y$05$...'
+```
+
+Unquoted or in double quotes, Compose reads `$2y` and the rest as variables,
+and the login always fails. Do not put basic auth on the API router: the app does not send it.
 
 Check it: `curl -sI https://api-stg.example.com/health | grep -i x-robots-tag`
 shows `noindex`. A staging page asks for a login in a private window.

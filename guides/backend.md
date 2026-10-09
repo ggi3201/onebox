@@ -256,6 +256,16 @@ only names them: `${JWT_SECRET_KEY}`. Where the values come from depends on
 | `doppler` | the Doppler CLI on the box; a service token for one project and config as the GitHub secret `DOPPLER_TOKEN` | `doppler run -- docker compose up -d` |
 | `1password` | the `op` CLI on the box; an `app.env` file in the repo that holds only `op://` references; a service account token as the GitHub secret `OP_SERVICE_ACCOUNT_TOKEN` | `op run --env-file=app.env -- docker compose up -d` |
 
+For `doppler` and `1password`, install the CLI on the box once. The deploy
+runs it there:
+
+```bash
+# Doppler: https://docs.doppler.com/docs/install-cli
+ssh "$BOX" "curl -Ls --tlsv1.2 --proto '=https' --retry 3 https://cli.doppler.com/install.sh | sudo sh"
+# 1Password: https://developer.1password.com/docs/cli/get-started/ (the apt steps for Linux)
+ssh "$BOX" 'doppler --version || op --version'
+```
+
 I use Doppler: GitHub holds only a `DOPPLER_TOKEN` scoped to
 one project and one config, and the runner calls `doppler run`.
 
