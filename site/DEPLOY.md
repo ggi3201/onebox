@@ -42,8 +42,9 @@ the guides, a `SKILL.md`, the plan catalog or `site/`. After a merge to `main`
 it also deploys. A skill's description is on the site too, so those changes
 count.
 
-It deploys only when two repository secrets exist. Without them it still
-builds, prints a notice and does not fail.
+It needs two repository secrets. Without them the deploy step on `main`
+fails, so a green run always means the site went live. After the deploy it
+checks that a made-up path answers 404 (`site/src/pages/404.astro`).
 
 ### Set it up once
 

@@ -2,8 +2,9 @@ name: Deploy site
 
 # The site (site/) is on Cloudflare Pages. It builds from the guides and from
 # every SKILL.md, so a change to either must go live. On a PR this only builds.
-# On a merge to main it also deploys, but only when both repository secrets
-# exist. Without them it builds and says so, and does not fail.
+# On a merge to main it also deploys, and then checks that an unknown path
+# answers 404. Without the two repository secrets the deploy fails on main:
+# a green run that deployed nothing would hide the problem.
 on:
   pull_request:
     paths:
@@ -29,9 +30,11 @@ on:
 permissions:
   contents: read
 
+# One group per ref: a push to a PR can never cancel or hold up a deploy from
+# main. A newer push to the same PR replaces its older build.
 concurrency:
-  group: deploy-site
-  cancel-in-progress: false
+  group: deploy-site-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   site:
@@ -51,7 +54,7 @@ jobs:
       - name: Check the build has what skills fetch
         working-directory: site
         run: |
-          for f in dist/index.html dist/llms.txt dist/_headers dist/guides/xcode.md dist/guides/xcode/index.html; do
+          for f in dist/index.html dist/404.html dist/llms.txt dist/_headers dist/guides/xcode.md dist/guides/xcode/index.html; do
             test -s "$f" || { echo "missing: $f"; exit 1; }
           done
       - name: Deploy to Cloudflare Pages
@@ -66,11 +69,26 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
-            echo "::notice::Not deployed. Add the repository secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (site/DEPLOY.md)."
-            exit 0
+            echo "::error::Not deployed. Add the repository secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (site/DEPLOY.md)."
+            exit 1
           fi
           # A pasted secret often has a trailing line break, a space or quotes.
           token="$(printf '%s' "$CLOUDFLARE_API_TOKEN" | tr -d "[:space:]\"'" | sed 's/^Bearer//')"
           account="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d "[:space:]\"'")"
           export CLOUDFLARE_API_TOKEN="$token" CLOUDFLARE_ACCOUNT_ID="$account"
           npx --no-install wrangler pages deploy dist --project-name onebox --branch main --commit-dirty=true
+      - name: Check the live site answers 404 for an unknown path
+        # Pages serves the home page with 200 for an unknown path when dist/
+        # has no 404.html. Try a few times: a new deploy takes a moment to show.
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        run: |
+          site=https://onebox.lokkesveen.com
+          for path in /onebox-no-such-page/ /guides/onebox-no-such-guide.md; do
+            for attempt in 1 2 3 4 5 6; do
+              code="$(curl -s -o /dev/null -w '%{http_code}' "$site$path" || true)"
+              [ "$code" = 404 ] && break
+              sleep 10
+            done
+            echo "$path -> $code"
+            [ "$code" = 404 ] || { echo "::error::$site$path answered $code, not 404"; exit 1; }
+          done
