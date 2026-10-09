@@ -74,6 +74,10 @@ Optional onebox config, so a skill can find the project:
   container, so tracing never turned on (that is the opt-in working). Check
   `docker compose exec myapp-api printenv | grep -o '^OTEL[A-Z_]*'`. It prints
   the names only: the header value is a secret.
+- **Jobs show up, chats do not:** the API runs an `agent-harness` copy from
+  before October 2026. Its chat spans sat under ASP.NET Core's request
+  activity, which nothing records, so the sampler dropped them. Copy
+  `AgentTelemetry.cs` again and pass the run to `StartTool` in `AgentLoop.cs`.
 - **401 in the API log:** the header is quoted in the `.env` file, or the
   base64 has a newline in it. Use `printf`, not `echo`, and no quotes.
 - **Wrong or zero cost:** Langfuse prices from its own model table. A new model

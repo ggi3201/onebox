@@ -421,6 +421,15 @@ update.
 
 ## app-features
 
+### 0.2.3 (2026-10-09)
+
+- `agent-harness`: tracing exports chat runs. Before, a chat run in a request
+  exported nothing: ASP.NET Core's request activity is not recorded, and the
+  sampler dropped every span under it. The run now starts as a root span when
+  the request is not traced, and tool spans name the run as their parent, so
+  they keep it across each `yield`. Copy `AgentTelemetry.cs` and the
+  `StartTool` line in `AgentLoop.cs` into your API again.
+
 ### 0.2.2 (2026-10-09)
 
 - Every skill ends with the next step from your plan, as one question.
