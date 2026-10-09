@@ -1,7 +1,7 @@
 {
   "name": "content",
   "description": "Generate images and video for the store page, the landing page and social posts, with kie.ai, fal.ai or Replicate.",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "author": { "name": "Geir-Stian Løkkesveen" },
   "license": "MIT"
 }

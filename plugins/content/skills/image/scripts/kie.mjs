@@ -116,7 +116,7 @@ async function uploadLocal(file) {
   const abs = path.resolve(file);
   if (!fs.existsSync(abs)) throw new Error("input not found: " + abs);
   const ext = path.extname(abs).slice(1).toLowerCase();
-  const mime = ext === "jpg" ? "image/jpeg" : `image/${ext}`;
+  const mime = ext === "jpg" || ext === "jpeg" ? "image/jpeg" : `image/${ext}`;
   const dataUrl = `data:${mime};base64,${fs.readFileSync(abs).toString("base64")}`;
   const res = await fetch(UPLOAD, {
     method: "POST", headers: authHeaders(),
@@ -137,16 +137,31 @@ async function createTask(model, input) {
   });
   const j = await res.json();
   if (j.code !== 200 || !j?.data?.taskId) throw new Error(`createTask ${model}: ${JSON.stringify(j)}`);
+  // Paid from here on. Print the id, so a result can be fetched later.
+  process.stderr.write(`  submitted: kie.ai task ${j.data.taskId}\n`);
   return j.data.taskId;
 }
 
 async function waitTask(taskId, { label = "job", timeoutMs = 15 * 60 * 1000 } = {}) {
   const t0 = Date.now();
   let delay = 4000;
+  let misses = 0;
   for (;;) {
-    if (Date.now() - t0 > timeoutMs) throw new Error(`${label}: timed out after ${Math.round((Date.now() - t0) / 1000)}s`);
-    const res = await fetch(`${API}/api/v1/jobs/recordInfo?taskId=${encodeURIComponent(taskId)}`, { headers: authHeaders() });
-    const j = await res.json();
+    if (Date.now() - t0 > timeoutMs) {
+      throw new Error(`${label}: timed out after ${Math.round((Date.now() - t0) / 1000)}s. Task ${taskId} may still finish: it is on your account.`);
+    }
+    // One failed status request is not a failed task: it runs on, and it is
+    // paid for. Give up only after five in a row.
+    let j;
+    try {
+      j = await (await fetch(`${API}/api/v1/jobs/recordInfo?taskId=${encodeURIComponent(taskId)}`, { headers: authHeaders() })).json();
+      misses = 0;
+    } catch (err) {
+      if (++misses >= 5) throw new Error(`status check failed 5 times in a row (${err.message}). Task ${taskId} may still finish: it is on your account.`);
+      process.stderr.write(`  status check failed (${misses}/5), trying again: ${err.message}\n`);
+      await sleep(delay);
+      continue;
+    }
     const d = j?.data || {};
     const state = d.state || d.status;
     if (state === "success") {
@@ -207,7 +222,9 @@ try {
 
   } else if (cmd === "probe") {
     const r = await fetch(`${API}/api/v1/chat/credit`, { headers: authHeaders() });
-    const j = await r.json();
+    const j = await r.json().catch(() => null);
+    // A bad key answers with a code and no data. Say so; never print "null".
+    if (!r.ok || j?.code !== 200 || j?.data == null) throw new Error(`kie.ai credit check failed: ${j?.msg || `HTTP ${r.status}`}`);
     console.log("credit balance:", j.data);
 
   } else if (cmd === "still") {
@@ -258,8 +275,9 @@ try {
         output_format: flag(rest, "--format", "png"),
         nsfw_checker: false,
       };
+      // A dry run uploads nothing and reads no key: show the files instead.
       if (refs.length) {
-        input.image_urls = await Promise.all(refs.map(asUrl));
+        input.image_urls = dryRun ? refs.map((r) => `<upload ${r}>`) : await Promise.all(refs.map(asUrl));
       }
       if (dryRun) {
         console.log(JSON.stringify({ provider: "kie", model, input }, null, 2));

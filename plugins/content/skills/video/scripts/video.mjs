@@ -54,12 +54,11 @@
  *   `images.provider`/`images.keyRef` keys still work for the kie.ai case.
  *   Never printed. Loaded lazily — `--dry-run` and no-args usage need no key.
  *
- * FFMPEG (optional, only for `chain`)
+ * FFMPEG (only for `chain`)
  *   `chain` needs each leg's last frame to feed the next leg's first frame.
- *   If the provider's response already includes one (some kie.ai models do),
- *   that's used directly. Otherwise this script shells out to `ffmpeg` to
- *   grab the leg's last frame. Without ffmpeg installed, chaining fails with
- *   a clear error on any model that doesn't return a last frame itself —
+ *   If the provider's response includes one, that's used directly. Otherwise
+ *   ffmpeg cuts it from the clip. No model here is known to return one, so a
+ *   chain of more than one leg stops before leg 1 when ffmpeg is missing.
  *   `text-to-video` and plain `image-to-video` don't need ffmpeg at all.
  */
 
@@ -117,7 +116,9 @@ const KIE_MODELS = {
       prompt: o.prompt,
       ...(o.head ? {
         image_urls: o.tail ? [o.head, o.tail] : [o.head],
-        generation_type: o.tail ? "FIRST_AND_LAST_FRAMES_2_VIDEO" : "REFERENCE_2_VIDEO",
+        // One image is the FIRST frame too. REFERENCE_2_VIDEO would treat it
+        // as a style reference, and the clip would not start from it.
+        generation_type: "FIRST_AND_LAST_FRAMES_2_VIDEO",
       } : { generation_type: "TEXT_2_VIDEO" }),
       aspect_ratio: pick(o.ar, ["16:9", "9:16", "Auto"], "16:9"),
       resolution: pick(o.resolution, ["720p", "1080p", "4k"], "720p"),
@@ -136,6 +137,10 @@ const KIE_MODELS = {
       generate_audio: false,
     }),
   },
+  // kie.ai's Runway page says callBackUrl is "Required for all video
+  // generation requests", but its schema lists it as optional (checked
+  // 2026-10-09). This script polls instead. If kie.ai refuses the task for a
+  // missing callBackUrl, pass --extra '{"callBackUrl":"<a URL you own>"}'.
   runway: {
     kind: "t2v+i2v", // image_url conditions the shot but there is no tail/last-frame field
     build: (o) => ({
@@ -223,6 +228,19 @@ function resolveAdapter(cfg, providerOverride) {
 function buildInput(modelId, o) {
   const spec = KIE_MODELS[modelId];
   const base = spec ? spec.build(o) : { prompt: o.prompt, ...(o.head ? { image_url: o.head } : {}) };
+  if (!spec) {
+    // A model with no schema here (any fal or Replicate model) gets only the
+    // prompt and the image. Say which options were dropped, instead of
+    // charging for a clip with the wrong length or shape.
+    const dropped = [["--dur", o.dur], ["--ar", o.ar], ["--resolution", o.resolution], ["--tail", o.tail]]
+      .filter(([, v]) => v != null).map(([k]) => k);
+    if (dropped.length) {
+      process.stderr.write(
+        `  note: ${dropped.join(", ")} not sent: ${modelId} has no built-in schema here. ` +
+        `Pass them with --extra '<json>', in that model's own field names (its page lists them).\n`,
+      );
+    }
+  }
   if (o.seed != null && spec) {
     process.stderr.write(
       `  note: --seed was given but ${modelId}'s verified schema (2026-09-28) has no seed field on kie.ai — ` +
@@ -295,7 +313,9 @@ try {
     if (providerName !== "kie") throw new Error(`probe only supports kie.ai — check your ${providerName} dashboard for balance.`);
     const key = loadProviderKey(cfg, "kie");
     const r = await fetch("https://api.kie.ai/api/v1/chat/credit", { headers: { Authorization: `Bearer ${key}` } });
-    const j = await r.json();
+    const j = await r.json().catch(() => null);
+    // A bad key answers with a code and no data. Say so; never print "null".
+    if (!r.ok || j?.code !== 200 || j?.data == null) throw new Error(`kie.ai credit check failed: ${j?.msg || `HTTP ${r.status}`}`);
     console.log("credit balance:", j.data);
 
   } else if (cmd === "text-to-video") {
@@ -363,15 +383,14 @@ try {
       process.exit(0);
     }
 
-    fs.mkdirSync(outDir, { recursive: true });
+    // Each leg starts from the last frame of the one before. No model here is
+    // known to return that frame, so ffmpeg cuts it. Check before leg 1 is
+    // paid for, not after.
     const ff = hasFfmpeg();
-    if (!ff) {
-      process.stderr.write(
-        "  note: ffmpeg not found. Chaining will still work IF every leg's provider response includes a " +
-        "last-frame image on its own; otherwise it fails as soon as one doesn't. Install ffmpeg " +
-        "(e.g. `brew install ffmpeg`) to make chaining work with any model.\n",
-      );
+    if (!ff && legs > 1) {
+      throw new Error("chain needs ffmpeg to take each leg's last frame: install it first (brew install ffmpeg). Nothing was sent.");
     }
+    fs.mkdirSync(outDir, { recursive: true });
 
     let currentHead = head;
     const { providerName, adapter } = resolveAdapter(loadConfig(), o0.provider);

@@ -47,10 +47,12 @@ latency than a router adds.
 
 ## Replicate: has an adapter
 
-`POST /v1/predictions` with `{ version, input }`, where `version` is
-`owner/model:version_id`. Replicate's generic API needs a model's specific
-version id, not only its name (checked against Replicate's docs on
-2026-09-28). Auth is `Authorization: Bearer <REPLICATE_API_TOKEN>`.
+Two forms of `--model`. An official model (`owner/model`, no version id)
+runs at `POST /v1/models/{owner}/{model}/predictions` with `{ input }`, and
+always uses its latest version. Any other model needs
+`owner/model:version_id`, and runs at the generic `POST /v1/predictions` with
+`{ version, input }`. The version id is on the model's page, under
+"Versions". Auth is `Authorization: Bearer <REPLICATE_API_TOKEN>`.
 
 Uploads: a file under 256KB can go inline as a data URI. A larger file goes
 to Replicate's `/v1/files` upload endpoint. You pass the URL it returns as the

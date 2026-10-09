@@ -87,13 +87,11 @@ Only a model with a last-frame input works here (`kling/v2-1-pro`,
 `bytedance/seedance-2` — the default — or `veo-3-1`); the command refuses
 any other model up front.
 
-**ffmpeg is optional, but only for `chain`.** `text-to-video` and plain
-`image-to-video` never touch it. `chain` needs each leg's last frame: if the
-provider's response already includes one, that's used directly; otherwise
-this script shells out to `ffmpeg -sseof -0.05 ...` to grab it from the
-downloaded clip. Without ffmpeg installed, a model that doesn't return its
-own last frame makes `chain` fail with a clear error rather than silently
-producing a jump-cut. Install it with `brew install ffmpeg` if you hit that.
+**`chain` needs ffmpeg; nothing else does.** Each leg starts from the last
+frame of the one before, and ffmpeg cuts it from the clip
+(`ffmpeg -sseof -0.05 ...`). Without ffmpeg, `chain` with more than one leg
+stops before anything is sent, so no leg is paid for. Install it with
+`brew install ffmpeg`.
 
 ## Shot brief
 
@@ -153,8 +151,11 @@ Must not change:  the one or two things a viewer would notice drifting
 - **`could not resolve secret ...`** — follow `https://onebox.lokkesveen.com/guides/media-providers.md` and
   `https://onebox.lokkesveen.com/guides/kie-ai.md`, or check `media.videoProvider` /
   `media.providers.<name>.keyRef` in your onebox config.
-- **`chain` fails partway with "didn't return a last frame and ffmpeg isn't
-  installed"** — install ffmpeg, or switch to a model that returns one.
+- **`chain` stops with "chain needs ffmpeg"** — install ffmpeg. Nothing was
+  sent.
+- **A clip fails after it was submitted** — the script printed
+  `submitted: <provider> job <id>` first. The job may still finish on your
+  account: look it up there by that id.
 - **A field-not-found error from `createTask`** — usually a value outside
   what that specific model accepts (see the table above); `--dry-run` first
   to see the exact request being built.

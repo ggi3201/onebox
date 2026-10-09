@@ -102,9 +102,33 @@ export function loadProviderKey(cfg, providerName) {
 // ------------------------------------------------------------- helpers ----
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// A job is paid for once it is submitted, and it runs on whatever this
+// script does. So one failed status request must not end the wait: retry,
+// and give up only after several in a row. Every message names the job, so
+// a result that finishes later can still be fetched.
+const MAX_POLL_MISSES = 5;
+async function pollJson(url, init, miss, jobId) {
+  try {
+    const res = await fetch(url, init);
+    const j = await res.json();
+    miss.count = 0;
+    return j;
+  } catch (err) {
+    miss.count = (miss.count || 0) + 1;
+    if (miss.count >= MAX_POLL_MISSES) {
+      throw new Error(`status check failed ${miss.count} times in a row (${err.message}). Job ${jobId} may still finish: it is on your account.`);
+    }
+    process.stderr.write(`  status check failed (${miss.count}/${MAX_POLL_MISSES}), trying again: ${err.message}\n`);
+    return null;
+  }
+}
+const submitted = (provider, id) => process.stderr.write(`  submitted: ${provider} job ${id}\n`);
+const timedOut = (label, t0, jobId) =>
+  new Error(`${label}: timed out after ${Math.round((Date.now() - t0) / 1000)}s. Job ${jobId} may still finish: it is on your account.`);
+
 function guessMime(file) {
   const ext = path.extname(file).slice(1).toLowerCase();
-  if (ext === "jpg") return "image/jpeg";
+  if (ext === "jpg" || ext === "jpeg") return "image/jpeg";
   if (ext === "png" || ext === "webp" || ext === "gif") return `image/${ext}`;
   return "application/octet-stream";
 }
@@ -158,16 +182,18 @@ function kieAdapter(key) {
       });
       const j = await res.json();
       if (j.code !== 200 || !j?.data?.taskId) throw new Error(`kie.ai createTask ${model}: ${JSON.stringify(j)}`);
+      submitted("kie.ai", j.data.taskId);
       return j.data.taskId;
     },
 
     async poll(jobId, { label = "job", timeoutMs = 15 * 60 * 1000 } = {}) {
       const t0 = Date.now();
+      const miss = {};
       let delay = 4000;
       for (;;) {
-        if (Date.now() - t0 > timeoutMs) throw new Error(`${label}: timed out after ${Math.round((Date.now() - t0) / 1000)}s`);
-        const res = await fetch(`${API}/api/v1/jobs/recordInfo?taskId=${encodeURIComponent(jobId)}`, { headers });
-        const j = await res.json();
+        if (Date.now() - t0 > timeoutMs) throw timedOut(label, t0, jobId);
+        const j = await pollJson(`${API}/api/v1/jobs/recordInfo?taskId=${encodeURIComponent(jobId)}`, { headers }, miss, jobId);
+        if (!j) { await sleep(delay); continue; }
         const d = j?.data || {};
         const state = d.state || d.status;
         if (state === "success") {
@@ -227,6 +253,7 @@ function falAdapter(key) {
       });
       const j = await res.json();
       if (!j?.request_id) throw new Error(`fal submit ${model}: ${JSON.stringify(j)}`);
+      submitted("fal", j.request_id);
       return JSON.stringify({ requestId: j.request_id, model, statusUrl: j.status_url, responseUrl: j.response_url });
     },
 
@@ -235,11 +262,12 @@ function falAdapter(key) {
       const statusEndpoint = statusUrl || `https://queue.fal.run/${model}/requests/${requestId}/status`;
       const resultEndpoint = responseUrl || `https://queue.fal.run/${model}/requests/${requestId}`;
       const t0 = Date.now();
+      const miss = {};
       let delay = 3000;
       for (;;) {
-        if (Date.now() - t0 > timeoutMs) throw new Error(`${label}: timed out after ${Math.round((Date.now() - t0) / 1000)}s`);
-        const res = await fetch(statusEndpoint, { headers });
-        const j = await res.json();
+        if (Date.now() - t0 > timeoutMs) throw timedOut(label, t0, requestId);
+        const j = await pollJson(statusEndpoint, { headers }, miss, requestId);
+        if (!j) { await sleep(delay); continue; }
         if (j.status === "COMPLETED") {
           // fal has no failed status: a failed request is COMPLETED with an
           // `error`, and its result is a 4xx/5xx whose body links fal's docs.
@@ -291,32 +319,33 @@ function replicateAdapter(key) {
       return url;
     },
 
-    // `model` must be "owner/name:version_id" — Replicate's generic
-    // /v1/predictions endpoint keys off the version id, not just the model
-    // name. Find the version id on the model's page on replicate.com.
+    // Two forms. An official model ("owner/name", no version id) runs at
+    // POST /v1/models/{owner}/{name}/predictions, which always uses its
+    // latest version. Any other model needs "owner/name:version_id" and the
+    // generic POST /v1/predictions. The version id is on the model's
+    // replicate.com page, under "Versions".
     async submit(model, input) {
-      const [, version] = model.split(":");
-      if (!version) {
-        throw new Error(
-          `Replicate model "${model}" needs a version id: pass --model owner/name:version_id ` +
-          `(find it on the model's replicate.com page).`,
-        );
+      const [name, version] = model.split(":");
+      if (!version && !/^[\w.-]+\/[\w.-]+$/.test(name)) {
+        throw new Error(`Replicate model "${model}": pass owner/name for an official model, or owner/name:version_id.`);
       }
-      const res = await fetch(`${API}/predictions`, {
-        method: "POST", headers, body: JSON.stringify({ version, input }),
-      });
+      const res = version
+        ? await fetch(`${API}/predictions`, { method: "POST", headers, body: JSON.stringify({ version, input }) })
+        : await fetch(`${API}/models/${name}/predictions`, { method: "POST", headers, body: JSON.stringify({ input }) });
       const j = await res.json();
       if (!j?.id) throw new Error(`Replicate create prediction: ${JSON.stringify(j)}`);
+      submitted("Replicate", j.id);
       return j.id;
     },
 
     async poll(jobId, { label = "job", timeoutMs = 15 * 60 * 1000 } = {}) {
       const t0 = Date.now();
+      const miss = {};
       let delay = 3000;
       for (;;) {
-        if (Date.now() - t0 > timeoutMs) throw new Error(`${label}: timed out after ${Math.round((Date.now() - t0) / 1000)}s`);
-        const res = await fetch(`${API}/predictions/${jobId}`, { headers });
-        const j = await res.json();
+        if (Date.now() - t0 > timeoutMs) throw timedOut(label, t0, jobId);
+        const j = await pollJson(`${API}/predictions/${jobId}`, { headers }, miss, jobId);
+        if (!j) { await sleep(delay); continue; }
         if (j.status === "succeeded") {
           const urls = findUrls(j.output);
           if (!urls.length) throw new Error(`${label}: succeeded with no output url: ${JSON.stringify(j.output)}`);
