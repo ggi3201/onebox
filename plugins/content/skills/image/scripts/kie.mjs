@@ -258,8 +258,9 @@ try {
         output_format: flag(rest, "--format", "png"),
         nsfw_checker: false,
       };
+      // A dry run uploads nothing and reads no key: show the files instead.
       if (refs.length) {
-        input.image_urls = await Promise.all(refs.map(asUrl));
+        input.image_urls = dryRun ? refs.map((r) => `<upload ${r}>`) : await Promise.all(refs.map(asUrl));
       }
       if (dryRun) {
         console.log(JSON.stringify({ provider: "kie", model, input }, null, 2));

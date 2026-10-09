@@ -117,7 +117,9 @@ const KIE_MODELS = {
       prompt: o.prompt,
       ...(o.head ? {
         image_urls: o.tail ? [o.head, o.tail] : [o.head],
-        generation_type: o.tail ? "FIRST_AND_LAST_FRAMES_2_VIDEO" : "REFERENCE_2_VIDEO",
+        // One image is the FIRST frame too. REFERENCE_2_VIDEO would treat it
+        // as a style reference, and the clip would not start from it.
+        generation_type: "FIRST_AND_LAST_FRAMES_2_VIDEO",
       } : { generation_type: "TEXT_2_VIDEO" }),
       aspect_ratio: pick(o.ar, ["16:9", "9:16", "Auto"], "16:9"),
       resolution: pick(o.resolution, ["720p", "1080p", "4k"], "720p"),

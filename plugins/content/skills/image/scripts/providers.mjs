@@ -291,20 +291,19 @@ function replicateAdapter(key) {
       return url;
     },
 
-    // `model` must be "owner/name:version_id" — Replicate's generic
-    // /v1/predictions endpoint keys off the version id, not just the model
-    // name. Find the version id on the model's page on replicate.com.
+    // Two forms. An official model ("owner/name", no version id) runs at
+    // POST /v1/models/{owner}/{name}/predictions, which always uses its
+    // latest version. Any other model needs "owner/name:version_id" and the
+    // generic POST /v1/predictions. The version id is on the model's
+    // replicate.com page, under "Versions".
     async submit(model, input) {
-      const [, version] = model.split(":");
-      if (!version) {
-        throw new Error(
-          `Replicate model "${model}" needs a version id: pass --model owner/name:version_id ` +
-          `(find it on the model's replicate.com page).`,
-        );
+      const [name, version] = model.split(":");
+      if (!version && !/^[\w.-]+\/[\w.-]+$/.test(name)) {
+        throw new Error(`Replicate model "${model}": pass owner/name for an official model, or owner/name:version_id.`);
       }
-      const res = await fetch(`${API}/predictions`, {
-        method: "POST", headers, body: JSON.stringify({ version, input }),
-      });
+      const res = version
+        ? await fetch(`${API}/predictions`, { method: "POST", headers, body: JSON.stringify({ version, input }) })
+        : await fetch(`${API}/models/${name}/predictions`, { method: "POST", headers, body: JSON.stringify({ input }) });
       const j = await res.json();
       if (!j?.id) throw new Error(`Replicate create prediction: ${JSON.stringify(j)}`);
       return j.id;
