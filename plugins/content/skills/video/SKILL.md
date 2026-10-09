@@ -31,11 +31,11 @@ prints the key, and it isn't read at all for `--help`, no-args usage, or
 ## Commands
 
 ```bash
-node scripts/video.mjs probe                                                    # kie.ai credit balance
-node scripts/video.mjs text-to-video  "<prompt>" out.mp4 --ar 16:9 --dur 5
-node scripts/video.mjs image-to-video "<prompt>" head.png out.mp4               # first frame only
-node scripts/video.mjs image-to-video "<prompt>" head.png out.mp4 --tail last.png  # first + last frame (tail pinning)
-node scripts/video.mjs chain out/ head.png --legs 3 --prompt "<one camera move for every leg>"
+node <skill-dir>/scripts/video.mjs probe                                                    # kie.ai credit balance
+node <skill-dir>/scripts/video.mjs text-to-video  "<prompt>" out.mp4 --ar 16:9 --dur 5
+node <skill-dir>/scripts/video.mjs image-to-video "<prompt>" head.png out.mp4               # first frame only
+node <skill-dir>/scripts/video.mjs image-to-video "<prompt>" head.png out.mp4 --tail last.png  # first + last frame (tail pinning)
+node <skill-dir>/scripts/video.mjs chain out/ head.png --legs 3 --prompt "<one camera move for every leg>"
 ```
 
 `--dry-run` on any generating command prints the exact request (provider,

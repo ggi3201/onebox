@@ -263,6 +263,11 @@ update.
 
 ## ship-ios
 
+### 0.1.11 (2026-10-09)
+
+- `app-store-screenshots`: the `sheet.py` command starts with `<skill-dir>/`.
+  Its Codex `short_description` is 63 characters (Codex wants 25-64).
+
 ### 0.1.10 (2026-10-09)
 
 - `app-store-ready`: a placeholder API URL (`https://api.example.com`) in
@@ -356,6 +361,12 @@ update.
   store listing, and publish EAS updates.
 
 ## box
+
+### 0.1.9 (2026-10-09)
+
+- `box-setup`, `expose-service`: script commands start with `<skill-dir>/`, so
+  they run from the app's repo too. `references/updates.md` no longer says to
+  edit the installed `box-setup.sh`: a plugin update replaces it.
 
 ### 0.1.8 (2026-10-09)
 
@@ -566,6 +577,11 @@ update.
   consent, background jobs, and import from the share sheet.
 
 ## content
+
+### 0.1.5 (2026-10-09)
+
+- `image`, `video`: script commands start with `<skill-dir>/`, so they run
+  from the app's repo too.
 
 ### 0.1.4 (2026-10-09)
 

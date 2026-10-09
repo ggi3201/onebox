@@ -35,7 +35,7 @@ NET=$(cfg | jq -r '.box.proxyNetwork // "proxy"'); TUNNEL=$(cfg | jq -r '.box.tu
 REF=$(cfg | jq -r '.box.cloudflareTokenRef // "CLOUDFLARE_API_TOKEN"')
 ```
 
-The token comes from `scripts/secret.sh "$REF"` and goes on stdin. No token
+The token comes from `<skill-dir>/scripts/secret.sh "$REF"` and goes on stdin. No token
 yet: follow `https://onebox.lokkesveen.com/guides/cloudflare.md`. No box yet: run `box:box-setup`.
 
 ## Decide first

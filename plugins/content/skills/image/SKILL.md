@@ -26,10 +26,10 @@ your home directory. `scripts/kie.mjs` never prints the key.
 ## Commands
 
 ```bash
-node scripts/kie.mjs probe                                          # credit balance — run before and after a batch
-node scripts/kie.mjs still "<prompt>" out.png --ar 16:9              # text-to-image
-node scripts/kie.mjs still "<prompt>" out.png --ref logo.png         # image-to-image (one or more --ref)
-node scripts/kie.mjs shot  "<prompt>" head.png out.mp4 --dur 5       # optional: camera move over a still
+node <skill-dir>/scripts/kie.mjs probe                                          # credit balance — run before and after a batch
+node <skill-dir>/scripts/kie.mjs still "<prompt>" out.png --ar 16:9              # text-to-image
+node <skill-dir>/scripts/kie.mjs still "<prompt>" out.png --ref logo.png         # image-to-image (one or more --ref)
+node <skill-dir>/scripts/kie.mjs shot  "<prompt>" head.png out.mp4 --dur 5       # optional: camera move over a still
 ```
 
 `--model <id>` overrides the model on `still` or `shot` if you need a

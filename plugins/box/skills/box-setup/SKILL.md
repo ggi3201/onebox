@@ -56,7 +56,7 @@ ADMIN=alice                      # the admin user base creates
 # A mini PC: BOX=<install user>@<host> and ADMIN=<install user>. That user
 # already has sudo and your key (ssh-copy-id).
 cfg > /tmp/onebox.json
-scp scripts/box-setup.sh scripts/onebox-backup.sh /tmp/onebox.json "$BOX":
+scp <skill-dir>/scripts/box-setup.sh <skill-dir>/scripts/onebox-backup.sh /tmp/onebox.json "$BOX":
 ssh "$BOX" '[ "$HOME" = /root ] || { sudo install -m 600 box-setup.sh onebox-backup.sh onebox.json /root/ \
   && rm -f box-setup.sh onebox-backup.sh onebox.json; }'
 FLAGS="--config /root/onebox.json --user $ADMIN"
@@ -97,7 +97,7 @@ Passing the token without printing it:
 
 ```bash
 REF=$(cfg | jq -r '.box.cloudflareTokenRef // "CLOUDFLARE_API_TOKEN"')
-../expose-service/scripts/secret.sh "$REF" \
+<skill-dir>/../expose-service/scripts/secret.sh "$REF" \
   | ssh "$BOX" "sudo bash /root/box-setup.sh proxy $FLAGS --token-stdin"
 ```
 

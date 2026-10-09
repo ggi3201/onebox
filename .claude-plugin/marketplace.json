@@ -17,21 +17,21 @@
       "name": "ship-ios",
       "source": "./plugins/ship-ios",
       "description": "Take an Expo iOS app from 'works on my phone' to TestFlight and the App Store: readiness checks, local builds, preview builds, App Store Connect, screenshots and icons. Runs on your Mac.",
-      "version": "0.1.10",
+      "version": "0.1.11",
       "license": "MIT"
     },
     {
       "name": "content",
       "source": "./plugins/content",
       "description": "Generate images and video for the store page, the landing page and social posts, with kie.ai, fal.ai or Replicate. Runs on your Mac.",
-      "version": "0.1.4",
+      "version": "0.1.5",
       "license": "MIT"
     },
     {
       "name": "box",
       "source": "./plugins/box",
       "description": "Run your backend and sites on one cheap box: a mini PC at home or a small VPS, with Docker, Traefik and Cloudflare Tunnel.",
-      "version": "0.1.8",
+      "version": "0.1.9",
       "license": "MIT"
     },
     {

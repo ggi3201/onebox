@@ -40,7 +40,7 @@ The bundled pieces:
   `node_modules/@expo-google-fonts/*` or `assets/fonts`. Read the landing page
   copy for the voice and for claims you may make.
 - **Captures.** Make a contact sheet with
-  `python3 scripts/sheet.py grid out.png --cols 8 <files>`. Note the
+  `python3 <skill-dir>/scripts/sheet.py grid out.png --cols 8 <files>`. Note the
   resolution of each capture. If the best screens are weak or low-res, plan
   to capture new ones (step 3).
 
