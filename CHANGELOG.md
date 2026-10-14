@@ -20,15 +20,22 @@ A plugin updates only when its version went up. Guides are not in a plugin:
 the skills read them from the site, so a guide fix reaches you without an
 update.
 
-`app-features` (last version 0.2.3), `content` (0.1.5) and `dev:trim-tests`
-left the kit on 2026-10-14, to keep it about getting an app onto the App
-Store. A copy you installed keeps working, but gets no more updates. The AI
-consent rule is now a guide: https://onebox.lokkesveen.com/guides/ai-consent/.
+`app-features` (last version 0.2.3), `content` (0.1.5), `dev:trim-tests`,
+`start:check-features` and `ship-ios:draw-icon-set` left the kit on
+2026-10-14, to keep it about getting an app onto the App Store. A copy you
+installed keeps working, but gets no more updates. The AI consent rule is now
+a guide: https://onebox.lokkesveen.com/guides/ai-consent/.
 
 ## start
 
-### 0.2.16 (2026-10-14)
+### 0.3.0 (2026-10-14)
 
+- No server is now the recommended answer, with no accounts and no landing
+  page: the default plan has 25 steps instead of 39. `new-app` recommends it
+  too, and asks about accounts. Sign-in with no server is a conflict the plan
+  asks about. `check-features` left: the plan writes only `PLAN.md`, and no
+  longer asks what the app should do. The `remote` question and the
+  remote-access guide are gone.
 - `plan`: the AI chat, agent, budget, jobs, share-import and image/video items
   are gone with their plugins. AI apps get the new AI consent guide, and an
   API that calls a model needs a per-user usage count before its backend
@@ -286,8 +293,11 @@ consent rule is now a guide: https://onebox.lokkesveen.com/guides/ai-consent/.
 
 ## ship-ios
 
-### 0.1.13 (2026-10-14)
+### 0.2.0 (2026-10-14)
 
+- `draw-icon-set` left the kit; `draw-app-icon` stays. `eas-update`: fixes
+  for a live build go on its release branch, so a second update cannot take
+  the first fix away from users.
 - `appstore-connect`, `app-store-screenshots`: a mistyped flag such as
   `--dryrun` stops with "Nothing sent" instead of making the real change.
 - `app-store-screenshots`: backups go to a folder per locale and per run, and
@@ -499,7 +509,8 @@ consent rule is now a guide: https://onebox.lokkesveen.com/guides/ai-consent/.
 
 ### 0.2.0 (2026-10-14)
 
-- `trim-tests` left the kit. `test-loop` is unchanged.
+- `trim-tests` left the kit. `test-loop` flows lose their `Covers:` line,
+  which only `check-features` read.
 
 ### 0.1.7 (2026-10-09)
 
