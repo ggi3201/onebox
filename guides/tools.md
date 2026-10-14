@@ -34,7 +34,7 @@ Install [Homebrew](https://brew.sh) first. Most of the tools below come from it.
 |---|---|---|
 | Docker (Docker Desktop, OrbStack or Colima) | `dev:test-loop` and the API tests (a real Postgres) | the Docker Desktop or OrbStack app, or `brew install colima docker` |
 | .NET SDK 10 or newer | a .NET API | `brew install --cask dotnet-sdk` |
-| `gh` (GitHub CLI) | `box:box-setup` (the runner token), `box:staging-env` | `brew install gh`, then `gh auth login` |
+| `gh` (GitHub CLI) | `box:box-setup` (the runner token) | `brew install gh`, then `gh auth login` |
 | `ssh` | every `box` skill | comes with macOS. Make a key: see [vps.md](vps.md), step 1. |
 | `python3` | `ship-ios:app-store-screenshots` (contact sheets, with Pillow) | comes with Xcode. Then `python3 -m pip install --user Pillow`. |
 | Playwright and sharp | `ship-ios:app-store-screenshots` (rendering) | `mkdir -p ~/.cache/onebox-render && cd ~/.cache/onebox-render && npm i playwright sharp` |
@@ -100,6 +100,9 @@ On the box, after `box:box-setup`, its `check` phase must end with `0 fail`.
 - **`npm install -g pnpm` fails with `EEXIST`.** Corepack left a `pnpm` file
   where npm wants to put its own. Run `corepack disable pnpm`, then the
   install again.
+- **pnpm prints "Ignored build scripts: unrs-resolver".** pnpm 10 runs no
+  package's install script unless you allow it. ESLint works without this
+  one. Leave it, or allow it once with `pnpm approve-builds`.
 - **`npx eas-cli` fails with `Cannot find module 'fdir'`.** Use the global
   `eas` from `npm install -g eas-cli`.
 - **`docker info` says it cannot connect.** The Docker app or Colima is not

@@ -81,4 +81,6 @@ You see `"ok"` (or similar) and a `usage` object with token counts.
   `max_tokens`.
 - **429**: rate limit or no credit left. Check the billing page.
 - **It works locally and not on the box**: the variable is set but empty in
-  the container. See `box:staging-env`, gotcha 4.
+  the container. Compose turns `KEY: ${VAR}` with `VAR` unset into `KEY=""`,
+  and `config["KEY"] ?? "default"` keeps the `""`. Write `${VAR:?required}`
+  in the compose file, and treat a blank value as unset in code.

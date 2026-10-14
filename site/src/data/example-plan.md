@@ -66,13 +66,11 @@ Skills read these from `~/.config/onebox/config.json`, or `.onebox.json` for thi
 - [ ] Rent a small VPS (or use a mini PC) — guide: https://onebox.lokkesveen.com/guides/vps/ (raw: https://onebox.lokkesveen.com/guides/vps.md) <!-- guide:vps -->
 - [ ] Put the domain on Cloudflare, with a tunnel — guide: https://onebox.lokkesveen.com/guides/cloudflare/ (raw: https://onebox.lokkesveen.com/guides/cloudflare.md) <!-- guide:cloudflare -->
 - [ ] Bring the box to a safe baseline — skill: /box:box-setup <!-- skill:box/box-setup -->
-- [ ] Get an alert when the box or the API is down — guide: https://onebox.lokkesveen.com/guides/uptime-alerts/ (raw: https://onebox.lokkesveen.com/guides/uptime-alerts.md) <!-- guide:uptime-alerts -->
 
 ## The backend
 
 - [ ] API and Postgres on the box, users kept apart, protected — guide: https://onebox.lokkesveen.com/guides/backend/ (raw: https://onebox.lokkesveen.com/guides/backend.md) <!-- guide:backend -->
 - [ ] Give the API its public hostname — skill: /box:expose-service <!-- skill:box/expose-service -->
-- [ ] A staging API for test builds — skill: /box:staging-env <!-- skill:box/staging-env -->
 - [ ] A test build for your phone, pointed at a test backend — skill: /ship-ios:ios-preview-build <!-- skill:ship-ios/ios-preview-build -->
 
 ## Features

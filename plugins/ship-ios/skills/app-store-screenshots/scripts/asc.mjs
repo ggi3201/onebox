@@ -55,7 +55,10 @@ function ascCreds() {
   const cfg = oneboxConfig(), a = cfg.apple || {};
   if (a.ascKeyId && a.ascIssuerId && (a.ascKeyPath || a.ascKeyRef)) {
     const key = a.ascKeyPath ? fs.readFileSync(home(a.ascKeyPath)) : pem(readSecret(cfg, a.ascKeyRef));
-    if (!key || !String(key).includes('PRIVATE KEY')) throw new Error(`apple.ascKeyRef "${a.ascKeyRef}" did not resolve to a .p8 key.`);
+    // A multi-line value in .env keeps only its first line: check for the END line too.
+    if (!key || !/BEGIN PRIVATE KEY[\s\S]*END PRIVATE KEY/.test(String(key)))
+      throw new Error(`apple.ascKeyRef "${a.ascKeyRef}" did not resolve to a whole .p8 key (BEGIN to END PRIVATE KEY). `
+        + 'In .env, put the key on one line with \\n for each line break, or set apple.ascKeyPath to the .p8 file.');
     return { keyId: a.ascKeyId, issuer: a.ascIssuerId, key };
   }
   const legacy = path.join(os.homedir(), '.appstoreconnect/config.json');

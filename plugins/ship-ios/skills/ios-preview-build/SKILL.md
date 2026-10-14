@@ -12,8 +12,8 @@ A preview build is signed for a fixed list of devices (ad hoc). It installs
 straight onto those phones. It needs no TestFlight upload and no review. Point
 it at a staging API, so testers never touch production data.
 
-The server half (a second copy of the backend at its own hostname) is the
-`box:staging-env` skill. This skill is the app half.
+The server half, a second copy of the backend at its own hostname, is yours
+to run. This skill is the app half.
 
 ## Before you start
 
@@ -148,7 +148,7 @@ build. Do not assume the URL is right because the build succeeded.
   the preview profile, set in `app.config.js` from an env var such as
   `APP_VARIANT`. Each bundle ID needs its own App ID and profile.
 - Staging copied from production contains real user data. Say so to the
-  user. `box:staging-env` covers scrubbing it.
+  user. Start staging with an empty database instead.
 - A preview build is not proof that TestFlight works. Payments in particular
   must be checked with a sandbox purchase on a TestFlight or preview build,
   not in the simulator alone.

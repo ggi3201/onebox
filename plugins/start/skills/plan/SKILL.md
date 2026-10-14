@@ -112,6 +112,7 @@ do not ask them again:
 
 | new-app answer | `--answers` |
 |---|---|
+| (any: the app was just made) | `"stage":"expo"` |
 | Server: Own box, .NET API / Own box, Node API | `"backend":"box"` |
 | Server: Hosted (Supabase, Convex, Firebase) | `"backend":"hosted"` |
 | Server: No server | `"backend":"none"` |

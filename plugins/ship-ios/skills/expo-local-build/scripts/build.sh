@@ -98,7 +98,9 @@ if [ "$MODE" = local ] && [ "$(uname)" != Darwin ]; then
 fi
 # macOS always has /usr/bin/xcodebuild. It fails when only the Command Line Tools
 # are selected or the license is not accepted.
+# DEVELOPER_DIR beats xcode-select, so with it set the xcode-select fix does nothing.
 if [ "$MODE" = local ] && ! xcodebuild -version >/dev/null 2>&1; then
+  [ -n "${DEVELOPER_DIR:-}" ] && die "Xcode is not ready: DEVELOPER_DIR is set to $DEVELOPER_DIR. Unset it, or point it at Xcode.app/Contents/Developer. Or pass --cloud."
   die "Xcode is not ready on this Mac. Run: sudo xcode-select -s /Applications/Xcode.app and sudo xcodebuild -license accept. Or pass --cloud."
 fi
 

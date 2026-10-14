@@ -18,7 +18,7 @@ Store, so the plan asks.
 
 A server holds data that must live off the phone: accounts, sync, AI calls
 with a secret key. **Your own box** adds a VPS or mini PC, Cloudflare, the box
-setup, the backend guide, a public API hostname and a staging API. **A hosted
+setup, the backend guide and a public API hostname. **A hosted
 backend** (Supabase, Convex or Firebase) replaces the box steps with the
 hosted-backend guide. **No server** skips both. It is the default: the
 shortest road to the App Store. With either of those two, a landing page

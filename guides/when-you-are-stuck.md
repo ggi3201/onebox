@@ -39,7 +39,6 @@ Most problems have a skill made for them. Ask your agent to use it by name.
 | A test build talks to the wrong server, or has no API URL | `ship-ios:ios-preview-build` |
 | The box, a container or a backup looks wrong | `box:box-setup`, the `check` phase |
 | A URL does not load, or DNS looks wrong | `box:expose-service`, with its audit |
-| A staging deploy fails | `box:staging-env` |
 | You do not know what is next | the plan skill (`/start:plan`). It ticks what is done and shows the next step |
 
 ## A prompt that works

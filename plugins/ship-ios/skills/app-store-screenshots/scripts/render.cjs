@@ -42,10 +42,18 @@ const sharp = load('sharp');
     await page.close();
     if (!/^[\w-][\w.-]*$/.test(cfg.out)) throw new Error('data-out must be a plain folder name');
     const p = await browser.newPage({ viewport: { width: cfg.w * cfg.n, height: cfg.h }, deviceScaleFactor: cfg.dpr });
+    // A missing font or CSS background renders a fallback without an error, so
+    // every failed request counts, not only <img>.
+    const broken = [];
+    p.on('requestfailed', r => broken.push(`${r.url()} (${r.failure()?.errorText})`));
+    p.on('response', r => { if (r.status() >= 400) broken.push(`${r.url()} (${r.status()})`); });
     await p.goto(url);
     await p.evaluate(async () => { await document.fonts.ready; await Promise.all([...document.images].map(i => i.decode().catch(() => {}))); });
-    const broken = await p.evaluate(() => [...document.images].filter(i => !i.naturalWidth).map(i => i.src));
-    if (broken.length) throw new Error('Images failed to load:\n' + broken.join('\n'));
+    broken.push(...await p.evaluate(() => [
+      ...[...document.images].filter(i => !i.naturalWidth).map(i => i.src),
+      ...[...document.fonts].filter(f => f.status === 'error').map(f => `font ${f.family}`),
+    ]));
+    if (broken.length) throw new Error('Failed to load:\n' + broken.join('\n'));
 
     const out = path.join(dir, cfg.out);
     fs.rmSync(out, { recursive: true, force: true }); fs.mkdirSync(out, { recursive: true });

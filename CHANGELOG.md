@@ -28,6 +28,15 @@ a guide: https://onebox.lokkesveen.com/guides/ai-consent/.
 
 ## start
 
+### 0.3.1 (2026-10-14)
+
+- `new-app`: the app's simulator is named after its slug, not `MyApp`, so two
+  apps never share one. Clearer steps for `eas init`, `pnpm ios` (it keeps
+  Metro running), the first-run sheets and the AGENTS.md placeholders.
+- `plan`: tool checks run outside the repo, so an app that pins an older
+  pnpm, or uses yarn, no longer gets a wrong "install pnpm 10". Right after
+  `new-app`, it no longer asks where the app is.
+
 ### 0.3.0 (2026-10-14)
 
 - No server is now the recommended answer, with no accounts and no landing
@@ -294,6 +303,14 @@ a guide: https://onebox.lokkesveen.com/guides/ai-consent/.
 
 ## ship-ios
 
+### 0.2.1 (2026-10-14)
+
+- `appstore-connect`: an approved version waiting for release no longer
+  counts as editable. A key cut off after its first line stops with the fix.
+- `app-store-screenshots`: `render.cjs` fails on a missing font or CSS
+  background image, not only on a missing `<img>`.
+- `expo-local-build`: a broken `DEVELOPER_DIR` is named in the error.
+
 ### 0.2.0 (2026-10-14)
 
 - `draw-icon-set` left the kit; `draw-app-icon` stays. `eas-update`: fixes
@@ -414,6 +431,12 @@ a guide: https://onebox.lokkesveen.com/guides/ai-consent/.
 
 ## box
 
+### 0.2.0 (2026-10-14)
+
+- `staging-env` left the kit. It helps only once the app is live. Its one
+  general lesson (an unset compose variable becomes an empty string) moved
+  to the LLM API key guide.
+
 ### 0.1.10 (2026-10-14)
 
 - `box-setup`: `preflight` refuses a box with two or more Traefik containers
@@ -507,6 +530,13 @@ a guide: https://onebox.lokkesveen.com/guides/ai-consent/.
   host a landing page, and run a staging backend.
 
 ## dev
+
+### 0.3.0 (2026-10-14)
+
+- `test-loop`: `scripts/dev-client.sh` gives a new worktree a loaded app in
+  about a minute, with no native build. It caches the dev client per Expo
+  fingerprint and launches it on the worktree's Metro port. Measured times and
+  disk use are in `references/preflight.md`.
 
 ### 0.2.0 (2026-10-14)
 

@@ -362,8 +362,8 @@ export const ask = action({
 ```
 
 The budget check must be a mutation, not a query: a mutation checks and
-counts in one transaction. The code is in
-[hosted-ai-limits.md](hosted-ai-limits.md#convex).
+counts in one transaction. The design is in
+[hosted-ai-limits.md](hosted-ai-limits.md#the-design).
 
 The values match [llm-api-key.md](llm-api-key.md). For a chat that streams,
 the usual Convex way is to write the answer into a table as it arrives. The
@@ -514,8 +514,10 @@ export const ask = onCall({ secrets: [llmKey] }, async (request) => {
 The secret is only visible to functions that list it in `secrets`. Raise
 `timeoutSeconds` on the function if your model is slow.
 
-The budget check is a Firestore transaction in the function. The code, the
-rules and App Check are in [hosted-ai-limits.md](hosted-ai-limits.md#firebase).
+The budget check is a Firestore transaction in the function. The design is
+in [hosted-ai-limits.md](hosted-ai-limits.md#the-design). Keep the counter out
+of `users/{uid}`, where the rules let users write, and turn on App Check with
+App Attest.
 
 ### RevenueCat
 

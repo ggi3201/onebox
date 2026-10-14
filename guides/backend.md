@@ -311,8 +311,8 @@ This is fine for one API container, which is what this setup runs. Never use
 once and never changes them again.
 
 A migration that drops or renames a column can lose data. Make a backup first
-(`sudo onebox-backup` on the box) and test the change on staging
-(`box:staging-env`).
+(`sudo onebox-backup` on the box), and run the migration on a copy of the
+database first.
 
 ### 6. The hostname
 

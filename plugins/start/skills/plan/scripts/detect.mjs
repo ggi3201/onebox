@@ -536,11 +536,6 @@ if (backends.length) {
   // "open", not "seen": it also drops a tick an older run made before these checks.
   else open["guide:backend"] = `${where}; still missing ${list(lackB)}`;
 }
-if (stagingCompose.length) {
-  const deploys = workflows.filter((w) => stagingCompose.some((f) => w.text.includes(f))).map((w) => w.file);
-  if (deploys.length) done["skill:box/staging-env"] = `${stagingCompose.join(", ")}, deployed by ${deploys.join(", ")}`;
-  else seen["skill:box/staging-env"] = `${stagingCompose.join(", ")}; no workflow deploys it`;
-}
 
 // App Review wants account deletion in the app (guideline 5.1.1(v)), and Apple
 // wants the tokens revoked then. So the token check alone is not a tick.

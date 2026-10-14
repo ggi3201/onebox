@@ -69,7 +69,10 @@ function ascCreds() {
   const cfg = oneboxConfig(), a = cfg.apple || {};
   if (a.ascKeyId && a.ascIssuerId && (a.ascKeyPath || a.ascKeyRef)) {
     const key = a.ascKeyPath ? fs.readFileSync(home(a.ascKeyPath)) : pem(readSecret(cfg, a.ascKeyRef));
-    if (!key || !String(key).includes('PRIVATE KEY')) throw new Error(`apple.ascKeyRef "${a.ascKeyRef}" did not resolve to a .p8 key.`);
+    // A multi-line value in .env keeps only its first line: check for the END line too.
+    if (!key || !/BEGIN PRIVATE KEY[\s\S]*END PRIVATE KEY/.test(String(key)))
+      throw new Error(`apple.ascKeyRef "${a.ascKeyRef}" did not resolve to a whole .p8 key (BEGIN to END PRIVATE KEY). `
+        + 'In .env, put the key on one line with \\n for each line break, or set apple.ascKeyPath to the .p8 file.');
     return { keyId: a.ascKeyId, issuer: a.ascIssuerId, key };
   }
   const legacy = path.join(os.homedir(), '.appstoreconnect/config.json');
@@ -146,9 +149,9 @@ const VERSION_FIELDS = ['description', 'keywords', 'promotionalText', 'whatsNew'
 const EDITABLE = ['PREPARE_FOR_SUBMISSION', 'DEVELOPER_REJECTED', 'REJECTED', 'METADATA_REJECTED', 'INVALID_BINARY', 'READY_FOR_REVIEW'];
 const LIVE = ['READY_FOR_SALE', 'READY_FOR_DISTRIBUTION'];
 const stateOf = a => a.appVersionState || a.appStoreState || a.state;
-// The app info that can change now, or null. One in review (WAITING_FOR_REVIEW) cannot.
-const editableInfo = infos => infos.find(i => EDITABLE.includes(stateOf(i.attributes)))
-  || infos.find(i => !LIVE.includes(stateOf(i.attributes)) && !OPEN_SUBMISSION.includes(stateOf(i.attributes))) || null;
+// The app info that can change now, or null. One in review, or approved and
+// waiting for release (PENDING_DEVELOPER_RELEASE), cannot.
+const editableInfo = infos => infos.find(i => EDITABLE.includes(stateOf(i.attributes))) || null;
 const size = (k, v) => k === 'keywords' ? Buffer.byteLength(v || '', 'utf8') : [...(v || '')].length;
 async function listingParts(app, locale) {
   const versions = await all(`/v1/apps/${app.id}/appStoreVersions` + q({ 'filter[platform]': 'IOS', limit: 20 }));

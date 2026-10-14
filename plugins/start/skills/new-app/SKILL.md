@@ -35,7 +35,7 @@ exception: pnpm is pinned to major 10 (step 0).
 
   ```bash
   node <plan-dir>/scripts/plan.mjs ready --step new-app --repo "$(mktemp -d)" \
-    --answers '{"stage":"idea","backend":"box"}' --need dotnet --list
+    --answers '{"stage":"idea","backend":"none"}' --list
   ```
 
   `backend` is `box` with an API in the repo, else `hosted` or `none`. Add
@@ -157,8 +157,9 @@ API, the repo root without one. Run every `npx expo` and `eas` command there.
      `references/files.md`, "The Expo app", says.
 3. **App config.** Follow `expo-app.md` steps 2, 3, 4, 5, 6, 7 and 9: the
    bundle id, `app.json`, the API URL module, `expo-dev-client`, `eas.json`
-   with three profiles, remote versions, `expo-secure-store`. Set `slug`,
-   `name` and `scheme` to the app's slug (the template says `mobile`). Set
+   with three profiles, remote versions, `expo-secure-store`. From steps 5
+   and 9, only install the packages: the skeleton has no token code. Set
+   `slug` and `scheme` to the slug, and `name` to the App Store name. Set
    `supportsTablet: false`. With "No accounts" or "Sign in with Apple
    later", leave out `usesAppleSignIn` and its plugin.
    - `eas.json` gets `cli` and `build` only. No `submit` block and no
@@ -174,8 +175,10 @@ API, the repo root without one. Run every `npx expo` and `eas` command there.
    `eas init --non-interactive --force` from the Expo app's folder
    (`apps/mobile` when there is an API; never the repo root then). In an
    agent's shell `eas init` needs both flags, and `--force` links any Expo
-   project that already has this slug. So check the output: it must say it
-   created a project. If it linked an existing one, stop and ask the user.
+   project that already has this slug. So check the output: it must say
+   `Created @<account>/<slug>`. It prints "linked" in both cases, so that word
+   tells nothing. Without `Created`, it linked an existing project: stop and
+   ask the user. It also writes `owner` into `app.json`. Keep it.
 5. **App checks.** Follow `agent-test-loop.md` steps 1, 2, 4 and 7: strict
    TypeScript, ESLint, one test runner, one Metro port per app and per
    worktree. The Metro script goes in the app folder's `scripts/`
@@ -211,7 +214,9 @@ API, the repo root without one. Run every `npx expo` and `eas` command there.
    (the `dev:test-loop` skill's `assets/AGENTS.snippet.md`; without the
    `dev` plugin, fetch
    `https://raw.githubusercontent.com/ggi3201/onebox/main/plugins/dev/skills/test-loop/assets/AGENTS.snippet.md`). Delete its lines for steps this repo
-   does not have. With an API, link `CLAUDE.md` to it with
+   does not have, and fill each `<...>` with this repo's command
+   (`pnpm typecheck`, `pnpm lint`, `pnpm test`, `sh scripts/metro-port.sh`).
+   Drop the HTML comment. With an API, link `CLAUDE.md` to it with
    `ln -s AGENTS.md CLAUDE.md`. Without an API, the template's `AGENTS.md`
    and `CLAUDE.md` are already at the root: put the blocks at the top of that
    `AGENTS.md`, and keep its `CLAUDE.md`.
@@ -250,20 +255,25 @@ simulator, so the build does not land on one another session uses.
 ```bash
 # CocoaPods on a Ruby from rbenv or Homebrew (not /usr/bin/ruby), and a UTF-8 LANG
 node <plan-dir>/scripts/plan.mjs ready --need cocoapods-ruby,utf8-locale --repo .
-# The app's own simulator. A second run reuses it, so they do not pile up.
-U=$(xcrun simctl list devices -j | jq -r '.devices[][] | select(.name == "MyApp" and .isAvailable) | .udid' | head -1)
-[ -n "$U" ] || U=$(xcrun simctl create "MyApp" "iPhone 17 Pro")
+# The app's own simulator, named after the slug. A second run reuses it, so
+# they do not pile up, and two apps never share one.
+N=myapp   # the slug
+U=$(xcrun simctl list devices -j | jq -r --arg n "$N" '.devices[][] | select(.name == $n and .isAvailable) | .udid' | head -1)
+[ -n "$U" ] || U=$(xcrun simctl create "$N" "iPhone 17 Pro")
 xcrun simctl boot "$U" 2>/dev/null || true
 pnpm ios --device "$U"
 ```
 
 Pick a device type that `xcrun simctl list devicetypes` shows. `pnpm ios`
 builds the dev client and opens it in that simulator. The first build takes
-minutes. Take a screenshot and read it.
+minutes. It then keeps Metro running and never exits: run it in the
+background, wait for `Logs for your project will appear below`, then take a
+screenshot and read it. Stop that Metro when you are done.
 
 - iOS can ask "Open in MyApp?" when the build or `xcrun simctl openurl`
   opens the app's URL. Tap Open.
-- The first start of a dev client shows the developer menu sheet. Close it.
+- The first start of a dev client shows an onboarding sheet. Tap Continue.
+  That opens the developer menu: close it with the X at the top right.
 
 Both are normal, not errors. On a CocoaPods or Ruby error, read
 the `ship-ios:expo-local-build` skill's `references/pitfalls.md` (without the
