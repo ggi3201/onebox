@@ -150,8 +150,6 @@ Either way:
 
 - Pin the time zone in the test config, to one with DST (`TZ: "Europe/Berlin"`
   or `"America/New_York"`). Date code that only ever runs in UTC is untested.
-- Add a coverage provider now (`@vitest/coverage-v8` for Vitest; Jest has one
-  built in). The `dev:trim-tests` skill needs it later.
 - Add the script: `"test": "vitest run"` or `"test": "jest"`. For Jest, the
   script can pin the time zone too: `"test": "TZ=Europe/Berlin jest"`.
 
@@ -269,10 +267,7 @@ node <path-to>/plugins/dev/skills/test-loop/scripts/discover.mjs .
 Pick the feature that would hurt most if it broke: sign-in, the paywall, the
 main create action. Write `<feature>.flow.md` next to its code, with 5 to 15
 numbered steps and an `Expect:` line after each step. The format and a full
-example are in `plugins/dev/skills/test-loop/references/flows.md`. When the
-repo has a `FEATURES.md` (`/start:plan` makes it), add a `Covers:` line with
-the ids of the features the flow proves. `/start:check-features` uses it to
-check that every feature is built.
+example are in `plugins/dev/skills/test-loop/references/flows.md`.
 
 Then ask the agent: "run the flows for <feature>".
 
@@ -288,7 +283,6 @@ Nothing goes into the onebox config. All of it lives in the app repo:
 | Seed | the API project, run at startup in Development only |
 | Agent rules | `AGENTS.md` or `CLAUDE.md` |
 | Flows | `src/features/<feature>/<feature>.flow.md` |
-| Features, and the flow runs that prove them | `FEATURES.md`, `.onebox/runs/` (commit both) |
 | Native build marker | `.expo/dev-loop-fingerprint.json` (Expo already git-ignores `.expo/`) |
 
 ## Check it works

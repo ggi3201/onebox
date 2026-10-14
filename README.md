@@ -123,17 +123,15 @@ and terms pages that App Store Connect and your paywall link to.
 
 ## What is in the box
 
-26 skills in 6 plugins, and 33 guides. Install the `start` plugin first. It
+15 skills in 4 plugins, and 30 guides. Install the `start` plugin first. It
 tells you which of the others you need.
 
 | Plugin | Runs on | What it does | Skills |
 |---|---|---|---|
-| `start` | your Mac | Makes the repo, writes your plan, and says what is next | plan, new-app, check-features |
-| `ship-ios` | your Mac | From a working app to TestFlight and the store | app-store-ready, expo-local-build, eas-update, appstore-connect, ios-preview-build, app-store-screenshots, store-listing, draw-app-icon, draw-icon-set |
+| `start` | your Mac | Makes the repo, writes your plan, and says what is next | plan, new-app |
+| `ship-ios` | your Mac | From a working app to TestFlight and the store | app-store-ready, expo-local-build, eas-update, appstore-connect, ios-preview-build, app-store-screenshots, store-listing, draw-app-icon |
 | `box` | your server | A safe, small server for the API and the site | box-setup, expose-service, new-landing-page, staging-env |
-| `dev` | your Mac | Makes the agent prove its work before it says "done" | test-loop, trim-tests |
-| `app-features` | your app and API | AI features, built with limits and consent | agent-harness, chat-feature, ai-usage-limits, ai-consent, durable-jobs, share-import |
-| `content` | your Mac | Images and video for the store page and social | image, video |
+| `dev` | your Mac | Makes the agent prove its work before it says "done" | test-loop |
 
 ## How it works
 
@@ -188,7 +186,7 @@ install steps and license.
 
 ## License
 
-MIT. See [LICENSE](LICENSE) and [NOTICE.md](NOTICE.md) for third-party code.
+MIT. See [LICENSE](LICENSE).
 
 Not affiliated with Apple, Expo or the other companies named here. Names and
 trademarks belong to their owners.

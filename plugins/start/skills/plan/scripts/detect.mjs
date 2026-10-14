@@ -18,7 +18,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 import { loadNeeds, loadConfig, checkNeeds } from "./needs.mjs";
 
 const root = path.resolve(process.argv[2] ?? ".");
@@ -311,8 +311,8 @@ for (const f of srcFiles) {
 //   MaxRequestBodySize (Kestrel's default is 30 MB).
 // - Node ("On Node"): trust proxy / trustProxy set to a subnet, or
 //   CF-Connecting-IP; a rate-limit package. The body limit is fine by default.
-// - Per-user AI quota (part 3, and app-features:ai-usage-limits): the
-//   ai_usage table from the guide, or UserUsages / IUsageRecorder from the skill.
+// - Per-user AI quota (part 3), only for an API that calls a model: the
+//   ai_usage table from the guide (UserUsages / IUsageRecorder: older apps).
 const NODE_LIMITERS = ["express-rate-limit", "@fastify/rate-limit", "hono-rate-limiter", "@nestjs/throttler"];
 const AI_QUOTA = /\bai_usage\b|\bUserUsages\b|\bIUsageRecorder\b/;
 let aiQuota = null;
@@ -332,7 +332,7 @@ for (const b of backends) {
   } else {
     const pkg = pkgs.find((x) => rel(x.dir) === b.dir)?.pkg;
     const trust = [...t.matchAll(/\btrustProxy\s*:\s*([^,}\n]+)|["']trust proxy["']\s*,\s*([^)\n]+)/g)].map((m) => (m[1] ?? m[2]).trim());
-    if (!cfIp && !trust.some((v) => !/^true\b/.test(v))) {
+    if (!cfIp && !trust.some((v) => !/^(true|false)\b/.test(v))) {
       lackP.push(trust.length
         ? `the real client IP behind the tunnel (trust proxy is true, so the client picks its own address; trust the proxy subnet)${at}`
         : `the real client IP behind the tunnel (trust proxy or trustProxy set to the proxy subnet)${at}`);
@@ -396,7 +396,8 @@ function leafKeys(obj, prefix = "") {
 }
 function configInfo(p) {
   if (!exists(p)) return { present: false };
-  const j = readJson(p);
+  // Plain JSON only (CONFIG.md): the skills read it with jq and JSON.parse.
+  const j = (() => { try { return JSON.parse(readText(p)); } catch { return null; } })();
   if (!j) return { present: true, valid: false };
   return { present: true, valid: true, keysSet: leafKeys(j) };
 }
@@ -410,12 +411,13 @@ const hasKey = (k) => keySet.has(k);
 // ---------- the Mac, the plan ----------
 
 // Like the tool checks, this reads the Mac, so ONEBOX_DETECT_NO_RUN=1 skips it.
-const xcode = process.env.ONEBOX_DETECT_NO_RUN !== "1" && exists("/Applications/Xcode.app");
+// Any Xcode*.app counts (Xcode-beta.app, the xcodes tool's Xcode-26.0.app), as in needs.json.
+const xcode = process.env.ONEBOX_DETECT_NO_RUN !== "1" && (() => { try { return fs.readdirSync("/Applications").some((f) => /^Xcode.*\.app$/.test(f)); } catch { return false; } })();
 // The plan file. PLAN.md, unless the user kept their own PLAN.md and the
 // plan went to another file with --out: then the root .md file that starts
 // with the onebox mark. Without this, later runs forgot that file.
 function findPlan(dir) {
-  const isOnebox = (f) => { try { return fs.readFileSync(path.join(dir, f), "utf8").startsWith("<!-- onebox-plan v1"); } catch { return false; } };
+  const isOnebox = (f) => { try { return /^<!-- onebox-plan v1 /m.test(fs.readFileSync(path.join(dir, f), "utf8")); } catch { return false; } };
   if (isOnebox("PLAN.md")) return "PLAN.md";
   let names = [];
   try { names = fs.readdirSync(dir).filter((f) => f.endsWith(".md") && f !== "PLAN.md").sort(); } catch { /* no folder */ }
@@ -423,7 +425,7 @@ function findPlan(dir) {
 }
 const planPath = path.join(root, findPlan(root));
 const planText = readText(planPath);
-const plan = planText == null ? { exists: false } : { exists: true, file: rel(planPath), format: planText.startsWith("<!-- onebox-plan v1") ? "onebox" : "other" };
+const plan = planText == null ? { exists: false } : { exists: true, file: rel(planPath), format: /^<!-- onebox-plan v1 /m.test(planText) ? "onebox" : "other" };
 
 // ---------- test scripts ----------
 
@@ -438,7 +440,7 @@ const say = (id, value, confidence, why) => { answers[id] = { value, confidence,
 if (!expo.found) say("stage", "idea", "likely", "no Expo app in this folder");
 else if (expo.eas?.ascAppId) say("stage", "testflight", "likely",
   "eas.json has an App Store Connect app id. The repo cannot show if the app is on TestFlight only or on the App Store");
-else say("stage", "expo", "high", `Expo app in ${expo.dir}`);
+else say("stage", "expo", "likely", `Expo app in ${expo.dir}`);
 
 const hostedHit = [...hosted.supabase, ...hosted.firebase, ...hosted.convex];
 if (backends.length) say("backend", "box", compose.length ? "high" : "likely",
@@ -526,6 +528,7 @@ if (backends.length) {
   if (!deployWorkflows.length) lackB.push("a deploy workflow in .github/workflows");
   // Deployed is not done: the guide's title says "protected" too.
   lackB.push(...lackP);
+  if (aiServer && !aiQuota) lackB.push(`a per-user AI usage count, because the API calls an AI model (${aiServer}; "Protect the API", part 3)`);
   // Name the production deploy, not the staging one, when both exist.
   const prodDeploys = workflows.filter((w) => deployWorkflows.includes(w.file) && !stagingCompose.some((f) => w.text.includes(f))).map((w) => w.file);
   const by = (prodDeploys.length ? prodDeploys : deployWorkflows).join(", ");
@@ -533,9 +536,6 @@ if (backends.length) {
   // "open", not "seen": it also drops a tick an older run made before these checks.
   else open["guide:backend"] = `${where}; still missing ${list(lackB)}`;
 }
-// The per-user AI quota: only an API that calls a model needs one.
-if (aiQuota) done["skill:app-features/ai-usage-limits"] = `a per-user AI usage count in ${aiQuota} (ai_usage, UserUsages or IUsageRecorder)`;
-else if (aiServer) open["skill:app-features/ai-usage-limits"] = `the API calls an AI model (${aiServer}); no per-user usage count found (ai_usage, UserUsages or IUsageRecorder)`;
 if (stagingCompose.length) {
   const deploys = workflows.filter((w) => stagingCompose.some((f) => w.text.includes(f))).map((w) => w.file);
   if (deploys.length) done["skill:box/staging-env"] = `${stagingCompose.join(", ")}, deployed by ${deploys.join(", ")}`;
@@ -569,8 +569,7 @@ if (sites.length) seen["skill:box/new-landing-page"] = `site folder: ${sites.joi
 if (ai.inApp) {
   open["guide:llm-api-key"] = `the app itself names ${ai.inApp}, so the AI key ships inside the app, where anyone can read it. Move the AI call to the server`;
   notes.push(`The app names ${ai.inApp}: an AI key in the app is readable by anyone who has the app.`);
-} else if (aiHits.length || hasKey("llm.keyRef")) seen["guide:llm-api-key"] = "the code already calls an AI API";
-if (hasKey("tracing.otlpEndpoint")) done["guide:langfuse"] = "tracing.otlpEndpoint is in the onebox config";
+} else if (aiHits.length) seen["guide:llm-api-key"] = "the code already calls an AI API";
 
 // The tools item: done when every check it needs passes on this Mac. These are
 // the checks `ready` runs before the step. "unknown" (a check that could not
@@ -624,19 +623,6 @@ if (expo.found) {
   if (!lackL.length) done["skill:dev/test-loop"] = list(have);
   else if (have.length) seen["skill:dev/test-loop"] = `${list(have)}; still missing ${list(lackL)}`;
 }
-
-// /start:check-features: done when every feature in FEATURES.md has a flow
-// that passed on the current code. Its check reads files only. Without the
-// skill next to this one (an install of the plan skill alone), skip it.
-try {
-  const { checkFeatures } = await import(pathToFileURL(path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "check-features", "scripts", "features.mjs")).href);
-  const r = checkFeatures(root);
-  if (r?.allDone) done["skill:start/check-features"] = `all ${r.total} features in FEATURES.md have a flow that passed on the current code`;
-  else if (r?.total) {
-    const left = r.features.filter((f) => f.state !== "done").map((f) => `${f.name} (${f.state})`);
-    open["skill:start/check-features"] = `${r.done} of ${r.total} features proven; not yet: ${left.slice(0, 3).join(", ")}${left.length > 3 ? ` and ${left.length - 3} more` : ""}`;
-  }
-} catch (e) { if (e?.code !== "ERR_MODULE_NOT_FOUND") notes.push(`could not check FEATURES.md: ${e.message}`); }
 
 for (const c of capped) notes.push(`Stopped reading ${rel(c.dir)} after ${c.limit} files: anything past that point was not seen. Move generated files out of the source folders.`);
 

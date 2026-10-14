@@ -22,4 +22,4 @@ body:
     id: plugin
     attributes:
       label: Which plugin
-      description: start, ship-ios, box, content, dev, app-features or guides. Leave it empty if you do not know.
+      description: start, ship-ios, box, dev or guides. Leave it empty if you do not know.

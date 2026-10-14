@@ -129,4 +129,5 @@ app in the simulator.
 - **Not enough disk space during install.** The installer needs room for the
   download and the unpacked app at the same time. Free more space, or delete
   old simulator runtimes: `xcrun simctl runtime list`, then
-  `xcrun simctl runtime delete <id>`.
+  `xcrun simctl runtime delete <id>`. `xcrun simctl delete unavailable`
+  removes the simulators those runtimes leave behind.

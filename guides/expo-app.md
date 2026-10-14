@@ -160,7 +160,11 @@ A static `app.json` is enough for most apps. The parts this setup needs:
         "NSCameraUsageDescription": "My App uses the camera to scan a receipt and add it to your list."
       }
     },
-    "plugins": ["expo-apple-authentication", "expo-secure-store"],
+    "plugins": [
+      "expo-apple-authentication",
+      "expo-secure-store",
+      ["expo-build-properties", { "ios": { "enableSceneSupport": true } }]
+    ],
     "extra": { "eas": { "projectId": "set-by-eas-init" } }
   }
 }
@@ -168,9 +172,14 @@ A static `app.json` is enough for most apps. The parts this setup needs:
 
 - Each name in `plugins` is a package. Expo finds a plugin only in an
   installed package, so install each one before the first `npx expo config`
-  or build: `npx expo install expo-apple-authentication expo-secure-store`.
-  Without Sign in with Apple, leave out `usesAppleSignIn`, its plugin and
-  its package.
+  or build: `npx expo install expo-apple-authentication expo-secure-store
+  expo-build-properties`. Without Sign in with Apple, leave out
+  `usesAppleSignIn`, its plugin and its package.
+- `enableSceneSupport` (Expo SDK 57 and later) lets the app launch on iOS 27
+  when you build with Xcode 27, the one the Mac App Store installs. Without it
+  `ship-ios:expo-local-build` stops before the build ([xcode.md](xcode.md),
+  "Which Xcode for your Expo SDK"). Older SDKs: leave it out and build with
+  Xcode 26.
 - `ITSAppUsesNonExemptEncryption: false` answers Apple's export compliance
   question for every build, if the app uses only standard HTTPS and the
   system's own encryption. Without it every TestFlight build waits on
@@ -250,8 +259,7 @@ npx expo run:ios --device        # builds on this Mac and installs on the plugge
 ```
 
 After that, `npx expo start` serves JavaScript changes to it, like Expo Go.
-Rebuild only when you add or change a native module or a config plugin. The
-`ship-ios:expo-local-build` skill covers the local build in detail.
+Rebuild only when you add or change a native module or a config plugin.
 
 ### 6. `eas.json`: three profiles
 
@@ -265,6 +273,7 @@ Rebuild only when you add or change a native module or a config plugin. The
     },
     "preview": {
       "distribution": "internal",
+      "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api.example.com",
         "EXPO_PUBLIC_REVENUECAT_IOS_KEY": "appl_public_sdk_key"
@@ -316,12 +325,13 @@ Apple uses two numbers:
 | Field | Who sees it | Example | Who changes it |
 |---|---|---|---|
 | `version` | users, in the store | `1.2.0` | you, in `app.json`, once per release |
-| `ios.buildNumber` | Apple and you | `57` | EAS, on every production build |
+| `ios.buildNumber` | Apple and you | `57` | EAS, on every preview and production build |
 
 With `"appVersionSource": "remote"` EAS stores the build number on its
-servers. `"autoIncrement": true` on the production profile raises it on every
-build, local builds included. You never edit `buildNumber` by hand, and you
-never get "this build number was already used".
+servers. `"autoIncrement": true` on the preview and production profiles
+raises it on every build, local builds included. You never edit
+`buildNumber` by hand, and you never get "this build number was already
+used".
 
 One `version` can have many builds in TestFlight. After a version goes live
 in the store, raise `version` before the next upload.

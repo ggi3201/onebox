@@ -296,7 +296,6 @@ What each tool adds in App Store Connect, under App Privacy:
 | Xcode Organizer, TestFlight | nothing to declare (Apple collects it) | | | |
 | Sentry in the app | Diagnostics: Crash Data, Performance Data, Other Diagnostic Data | No. **Yes** if you call `Sentry.setUser` with your user id | No | App Functionality |
 | Sentry on the API | no new type if it only sends what the API already has | | | |
-| PostHog | Usage Data: Product Interaction. Identifiers: User ID if you call `identify()` with your user id | Yes if you call `identify()` | No | Analytics |
 
 If you call `Sentry.setUser`, also set `NSPrivacyCollectedDataTypeLinked` to
 `true` in the three Sentry entries of the privacy manifest. The manifest and

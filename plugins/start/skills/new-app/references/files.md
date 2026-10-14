@@ -141,8 +141,9 @@ test("only the development profile has the dev client", () => {
   expect(Object.keys(eas.build).filter((name) => eas.build[name]?.developmentClient)).toEqual(["development"]);
 });
 
-test("production raises the build number", () => {
+test("preview and production raise the build number", () => {
   expect(eas.build.production?.autoIncrement).toBe(true);
+  expect(eas.build.preview?.autoIncrement).toBe(true);
 });
 
 test("profiles that leave the Mac use only https URLs", () => {
@@ -288,8 +289,9 @@ static string Ip(HttpContext c)
     return new IPAddress(b) + "/64";
 }
 static string UserOrIp(HttpContext c) =>
-    c.User.FindFirstValue("sub") is { } id ? "u:" + id : "ip:" + Ip(c);   // "sub": backend.md step 7
+    c.User.FindFirstValue("sub") is { } id ? "u:" + id : "ip:" + Ip(c);   // "sub": backend.md, "Protect the API", step 7
 
+// Copied from backend.md, "Protect the API", steps 1 and 2: change both.
 builder.Services.AddRateLimiter(o =>
 {
     o.RejectionStatusCode = StatusCodes.Status429TooManyRequests;   // the default is 503, which looks like an outage

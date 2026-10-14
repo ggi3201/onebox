@@ -77,8 +77,7 @@ folder first. It makes the Expo app, the API and the checks in the layout
 below.
 
 The plugins: `ship-ios` is the app and App Store side. `box` is the server
-side. `dev` is the agent's test loop. `content` makes images and video. `app-features` adds features to your app and API: an AI chat and
-agent, cost limits, AI consent, background jobs, import from a shared link.
+side. `dev` is the agent's test loop.
 
 In Codex:
 
@@ -109,6 +108,11 @@ skill asks you for a missing value once and offers to save it.
 Do them in order. Each phase ends with a "done when" line. Do not start the
 next phase before that line is true.
 
+**No server?** That is the shortest road, and the plan's default. Skip
+Phases 2, 3 and 4 (the box, the backend, Sign in with Apple): accounts need a
+server. The privacy policy and support page go on a free host instead
+([privacy-and-support-pages.md](privacy-and-support-pages.md)).
+
 ### Phase 0: accounts and tools
 
 1. Join the Apple Developer Program. Approval can take from minutes to a few
@@ -130,16 +134,15 @@ Make the Expo project fit this setup: a fixed bundle identifier, an API URL
 per build profile, a development build instead of Expo Go, and three EAS
 build profiles.
 
-Guide: [expo-app.md](expo-app.md). Skill: `ship-ios:expo-local-build` (for the first
-development build on your phone).
+Guide: [expo-app.md](expo-app.md).
 
 Then give your agent a way to check its own work: lint, strict types, tests,
 and a look at the change in the Simulator before it says "done". Guide:
 [agent-test-loop.md](agent-test-loop.md). Skill: `dev:test-loop`.
 
-Done when: a development build of your app runs on your iPhone, the API URL
-comes from `eas.json`, not from a file only your laptop has, and your agent
-runs the test loop without you.
+Done when: a development build of your app runs on your iPhone, the preview
+and production API URLs come from `eas.json`, and your agent runs the test
+loop without you.
 
 ### Phase 2: the box
 
@@ -149,9 +152,7 @@ firewall, Docker, Traefik, a Cloudflare Tunnel, nightly backups.
 1. Register a domain that stays cheap at renewal. Guide: [domain.md](domain.md).
 2. Put your domain on Cloudflare and make an API token. Guide: [cloudflare.md](cloudflare.md).
 3. Rent a small VPS ([vps.md](vps.md)), or install Ubuntu Server on a mini PC you own.
-4. Put the box, your Mac and your phone on one private network, so you (or
-   your coding agent) can fix things from anywhere. Guide: [remote-access.md](remote-access.md).
-5. Run the setup. Skill: `box:box-setup`.
+4. Run the setup. Skill: `box:box-setup`.
 
 Done when: `box:box-setup`'s `check` phase ends with `0 fail`, and the backup
 has run once to an off-box target.
@@ -186,15 +187,19 @@ Done when: you can sign in on your phone, the server logs show a verified
 Apple `sub`, and deleting the account in the app removes the user and
 revokes the Apple token.
 
-### Phase 5: payments (optional)
+### Phase 5: App Store Connect
+
+Create the app record and an App Store Connect API key. The key lets scripts
+and skills upload builds and read their state without your Apple password.
+
+Guides: [app-store-connect-setup.md](app-store-connect-setup.md), [app-store-connect-api-key.md](app-store-connect-api-key.md).
+Skill: `ship-ios:appstore-connect`.
+
+Done when: `ship-ios:appstore-connect` lists your app by its bundle ID.
+
+### Phase 6: payments (optional)
 
 Skip this phase if the app is free.
-
-The products live on the app record, so create the app record first
-([app-store-connect-setup.md](app-store-connect-setup.md), step 2).
-RevenueCat also needs the Issuer ID of an App Store Connect API key
-([app-store-connect-api-key.md](app-store-connect-api-key.md)). Both are Phase 6 steps. If
-you sell anything, do those two first.
 
 1. Sign the Paid Apps agreement and add tax and bank details. Nothing can be
    sold before that. Guide: [app-store-connect-setup.md](app-store-connect-setup.md) (the agreements part).
@@ -205,20 +210,11 @@ you sell anything, do those two first.
 Done when: a sandbox purchase in a development build unlocks the paid
 feature, and your server agrees that the user is paid.
 
-### Phase 6: App Store Connect
-
-Create the app record and an App Store Connect API key. The key lets scripts
-and skills upload builds and read their state without your Apple password.
-
-Guides: [app-store-connect-setup.md](app-store-connect-setup.md), [app-store-connect-api-key.md](app-store-connect-api-key.md).
-Skill: `ship-ios:appstore-connect`.
-
-Done when: `ship-ios:appstore-connect` lists your app by its bundle ID.
-
 ### Phase 7: builds
 
 1. **Preview build on your phone.** A release build that installs directly on
-   registered devices, pointed at your real API. Skill:
+   registered devices, pointed at your API (staging, once you have
+   `box:staging-env`). Skill:
    `ship-ios:ios-preview-build`.
 2. **TestFlight.** A production build, made on your Mac and uploaded to App
    Store Connect. Guide: [expo-eas.md](expo-eas.md). Skills: `ship-ios:expo-local-build`,
@@ -230,10 +226,8 @@ the main feature end to end against the production API.
 
 ### Phase 8: the store page
 
-1. **Icon.** Skill: `ship-ios:draw-app-icon`. For a matching set of in-app
-   icons: `ship-ios:draw-icon-set`.
-2. **Screenshots.** Skill: `ship-ios:app-store-screenshots`. For extra
-   artwork: `content:image` (needs [kie-ai.md](kie-ai.md)).
+1. **Icon.** Skill: `ship-ios:draw-app-icon`.
+2. **Screenshots.** Skill: `ship-ios:app-store-screenshots`.
 3. **Product analytics (optional).** Before your first public release, you
    can add PostHog to see where new users drop off. Do it before the privacy
    step, so the policy and the answers include it. Guide:
@@ -285,8 +279,6 @@ Done when: the app is approved and released.
   it).
 - **A landing page** for the app, on the same box. Skill:
   `box:new-landing-page`.
-- **Images and video** for the store page, the landing page and social posts.
-  Skills: `content:image`, `content:video`.
 - **Keep the box healthy.** About 15 minutes a month, and an agent can do it
   with `box:box-setup`:
   - Security updates install themselves. Reboot when the box says a reboot
@@ -334,8 +326,8 @@ Done when: the app is approved and released.
 - [ ] Push to `main` deploys the API
 - [ ] Sign in with Apple works, server verifies the token
 - [ ] Account deletion in the app, with Apple token revocation
-- [ ] (Optional) Paid Apps agreement signed, products created, RevenueCat connected
 - [ ] App record in App Store Connect, API key stored
+- [ ] (Optional) Paid Apps agreement signed, products created, RevenueCat connected
 - [ ] Preview build tested on your phone
 - [ ] TestFlight build tested end to end
 - [ ] (Optional) Product analytics: opt-in, privacy policy and App Privacy match ([product-analytics.md](product-analytics.md))

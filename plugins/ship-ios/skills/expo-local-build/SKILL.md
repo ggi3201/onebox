@@ -1,6 +1,6 @@
 ---
 name: expo-local-build
-description: Build an Expo / React Native iOS app on your own Mac with `eas build --local` (free, no build credits) and upload it to TestFlight with `eas submit`. Falls back to an EAS cloud build when there is no Mac or the config says cloud. Use when the user says "ship a build", "push to TestFlight", "deploy the iOS app", "release a new build", "build locally", "eas build failed", "signing failed", "errSecInternalComponent", "Apple 401", or asks how to get their Expo app onto TestFlight without paying for cloud builds.
+description: Build an Expo / React Native iOS app on your own Mac with `eas build --local` (free, no build credits) and upload it to TestFlight with `eas submit`. Falls back to an EAS cloud build when this is not a Mac or the config says cloud. Use when the user says "ship a build", "push to TestFlight", "deploy the iOS app", "release a new build", "build locally", "eas build failed", "signing failed", "errSecInternalComponent", "Apple 401", or asks how to get their Expo app onto TestFlight without paying for cloud builds.
 ---
 
 # Build locally, submit to TestFlight
@@ -41,7 +41,9 @@ The script:
 
 1. Checks it is in the app folder, and warns about a stray `app.json` above it.
 2. Picks local or cloud: `--cloud`, `expo.buildMode` in the onebox config, or
-   no Xcode on this machine.
+   a machine that is not a Mac. A Mac whose Xcode does not work (only the
+   Command Line Tools selected, or the license not accepted) stops with the
+   fix instead. `--groups` and `--upload` stop a cloud build too.
 3. Logs in to Expo with `eas login` state or `expo.tokenRef`.
 4. Checks `eas.json`: the profile exists, and the submit key fields are all
    set or all unset and match the config.

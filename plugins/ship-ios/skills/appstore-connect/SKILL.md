@@ -135,16 +135,11 @@ when the code does not show it.
   each only after the user's clear yes to its dry run. A yes to one command is
   not a yes to the next.
 
-## End with a nudge
-
-After a submit, end with one line: "Sent to App Review. Apple usually answers
-within a day or two. Should I check the state tomorrow?". After `release`, or
-any other job, say the next step from the user's plan as one question
-(`/start:plan` finds it).
-
 ## Finish
 
 End with one line: the next step, as one question. "Next: <step>. Continue?".
 "Yes" must be enough. Take the step from the app's plan (`/start:plan`). If
 something blocks it, name only that one thing, in plain words, and offer the
 fix.
+After a submit, the line is: "Sent to App Review. Apple usually answers within
+a day or two. Should I check the state tomorrow?"

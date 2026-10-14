@@ -11,7 +11,6 @@ To change an answer, run `/start:plan` again and say which one.
 - Will users pay inside the app? **Yes, subscriptions or one-time purchases** (you)
 - Do you want a landing page? **Yes, a page for the app on my own domain** (you)
 - Does the app use AI? **A chat or an agent that uses the app's data** (you)
-- Do you want to fix things from your phone? **Yes, let me (or my coding agent) reach the box from anywhere** (you)
 
 ## Install
 
@@ -21,7 +20,6 @@ Only the plugins this plan uses. In Claude Code:
 /plugin install dev@onebox
 /plugin install box@onebox
 /plugin install ship-ios@onebox
-/plugin install app-features@onebox
 ```
 
 In Codex: `codex plugin add <plugin>@onebox` for each of them.
@@ -39,7 +37,6 @@ Skills read these from `~/.config/onebox/config.json`, or `.onebox.json` for thi
 - `apple.ascKeyRef` or `apple.ascKeyPath` — not set
 - `expo.tokenRef` — not set
 - `expo.buildMode` — not set
-- `revenuecat.apiKeyRef` — not set
 - `box.type` — not set
 - `box.ssh` — not set
 - `box.domain` — not set
@@ -48,11 +45,6 @@ Skills read these from `~/.config/onebox/config.json`, or `.onebox.json` for thi
 - `box.tunnelName` — not set
 - `box.cloudflareTokenRef` — not set
 - `box.runnerLabel` — not set
-- `llm.baseUrl` — not set
-- `llm.model` — not set
-- `llm.keyRef` — not set
-- `tracing.otlpEndpoint` — not set
-- `tracing.authRef` — not set
 
 ## Accounts and tools
 
@@ -68,14 +60,12 @@ Skills read these from `~/.config/onebox/config.json`, or `.onebox.json` for thi
   - detected: Expo app in apps/mobile with a bundle id, a dev client and the three EAS profiles
 - [ ] Give your agent a test loop — guide: https://onebox.lokkesveen.com/guides/agent-test-loop/ (raw: https://onebox.lokkesveen.com/guides/agent-test-loop.md) <!-- guide:agent-test-loop -->
 - [ ] Agent checks its own work, then proves it in the Simulator — skill: /dev:test-loop <!-- skill:dev/test-loop -->
-- [ ] Trim the test suite now and then — skill: /dev:trim-tests <!-- skill:dev/trim-tests -->
 
 ## The box
 
 - [ ] Rent a small VPS (or use a mini PC) — guide: https://onebox.lokkesveen.com/guides/vps/ (raw: https://onebox.lokkesveen.com/guides/vps.md) <!-- guide:vps -->
 - [ ] Put the domain on Cloudflare, with a tunnel — guide: https://onebox.lokkesveen.com/guides/cloudflare/ (raw: https://onebox.lokkesveen.com/guides/cloudflare.md) <!-- guide:cloudflare -->
 - [ ] Bring the box to a safe baseline — skill: /box:box-setup <!-- skill:box/box-setup -->
-- [ ] Reach the box from your phone — guide: https://onebox.lokkesveen.com/guides/remote-access/ (raw: https://onebox.lokkesveen.com/guides/remote-access.md) <!-- guide:remote-access -->
 - [ ] Get an alert when the box or the API is down — guide: https://onebox.lokkesveen.com/guides/uptime-alerts/ (raw: https://onebox.lokkesveen.com/guides/uptime-alerts.md) <!-- guide:uptime-alerts -->
 
 ## The backend
@@ -90,12 +80,7 @@ Skills read these from `~/.config/onebox/config.json`, or `.onebox.json` for thi
 - [ ] Sign in with Apple, verified on the server — guide: https://onebox.lokkesveen.com/guides/sign-in-with-apple/ (raw: https://onebox.lokkesveen.com/guides/sign-in-with-apple.md) <!-- guide:sign-in-with-apple -->
 - [ ] Send push notifications from your API — guide: https://onebox.lokkesveen.com/guides/push-notifications/ (raw: https://onebox.lokkesveen.com/guides/push-notifications.md) <!-- guide:push-notifications -->
 - [ ] Get an LLM API key — guide: https://onebox.lokkesveen.com/guides/llm-api-key/ (raw: https://onebox.lokkesveen.com/guides/llm-api-key.md) <!-- guide:llm-api-key -->
-- [ ] An agent in your API that calls your tools — skill: /app-features:agent-harness <!-- skill:app-features/agent-harness -->
-- [ ] A streamed chat screen — skill: /app-features:chat-feature <!-- skill:app-features/chat-feature -->
-- [ ] A cost budget per user — skill: /app-features:ai-usage-limits <!-- skill:app-features/ai-usage-limits -->
-- [ ] The AI consent Apple asks for — skill: /app-features:ai-consent <!-- skill:app-features/ai-consent -->
-- [ ] Slow AI work as background jobs — skill: /app-features:durable-jobs <!-- skill:app-features/durable-jobs -->
-- [ ] Trace and cost every AI call — guide: https://onebox.lokkesveen.com/guides/langfuse/ (raw: https://onebox.lokkesveen.com/guides/langfuse.md) <!-- guide:langfuse -->
+- [ ] The AI consent Apple asks for — guide: https://onebox.lokkesveen.com/guides/ai-consent/ (raw: https://onebox.lokkesveen.com/guides/ai-consent.md) <!-- guide:ai-consent -->
 - [ ] Ask for a rating at a good moment — guide: https://onebox.lokkesveen.com/guides/ask-for-a-rating/ (raw: https://onebox.lokkesveen.com/guides/ask-for-a-rating.md) <!-- guide:ask-for-a-rating -->
 
 ## App Store Connect and builds
@@ -112,10 +97,8 @@ Skills read these from `~/.config/onebox/config.json`, or `.onebox.json` for thi
 
 - [ ] The landing page with privacy, support and terms — skill: /box:new-landing-page <!-- skill:box/new-landing-page -->
 - [ ] The app icon — skill: /ship-ios:draw-app-icon <!-- skill:ship-ios/draw-app-icon -->
-- [ ] Custom icons, if the app needs its own — skill: /ship-ios:draw-icon-set <!-- skill:ship-ios/draw-icon-set -->
 - [ ] Store screenshots from real screens — skill: /ship-ios:app-store-screenshots <!-- skill:ship-ios/app-store-screenshots -->
 - [ ] Store page text that search finds — skill: /ship-ios:store-listing <!-- skill:ship-ios/store-listing -->
-- [ ] Check that every feature works, with proof — skill: /start:check-features <!-- skill:start/check-features -->
 - [ ] Find what Apple will reject, before Apple does — skill: /ship-ios:app-store-ready <!-- skill:ship-ios/app-store-ready -->
 - [ ] See crashes and errors after launch — guide: https://onebox.lokkesveen.com/guides/crash-reports/ (raw: https://onebox.lokkesveen.com/guides/crash-reports.md) <!-- guide:crash-reports -->
 - [ ] Optional: see where new users drop off, before your first release — guide: https://onebox.lokkesveen.com/guides/product-analytics/ (raw: https://onebox.lokkesveen.com/guides/product-analytics.md) <!-- guide:product-analytics -->

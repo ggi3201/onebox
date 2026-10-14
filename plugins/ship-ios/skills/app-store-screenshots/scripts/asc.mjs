@@ -19,7 +19,7 @@
 import fs from 'fs'; import path from 'path'; import os from 'os'; import crypto from 'crypto';
 import { readSecret } from './secret.mjs';
 
-const EDITABLE = ['PREPARE_FOR_SUBMISSION', 'DEVELOPER_REJECTED', 'REJECTED', 'METADATA_REJECTED', 'INVALID_BINARY'];
+const EDITABLE = ['PREPARE_FOR_SUBMISSION', 'DEVELOPER_REJECTED', 'REJECTED', 'METADATA_REJECTED', 'INVALID_BINARY', 'READY_FOR_REVIEW'];
 
 // ---- onebox ASC auth ------------------------------------------------------
 // This block is identical in ship-ios/skills/appstore-connect/scripts/asc.mjs
@@ -86,9 +86,13 @@ async function api(method, p, body) {
 
 const args = Object.fromEntries(process.argv.slice(3).reduce((a, x, i, all) => {
   if (x.startsWith('--')) a.push([x.slice(2), all[i + 1] && !all[i + 1].startsWith('--') ? all[i + 1] : true]); return a; }, []));
+// A mistyped flag (--dryrun) must not run the real command.
+const KNOWN = ['app', 'backup', 'clear', 'dir', 'display', 'locale', 'version', 'dry-run'];
+const unknownFlag = Object.keys(args).find(k => !KNOWN.includes(k));
+if (unknownFlag) { console.error(`unknown flag --${unknownFlag}. Nothing sent.`); process.exit(2); }
 
 async function versionsOf(appId) {
-  return (await api('GET', `/v1/apps/${appId}/appStoreVersions?filter[platform]=IOS&limit=10`)).data;
+  return (await api('GET', `/v1/apps/${appId}/appStoreVersions?filter[platform]=IOS&limit=200`)).data;
 }
 async function setsOf(locId) {
   return (await api('GET', `/v1/appStoreVersionLocalizations/${locId}/appScreenshotSets?limit=50&include=appScreenshots`)).data;
@@ -99,7 +103,7 @@ async function list() {
   for (const a of apps) {
     console.log(`${a.attributes.name}  ${a.attributes.bundleId}  id=${a.id}`);
     for (const v of await versionsOf(a.id)) {
-      const st = v.attributes.appStoreState, edit = EDITABLE.includes(st);
+      const st = v.attributes.appVersionState || v.attributes.appStoreState, edit = EDITABLE.includes(st);
       console.log(`  ${v.attributes.versionString}  ${st}${edit ? '  (editable)' : ''}`);
       if (!edit) continue;
       const locs = (await api('GET', `/v1/appStoreVersions/${v.id}/appStoreVersionLocalizations?limit=50`)).data;
@@ -125,7 +129,7 @@ async function replace() {
   const res = await api('GET', q);
   const app = Array.isArray(res.data) ? res.data.find(a => a.attributes.bundleId === args.app) : res.data;
   if (!app) throw new Error(`No app with bundle id exactly ${args.app}. Run "node asc.mjs list" and pass the bundle id or the app id from it.`);
-  const vs = (await versionsOf(app.id)).filter(v => args.version ? v.attributes.versionString === args.version : EDITABLE.includes(v.attributes.appStoreState));
+  const vs = (await versionsOf(app.id)).filter(v => args.version ? v.attributes.versionString === args.version : EDITABLE.includes(v.attributes.appVersionState || v.attributes.appStoreState));
   if (vs.length !== 1) throw new Error(`Expected one editable version, found ${vs.length}: ${vs.map(v => v.attributes.versionString).join(', ')}. Pass --version.`);
   const v = vs[0];
   const loc = (await api('GET', `/v1/appStoreVersions/${v.id}/appStoreVersionLocalizations?limit=50`)).data.find(l => l.attributes.locale === locale);
@@ -133,15 +137,19 @@ async function replace() {
   const sets = await setsOf(loc.id);
   const toClear = sets.filter(s => clear.includes(s.attributes.screenshotDisplayType));
 
-  console.log(`${app.attributes.name} ${v.attributes.versionString} (${v.attributes.appStoreState}) ${locale}`);
+  console.log(`${app.attributes.name} ${v.attributes.versionString} (${v.attributes.appVersionState || v.attributes.appStoreState}) ${locale}`);
   for (const s of toClear) console.log(`  clear ${s.attributes.screenshotDisplayType}: ${s.relationships.appScreenshots.data.length} screenshots`);
   console.log(`  upload ${files.length} to ${display}: ${files.join(', ')}`);
   if (dry) return console.log('  dry run, nothing changed');
 
+  // Back up every set first, then delete. One failed download deletes nothing.
+  // Each run and locale gets its own folder, so no backup overwrites another.
   const backup = path.resolve(args.backup || path.join(dir, '..', 'asc-backup'));
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const saved = [];
   for (const s of toClear) {
     const shots = (await api('GET', `/v1/appScreenshotSets/${s.id}/appScreenshots?limit=50`)).data;
-    const bdir = path.join(backup, app.attributes.bundleId, s.attributes.screenshotDisplayType); fs.mkdirSync(bdir, { recursive: true });
+    const bdir = path.join(backup, app.attributes.bundleId, locale, stamp, s.attributes.screenshotDisplayType); fs.mkdirSync(bdir, { recursive: true });
     for (const [i, sh] of shots.entries()) {
       const a = sh.attributes.imageAsset; if (!a) continue;
       const r = await fetch(a.templateUrl.replace('{w}', a.width).replace('{h}', a.height).replace('{f}', 'png'));
@@ -149,8 +157,11 @@ async function replace() {
       fs.writeFileSync(path.join(bdir, `${String(i + 1).padStart(2, '0')}-${sh.attributes.fileName.replace(/\.[^.]+$/, '')}.png`), Buffer.from(await r.arrayBuffer()));
     }
     console.log(`  backed up ${shots.length} -> ${bdir}`);
-    for (const sh of shots) await api('DELETE', `/v1/appScreenshots/${sh.id}`);
-    console.log(`  deleted ${shots.length} from ${s.attributes.screenshotDisplayType}`);
+    saved.push(shots);
+  }
+  for (const [i, s] of toClear.entries()) {
+    for (const sh of saved[i]) await api('DELETE', `/v1/appScreenshots/${sh.id}`);
+    console.log(`  deleted ${saved[i].length} from ${s.attributes.screenshotDisplayType}`);
   }
 
   let set = sets.find(s => s.attributes.screenshotDisplayType === display);

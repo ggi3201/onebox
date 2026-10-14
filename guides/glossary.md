@@ -100,7 +100,7 @@ sentences. When a word has its own guide, the entry links to it.
 - **Proxied.** A DNS record that goes through Cloudflare, so the box's real
   address stays hidden.
 - **Tailscale.** A private network for your own devices, so you can reach the
-  box from your phone anywhere. See [remote-access.md](remote-access.md).
+  box without an open SSH port. https://tailscale.com
 - **API.** Your backend: the code the app calls over HTTPS. See
   [backend.md](backend.md).
 - **Postgres.** The database the backend uses.

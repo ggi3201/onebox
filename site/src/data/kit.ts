@@ -30,32 +30,17 @@ export const PLUGINS: Plugin[] = [
     blurb: "Backend and sites on one cheap machine. A mini PC at home or a small VPS.",
   },
   {
-    id: "content",
-    letter: "C",
-    title: "Content",
-    runsOn: "Your Mac",
-    blurb: "Images and video for the store page, the landing page and social posts.",
-  },
-  {
     id: "dev",
     letter: "D",
     title: "Dev loop",
     runsOn: "Your Mac",
     blurb: "The agent proves its change on the simulator before it says done.",
   },
-  {
-    id: "app-features",
-    letter: "E",
-    title: "App features",
-    runsOn: "Your app",
-    blurb: "An AI chat and agent, cost limits, consent, background jobs and share import, built into your app and API.",
-  },
 ];
 
 const TAGLINES: Record<string, string> = {
   "plan": "Looks at your app, asks only what it cannot see, and writes PLAN.md with the next step.",
   "new-app": "A new repo in the layout every other skill expects, with the checks already green.",
-  "check-features": "Checks that every feature you asked for has a flow that passed on the current code.",
   "app-store-ready": "Tells you why Apple will reject your app, before Apple does.",
   "expo-local-build": "Builds on your own Mac and sends it to TestFlight. No build credits.",
   "eas-update": "Sends a JavaScript fix to phones without a new build or App Review.",
@@ -64,21 +49,11 @@ const TAGLINES: Record<string, string> = {
   "app-store-screenshots": "Store images from your real screens, in your app’s own fonts.",
   "store-listing": "Name, subtitle, keywords and description that search finds, within Apple\u2019s limits.",
   "draw-app-icon": "A vector icon that still reads at home-screen size.",
-  "draw-icon-set": "A set of outline icons that look like one family.",
   "box-setup": "Takes a fresh VPS to a safe, working baseline in one go.",
   "expose-service": "Puts a service on the internet at your domain, with no open ports.",
   "new-landing-page": "A self-hosted landing page, or your Next.js site moved off Vercel.",
   "staging-env": "A second backend for test branches, with its own database.",
-  "image": "Generate and edit images with kie.ai, fal or Replicate. Look first, pay little, reroll.",
-  "video": "Animate an approved still. Chain shots so the cuts disappear.",
   "test-loop": "Lint, types, tests, then the simulator. Proof before “done”.",
-  "trim-tests": "Cuts a fifth of your tests and keeps what catches bugs.",
-  "agent-harness": "An agent in your API that calls your tools, streams, and proposes instead of acting.",
-  "chat-feature": "A chat screen that streams word by word, with Stop, photos and tap-to-apply cards.",
-  "ai-usage-limits": "A monthly budget per user, so one account cannot run up your model bill.",
-  "ai-consent": "The AI consent step App Review asks for, enforced on the server too.",
-  "durable-jobs": "Slow work as a background job that survives restarts, with cancel and refunds.",
-  "share-import": "Share a page from Safari into your app, with its data, ready to import.",
 };
 
 export type Skill = { name: string; plugin: string; line: string };

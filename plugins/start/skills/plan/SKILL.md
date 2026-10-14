@@ -7,8 +7,7 @@ description: The first step with onebox. It looks at the app in the current fold
 
 Runs on: your Mac, in your app's repo.
 
-This skill writes two files in the repo root: `PLAN.md`, and `FEATURES.md`
-through the `check-features` skill's script (section 3b). It does not install
+This skill writes one file in the repo root: `PLAN.md`. It does not install
 plugins, change the app or touch the config. The user does those, step by
 step, with the plan in hand.
 
@@ -103,14 +102,12 @@ with `--answers`, and do not ask those questions again. Detection still runs.
 If detection says something different with `high` confidence (for example,
 the site says "no server" but the repo has an ASP.NET API), say both and ask
 which is right. Drop keys the catalog does not know before you pass them; the
-script rejects them. One of them is `does`: a list of what the app should do,
-in the user's words. It is not a catalog answer. Pass it to `sync` in
-section 3b, and do not ask for it again.
+script rejects them.
 
 **Answers from `/start:new-app`.** When `/start:new-app` made the repo in this
 session, the user already answered the server and sign-in questions there.
-The repo shows an API in `apps/api`, but not "no server", "hosted" or "sign
-in later". Pass those answers with `--answers` to `questions` and `write`, and
+The repo shows an API in `apps/api`, but not "no server", "hosted", "no
+accounts" or "sign in later". Pass those answers with `--answers` to `questions` and `write`, and
 do not ask them again:
 
 | new-app answer | `--answers` |
@@ -118,8 +115,9 @@ do not ask them again:
 | Server: Own box, .NET API / Own box, Node API | `"backend":"box"` |
 | Server: Hosted (Supabase, Convex, Firebase) | `"backend":"hosted"` |
 | Server: No server | `"backend":"none"` |
-| Sign in with Apple now: Yes | `"login":"apple"` |
-| Sign in with Apple now: Later | `"login":"later"` |
+| Accounts: No accounts | `"login":"none"` |
+| Accounts: Sign in with Apple now | `"login":"apple"` |
+| Accounts: Sign in with Apple later | `"login":"later"` |
 
 `write` keeps them in `PLAN.md`, so a later run does not ask them either.
 
@@ -132,7 +130,7 @@ question means, answer from `references/questions.md`.
 
 ```bash
 node <skill-dir>/scripts/plan.mjs write --detect "$TMPDIR/onebox-detect.json" \
-  --answers '{"backend":"box","login":"apple","paid":"subs","site":"yes","ai":["chat"],"remote":"yes"}'
+  --answers '{"backend":"box","login":"apple","paid":"subs","site":"yes","ai":["chat"]}'
 ```
 
 Answers are option ids from the catalog. `ai` is a list; `[]` means none.
@@ -162,27 +160,6 @@ The same answers and the same repo give the same file. The script prints a
 summary for you: counts, answers, install lines, config keys not set, a
 `Newly done:` line and the next step. Do not show it to the user, and do not
 paste the file. Go to section 6.
-
-## 3b. What the app does
-
-`FEATURES.md` lists what the app must do. `/start:check-features` later
-checks that each feature has a flow that passed. `<check-dir>` is
-`<skill-dir>/../check-features`, in the same plugin.
-
-If `FEATURES.md` does not exist, and no `does` list came from the site, ask
-one more question: "What should the app do? A few short lines, one per
-thing." Suggest lines from what you know (the idea, the app name, the screens
-in the repo), so the user can say yes or change them. "Not sure yet" is a
-fine answer: write the file without them. Then:
-
-```bash
-node <check-dir>/scripts/features.mjs sync --add '["Add a receipt with a photo", "Remind me before a warranty ends"]'
-```
-
-Leave out `--add` when there is nothing to add. With `--out`, add `--plan <that file>`. `sync` also copies the
-features the plan's items promise (sign-in, payments, AI) from `PLAN.md`, so
-run it after `write`, on every run. It adds lines and never changes or
-removes one. Do not show its output unless the user asks.
 
 ## 4. Run again later
 
@@ -280,8 +257,8 @@ the repo already answers), offer to report it: `https://onebox.lokkesveen.com/gu
 
 ## Rules
 
-- In the repo, write only `PLAN.md` (or the `--out` file) and, through
-  `features.mjs sync`, `FEATURES.md`. No other file, no config, no app code.
+- In the repo, write only `PLAN.md` (or the `--out` file). No other file, no
+  config, no app code.
 - Never run `/plugin install`. The user types it. Run another installer only
   when `ready` marks it `safe`, and only after the user says yes.
 - Never print a config value or a secret. Detection reads key names only.

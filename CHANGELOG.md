@@ -20,7 +20,32 @@ A plugin updates only when its version went up. Guides are not in a plugin:
 the skills read them from the site, so a guide fix reaches you without an
 update.
 
+`app-features` (last version 0.2.3), `content` (0.1.5), `dev:trim-tests`,
+`start:check-features` and `ship-ios:draw-icon-set` left the kit on
+2026-10-14, to keep it about getting an app onto the App Store. A copy you
+installed keeps working, but gets no more updates. The AI consent rule is now
+a guide: https://onebox.lokkesveen.com/guides/ai-consent/.
+
 ## start
+
+### 0.3.0 (2026-10-14)
+
+- No server is now the recommended answer, with no accounts and no landing
+  page: the default plan has 25 steps instead of 39. `new-app` recommends it
+  too, and asks about accounts. Sign-in with no server is a conflict the plan
+  asks about. `check-features` left: the plan writes only `PLAN.md`, and no
+  longer asks what the app should do. The `remote` question and the
+  remote-access guide are gone. `new-app` reuses the app's simulator on a
+  second run.
+- `plan`: the AI chat, agent, budget, jobs, share-import and image/video items
+  are gone with their plugins. AI apps get the new AI consent guide, and an
+  API that calls a model needs a per-user usage count before its backend
+  step is ticked. Paid apps no longer need a RevenueCat secret key.
+- `plan`: a re-run keeps every line you wrote, even one that looks like the
+  planner's, a title above the header, and the old plan kept by `--convert`.
+- `plan`: the box SSH check can no longer be handed an ssh option by a
+  repo's `.onebox.json`. The setup list for `new-app` no longer contradicts
+  itself, and its pnpm fix runs.
 
 ### 0.2.15 (2026-10-09)
 
@@ -269,6 +294,21 @@ update.
 
 ## ship-ios
 
+### 0.2.0 (2026-10-14)
+
+- `draw-icon-set` left the kit; `draw-app-icon` stays. `eas-update`: fixes
+  for a live build go on its release branch, so a second update cannot take
+  the first fix away from users.
+- `appstore-connect`, `app-store-screenshots`: a mistyped flag such as
+  `--dryrun` stops with "Nothing sent" instead of making the real change.
+- `app-store-screenshots`: backups go to a folder per locale and per run, and
+  every set is saved before any is deleted.
+- `appstore-connect`: a `subs-create` re-run leaves the price of a product
+  that already has one; its dry run shows the same writes as the real run.
+- `app-store-ready`: `'image/*'` in the code no longer hides a LAN URL or a
+  secret from the checks. `expo-local-build`: a Mac whose Xcode cannot run
+  stops with the fix instead of exiting silently.
+
 ### 0.1.12 (2026-10-09)
 
 - `appstore-connect`: the subscription commission is right. Apple keeps 30%
@@ -374,6 +414,16 @@ update.
 
 ## box
 
+### 0.1.10 (2026-10-14)
+
+- `box-setup`: `preflight` refuses a box with two or more Traefik containers
+  it did not make, or a cloudflared set up from Cloudflare's dashboard.
+- `box-setup`: a config that does not parse stops the run, and config values
+  are checked before they reach files root reads. A later `proxy` run keeps
+  your Traefik version. Docker is not restarted while containers run.
+- `expose-service`: the exposure audit also checks admin hostnames behind a
+  dashboard-managed tunnel. The nightly backup includes pgvector databases.
+
 ### 0.1.9 (2026-10-09)
 
 - `box-setup`, `expose-service`: script commands start with `<skill-dir>/`, so
@@ -458,6 +508,14 @@ update.
 
 ## dev
 
+### 0.2.0 (2026-10-14)
+
+- `trim-tests` left the kit. `test-loop` flows lose their `Covers:` line,
+  which only `check-features` read.
+- `test-loop`: one simulator per worktree is found by name and reused, and
+  deleted with the worktree, instead of a new one each session filling the
+  disk.
+
 ### 0.1.7 (2026-10-09)
 
 - `test-loop` preflight: one simulator per worktree no longer fails both.
@@ -510,124 +568,3 @@ update.
 
 - First version. `/dev:test-loop` lets the agent check its own work in the
   Simulator. `/dev:trim-tests` cuts a bloated test suite.
-
-## app-features
-
-### 0.2.3 (2026-10-09)
-
-- `agent-harness`: tracing exports chat runs. Before, a chat run in a request
-  exported nothing: ASP.NET Core's request activity is not recorded, and the
-  sampler dropped every span under it. The run now starts as a root span when
-  the request is not traced, and tool spans name the run as their parent, so
-  they keep it across each `yield`. Copy `AgentTelemetry.cs` and the
-  `StartTool` line in `AgentLoop.cs` into your API again.
-- `agent-harness`: the chat request's timezone and item id have size caps,
-  and a client can no longer send the server-only `background` view. The last
-  turn must be the person's, and a photo must be JPEG, PNG, WebP or GIF with
-  valid base64: these got a 200 and then a vague provider error. The SSE
-  keep-alive now comes every 15 s, not up to 30 s. With `APP_EVAL=1` and no
-  key, the evals fail instead of passing.
-- `ai-usage-limits`: `ModelPricing.EnsureConfigured` fails the start when a
-  budget is set and `Usage:Prices` is empty; before, nothing was counted. A
-  `:` in a model id is written and read as `_` (`.NET` config splits on `:`).
-  `IAiConsentCheck` moved to `agent-harness`'s `AgentSeams.cs`, so
-  `ai-consent` and `ai-usage-limits` each build alone.
-- `ai-consent`: the server accepts only consent versions up to the current
-  text's.
-- `durable-jobs`: register handlers with `AddJobHandler<T>(kind, safeToRetry)`;
-  `Kind` and `SafeToRetry` left `IJobHandler`. A handler that needs a missing
-  model key gives 503 `notConfigured` for its own kind, and no longer breaks
-  every job route and the worker. The worker acts as the job's owner through
-  `IJobUser`. A timeout inside a job fails it, instead of leaving it Running.
-- `chat-feature`: a message the server refused is marked "Not sent" and left
-  out of later requests. Before, it broke the chat until a reset.
-- The C# now imports `MyApp.Api.Data`, where new-app puts `AppDb`, and CI
-  builds it in an API shaped like new-app's.
-
-### 0.2.2 (2026-10-09)
-
-- Every skill ends with the next step from your plan, as one question.
-
-### 0.2.1 (2026-10-09)
-
-- `agent-harness` reads the smoke-test key as CONFIG.md "Secrets" says.
-
-### 0.2.0 (2026-10-09)
-
-- `/app-features:share-import` is now the share extension only: a page shared
-  from Safari opens your import screen with its link, text and JSON-LD. The
-  example server import (a recipe job with a model call) is gone; its lessons
-  stay as advice in `references/extraction.md`. Sharing the same link twice
-  now works.
-- `/app-features:ai-consent`: the first AI call after "Agree" waits until the
-  server has the yes. When the API still answers `consentRequired`, call the
-  new `consentRefused()` and the next AI action asks again. The chat feature
-  has a `consentRefused` slot in `config.ts`.
-
-### 0.1.3 (2026-10-07)
-
-- `ai-usage-limits` adds its per-account limit as one policy on the API's
-  own rate limiter. It no longer sets up a second limiter or a second
-  forwarded-headers step, which an API from `/start:new-app` already has.
-
-### 0.1.2 (2026-10-07)
-
-- `ai-usage-limits` says what to do in an app without sign-in: a per-install
-  id from the server, a per-IP limit, a lower daily cap, and the app-wide
-  budget as the real backstop.
-
-### 0.1.1 (2026-09-29)
-
-- The .NET code reads the user from the `sub` claim. Before, it got no user:
-  a 401 on every request, and one rate-limit bucket for everyone.
-- The .NET code builds under the kit's strict settings. `JobFailed` is now
-  `JobFailedException`.
-
-### 0.1.0 (2026-09-28)
-
-- First version. Skills for an AI agent, a chat screen, AI usage limits, AI
-  consent, background jobs, and import from the share sheet.
-
-## content
-
-### 0.1.5 (2026-10-09)
-
-- `image`, `video`: script commands start with `<skill-dir>/`, so they run
-  from the app's repo too.
-
-### 0.1.4 (2026-10-09)
-
-- `video`: Veo 3.1 with one image starts the clip from it
-  (`FIRST_AND_LAST_FRAMES_2_VIDEO`); before, the image was only a style
-  reference. `chain` stops before leg 1 when ffmpeg is missing, so no leg is
-  paid for. `--dur`, `--ar`, `--resolution` and `--tail` on a model with no
-  built-in schema are named as not sent, with how to pass them.
-- `image`, `video`: Replicate official models work as `owner/name`, with no
-  version id. `still --ref ... --dry-run` uploads nothing and reads no key.
-- `image`, `video`: every submitted job prints its id. One failed status
-  check no longer loses a paid result: the script retries, and after five
-  failures in a row it names the job, which may still finish on your account.
-  `probe` with a bad key fails instead of printing `null`. `.jpeg` files
-  upload as `image/jpeg`.
-
-### 0.1.3 (2026-10-09)
-
-- Every skill ends with the next step from your plan, as one question.
-
-### 0.1.2 (2026-10-09)
-
-- fal: a failed job is an error now. Before, fal's error page was saved as the
-  output file and the script reported success.
-
-### 0.1.1 (2026-10-09)
-
-- Secrets are read the same way in every script: the environment variable,
-  then your `secrets.command` (any tool; `doppler` and `1password` are
-  ready-made), then the nearest `.env`. A command that waits for a prompt
-  stops after 60 s with a clear message, instead of hanging. CONFIG.md,
-  "Secrets".
-- `/content:image` reads `media.providers.kie.keyRef`, like `/content:video`.
-
-### 0.1.0 (2026-09-28)
-
-- First version. Skills to make images and videos for your app.

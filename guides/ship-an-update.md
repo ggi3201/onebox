@@ -75,8 +75,13 @@ git tag v1.1.0 && git push origin v1.1.0
 
 With the fingerprint policy, `version` is one of the fingerprint's inputs
 by default. So raising it gives a new runtime version. An update made after
-the raise reaches only the new build. To fix the old build with an update,
-publish from its tag.
+the raise reaches only the new build.
+
+To fix the old build with an update, make a release branch from its tag
+(`git switch -c release/1.0.0 v1.0.0`), cherry-pick each fix onto it, and
+publish only from that branch. An update replaces all the JavaScript of the
+builds on its runtime: published a second time from the bare tag, it takes
+the first fix away from every user.
 
 ### 3. Backend first, app second
 
@@ -157,7 +162,7 @@ screen: "Please update the app", with a button that opens the store page
 var minAppVersion = Version.Parse(builder.Configuration["MIN_APP_VERSION"] ?? "1.0.0");
 
 var app = builder.Build();
-app.UseForwardedHeaders();
+if (trusted.Length > 0) app.UseForwardedHeaders();   // backend.md, "Protect the API", step 1
 app.Use(async (ctx, next) =>
 {
     // No header: curl, the health check, or a build from before the header.

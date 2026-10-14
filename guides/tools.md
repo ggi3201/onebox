@@ -21,7 +21,7 @@ Install [Homebrew](https://brew.sh) first. Most of the tools below come from it.
 |---|---|---|
 | Xcode | iOS builds, the Simulator, `xcodebuild`, `xcrun` | [xcode.md](xcode.md). The full Xcode, not only the Command Line Tools. |
 | `git` | every repo | comes with Xcode |
-| Node.js 22.18 or later, or 24 (LTS) | the skills' scripts, Expo, `eas`. Expo SDK 57 needs 22.13; a Node API from `/start:new-app` runs `src/server.ts` directly, which needs 22.18 | `brew install node@22`, or a version manager such as `fnm` |
+| Node.js 22.18 or later, or 24 (LTS) | the skills' scripts, Expo, `eas`. Expo SDK 57 needs 22.13; a Node API from `/start:new-app` runs `src/server.ts` directly, which needs 22.18 | `brew install node@22 && brew link --overwrite --force node@22` (Homebrew does not put `node@22` on your PATH by itself), or a version manager such as `fnm` |
 | `pnpm` | the package manager in a `/start:new-app` repo | `corepack disable pnpm 2>/dev/null; npm install -g pnpm@10`. Node 25 and newer no longer ship corepack, so the kit does not rely on it. In a repo, pnpm 10 runs the version that `package.json` pins in `packageManager`. |
 | `jq` | reads the onebox config | `brew install jq` |
 | `eas` | Expo builds and updates, also local builds | `npm install -g eas-cli`. See [expo-eas.md](expo-eas.md). |
@@ -38,9 +38,7 @@ Install [Homebrew](https://brew.sh) first. Most of the tools below come from it.
 | `ssh` | every `box` skill | comes with macOS. Make a key: see [vps.md](vps.md), step 1. |
 | `python3` | `ship-ios:app-store-screenshots` (contact sheets, with Pillow) | comes with Xcode. Then `python3 -m pip install --user Pillow`. |
 | Playwright and sharp | `ship-ios:app-store-screenshots` (rendering) | `mkdir -p ~/.cache/onebox-render && cd ~/.cache/onebox-render && npm i playwright sharp` |
-| `ffmpeg` | `content:video` (chained shots) | `brew install ffmpeg` |
 | `hcloud` | renting a Hetzner VPS | `brew install hcloud`. See [vps.md](vps.md). |
-| Tailscale | reaching the box from anywhere | the app from the Mac App Store. See [remote-access.md](remote-access.md). |
 
 ### Your secrets tool, one of these
 
@@ -70,8 +68,6 @@ that already runs a tunnel or a proxy it did not set up.
 
 Two more, and only if you want them:
 
-- **Tailscale**, to reach the box from anywhere without an open SSH port:
-  [remote-access.md](remote-access.md).
 - **The GitHub Actions runner**, for deploy on push. `box:box-setup` sets it
   up (its `references/runner.md`). You do not install it by hand.
 

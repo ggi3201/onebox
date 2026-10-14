@@ -54,9 +54,7 @@ your own code (this guide) and the provider's own spend limit stop that bill.
 **The limits live in the database**, in one row or document. You change them
 in the dashboard, with no deploy. Start with 30 calls per user a day and an
 app budget you could pay on a bad day, for example $5. A budget of 0 or less
-means no ceiling, the same as in the box skill. It does not turn AI off. The
-skill `app-features:ai-usage-limits` has
-[a page on choosing a budget](../plugins/app-features/skills/ai-usage-limits/references/pricing.md).
+means no ceiling. It does not turn AI off.
 
 **The cost comes from the provider's usage numbers.** Every Chat Completions
 answer has `usage.prompt_tokens` and `usage.completion_tokens`. Keep the
@@ -72,9 +70,7 @@ here. That counts a little high, which is the safe side.
 known only after it. So the budget bounds the day, not each call. That is
 fine.
 
-**A refusal carries a `code` and a sentence.** The app shows the sentence.
-`budgetExhausted` and `rateLimited` have the same names as on the box
-(`app-features:ai-usage-limits`). The other codes exist only here:
+**A refusal carries a `code` and a sentence.** The app shows the sentence:
 
 | Code | When | What the user sees |
 |---|---|---|
@@ -94,9 +90,7 @@ too: each account needs an Apple Account.
 **No sign-in?** Every count here is per user. Anonymous sign-in (Supabase and
 Firebase have it) gives each install a user id, but a reinstall gives a new
 one. Then the limits slow abuse down, and the app budget is the real
-backstop. The box skill's
-[no-accounts page](../plugins/app-features/skills/ai-usage-limits/references/no-accounts.md)
-explains the trade-off. Sign in with Apple makes the limits hold.
+backstop. Sign in with Apple makes the limits hold.
 
 ## Supabase
 
@@ -668,11 +662,6 @@ try { await httpsCallable(getFunctions(), "ask")({ prompt }); }
 catch (e: any) { const code = e.details?.code; const message = e.message; }
 ```
 
-On the box, the chat store maps its refusals with `refusalOf` and
-`explainError` (`store.ts` in `app-features:chat-feature`). They know only
-the box's codes. `aiUnavailable`, `tooLong` and `notSignedIn` are not among
-them. If you reuse them here, add those codes, or show the server's sentence.
-
 ## Where the values go
 
 | Value | Secret? | Where |
@@ -681,11 +670,9 @@ them. If you reuse them here, add those codes, or show the server's sentence.
 | `LLM_BASE_URL`, `LLM_MODEL` | no | Supabase secrets, Convex environment variables, or `functions/.env` on Firebase |
 | `LLM_INPUT_USD_PER_M`, `LLM_OUTPUT_USD_PER_M` | no | the same place as `LLM_MODEL`. Update them when you change the model |
 | Per-user daily calls, app daily budget | no | the database: `ai_limits` (Supabase), `aiLimits` (Convex), `aiConfig/limits` (Firebase). Change them in the dashboard, with no deploy |
-| `EXPO_PUBLIC_APP_CHECK_DEBUG_TOKEN` (Firebase) | treat as private | the `development` profile in `eas.json` only. Never in a production build |
+| `EXPO_PUBLIC_APP_CHECK_DEBUG_TOKEN` (Firebase) | treat as private | `apps/mobile/.env.local`, for the development client only. Never in `eas.json` or a production build |
 
-The model's prices come from its provider's pricing page. The skill
-`app-features:ai-usage-limits` has a script that prints current prices from
-OpenRouter's public list.
+The model's prices come from its provider's pricing page.
 
 ## Check it works
 

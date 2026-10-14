@@ -44,6 +44,7 @@ CLEANUP=(); cleanup() { local x; for x in "${CLEANUP[@]:-}"; do [ -n "$x" ] && r
 command -v jq >/dev/null || die "jq is required (brew install jq)."
 # The project config is the nearest .onebox.json, from the app folder up: in
 # a monorepo it sits at the repo root, not next to app.json.
+[ -n "$DIR" ] && cd "$DIR"
 PROJ_CFG=""; d="$PWD"
 while :; do [ -f "$d/.onebox.json" ] && { PROJ_CFG="$d/.onebox.json"; break; }; [ "$d" = / ] && break; d="$(dirname "$d")"; done
 cfg() {
@@ -58,7 +59,6 @@ SCRIPTS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 secret() { "$SCRIPTS/secret.sh" "$1"; }
 
 # ---- 1. Find the mobile project -------------------------------------------
-[ -n "$DIR" ] && cd "$DIR"
 has_app_config() { local f; for f in app.json app.config.js app.config.ts app.config.mjs app.config.cjs; do [ -f "$1/$f" ] && return 0; done; return 1; }
 if ! has_app_config . || [ ! -f eas.json ]; then
   found="$(find . -maxdepth 3 -name eas.json -not -path '*/node_modules/*' | head -3)"
@@ -92,9 +92,14 @@ say "eas-cli $(eas --version 2>/dev/null | head -1)"
 
 MODE="$(c '.expo.buildMode')"; MODE="${MODE:-local}"
 [ "$FORCE_CLOUD" = true ] && MODE=cloud
-if [ "$MODE" = local ] && { [ "$(uname)" != Darwin ] || ! command -v xcodebuild >/dev/null; }; then
-  warn "No Mac with Xcode here, so a local iOS build is impossible. Using the EAS cloud build."
+if [ "$MODE" = local ] && [ "$(uname)" != Darwin ]; then
+  warn "This is not a Mac, so a local iOS build is impossible. Using the EAS cloud build."
   MODE=cloud
+fi
+# macOS always has /usr/bin/xcodebuild. It fails when only the Command Line Tools
+# are selected or the license is not accepted.
+if [ "$MODE" = local ] && ! xcodebuild -version >/dev/null 2>&1; then
+  die "Xcode is not ready on this Mac. Run: sudo xcode-select -s /Applications/Xcode.app and sudo xcodebuild -license accept. Or pass --cloud."
 fi
 
 # ---- 3. Expo login ------------------------------------------------------------
@@ -131,6 +136,7 @@ fi
 
 # ---- 5. Cloud path -------------------------------------------------------------
 if [ "$MODE" = cloud ]; then
+  [ -z "$TF_GROUP$UPLOAD" ] || die "--groups and --upload work only for a local build."
   warn "Cloud build: it runs on Expo's servers and counts against your plan's monthly builds."
   flags=(--platform ios --profile "$PROFILE")
   [ "$INTERACTIVE" = false ] && flags+=(--non-interactive)

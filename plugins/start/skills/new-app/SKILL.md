@@ -39,7 +39,7 @@ exception: pnpm is pinned to major 10 (step 0).
   ```
 
   `backend` is `box` with an API in the repo, else `hosted` or `none`. Add
-  `--need dotnet` only for a .NET API. It checks git, Node 22 or newer,
+  `--need dotnet` only for a .NET API. It checks git, Node 22.18 or newer,
   pnpm 10, `eas` and its login, Xcode, CocoaPods and its Ruby, a UTF-8
   locale, and, with an API, Docker. pnpm stays on 10 (`tools.md`). The check
   is read-only.
@@ -91,9 +91,13 @@ question the user already answered.
     upload to Apple. The Simulator build does not need the real one.
   The options use the slug of the first suggested name: the answers come
   back together, so they cannot follow the name the user picks.
-- **Server:** "Own box, .NET API (recommended)", "Own box, Node API",
-  "Hosted (Supabase, Convex, Firebase)", "No server".
-- **Sign in with Apple now:** "Yes (recommended)", "Later".
+- **Server:** "No server (recommended)", "Hosted (Supabase, Convex,
+  Firebase)", "Own box, .NET API", "Own box, Node API". No server is the
+  shortest way to the App Store. Suggest a server only when the idea needs
+  data that lives off the phone: accounts, sync between devices, AI.
+- **Accounts:** "No accounts (recommended)", "Sign in with Apple now", "Sign
+  in with Apple later". Accounts need a server: if the user picks "No
+  server" and Sign in with Apple, ask which one to change before you build.
 
 **The slug** is not a question. Make it from the app name: lowercase letters
 and digits, no spaces (`warrantykeeper`). It names the folder, the scheme,
@@ -155,8 +159,8 @@ API, the repo root without one. Run every `npx expo` and `eas` command there.
    bundle id, `app.json`, the API URL module, `expo-dev-client`, `eas.json`
    with three profiles, remote versions, `expo-secure-store`. Set `slug`,
    `name` and `scheme` to the app's slug (the template says `mobile`). Set
-   `supportsTablet: false`. With "Sign in with Apple: Later", leave out
-   `usesAppleSignIn` and its plugin.
+   `supportsTablet: false`. With "No accounts" or "Sign in with Apple
+   later", leave out `usesAppleSignIn` and its plugin.
    - `eas.json` gets `cli` and `build` only. No `submit` block and no
      RevenueCat key: their values come from later steps, and a placeholder
      such as `"ascAppId": "1234567890"` makes the plan think the app is
@@ -246,7 +250,10 @@ simulator, so the build does not land on one another session uses.
 ```bash
 # CocoaPods on a Ruby from rbenv or Homebrew (not /usr/bin/ruby), and a UTF-8 LANG
 node <plan-dir>/scripts/plan.mjs ready --need cocoapods-ruby,utf8-locale --repo .
-U=$(xcrun simctl create "MyApp" "iPhone 17 Pro") && xcrun simctl boot "$U"
+# The app's own simulator. A second run reuses it, so they do not pile up.
+U=$(xcrun simctl list devices -j | jq -r '.devices[][] | select(.name == "MyApp" and .isAvailable) | .udid' | head -1)
+[ -n "$U" ] || U=$(xcrun simctl create "MyApp" "iPhone 17 Pro")
+xcrun simctl boot "$U" 2>/dev/null || true
 pnpm ios --device "$U"
 ```
 

@@ -41,7 +41,12 @@ errors=0
 stamp="$(date -u +%Y%m%dT%H%M%SZ)"
 
 docker ps --format '{{.Names}}\t{{.Image}}' | while IFS=$'\t' read -r name image; do
-  case "$image" in *postgres*|*postgis*|*timescale*) ;; *) continue ;; esac
+  # By image name, or by PG_MAJOR in the env (set by the postgres image and images built
+  # from it, such as pgvector/pgvector).
+  case "$image" in *postgres*|*postgis*|*timescale*) ;;
+    *) case "$(docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' "$name" 2>/dev/null)" in
+         *PG_MAJOR=*) ;; *) continue ;; esac ;;
+  esac
   [ "$(docker inspect -f '{{index .Config.Labels "onebox.backup"}}' "$name")" = false ] && continue
   out="$DUMP_DIR/$name-$stamp.sql.gz"
   # POSTGRES_USER is read inside the container, so no credential passes through here.

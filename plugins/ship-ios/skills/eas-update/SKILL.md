@@ -132,6 +132,13 @@ What it checks, and why:
   apps often have a dev-only `localhost` fallback. Read the code before you
   dismiss it.
 
+**Publish from the build's release branch.** An update replaces all the
+JavaScript of the builds on its runtime. Published from a checkout that lacks
+an earlier update's fix, it takes that fix away from every user. Fix a live
+build on `release/<version>`, made from its tag (`git switch -c
+release/1.0.0 v1.0.0`): cherry-pick each fix onto it, and publish only from
+there. Fixes for the next version stay on `main`.
+
 Always run the dry run first and show the user what it found. Publishing is an
 outward action: phones download it. Publish only after the user says yes.
 

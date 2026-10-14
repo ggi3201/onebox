@@ -55,6 +55,9 @@ it to a file other than the one the user asked for, and never put it in a URL.
 
 ## Keys
 
+Both files are plain JSON. The `//` comments below explain each key: leave
+them out of your file, or every script that reads it fails.
+
 ```jsonc
 {
   "secrets": {
@@ -81,62 +84,20 @@ it to a file other than the one the user asked for, and never put it in a URL.
     "supportUrl": ""                       // the support page URL, e.g. https://example.com/support
   },
 
-  "revenuecat": {
-    "apiKeyRef": "REVENUECAT_API_KEY"       // secret reference (v2 secret key)
-  },
-
   "box": {
     "type": "home",                        // home (mini PC on your LAN) | vps
     "ssh": "user@host",                    // how to reach it
     "domain": "example.com",               // the domain you own, on Cloudflare
     "appsDir": "/srv/apps",                // where each app's compose project lives
-    "proxy": "traefik",                    // traefik is the only supported proxy
     "proxyNetwork": "proxy",               // docker network Traefik watches
     "tunnel": "cloudflare",                // cloudflare | none (vps with open 80/443)
     "tunnelName": "onebox",
     "cloudflareTokenRef": "CLOUDFLARE_API_TOKEN",
     "acmeEmail": "",                      // for Traefik's certificates, if not tunnel-only
     "runnerLabel": "box"                   // GitHub Actions self-hosted runner label
-  },
-
-  "images": {
-    "provider": "kie",                      // deprecated: use media.imageProvider — still read as a fallback
-    "keyRef": "KIE_AI_API_KEY"               // deprecated: use media.providers.kie.keyRef — still read as a fallback
-  },
-
-  "media": {
-    "imageProvider": "kie",                 // kie | fal | replicate — which provider content:image uses by default
-    "videoProvider": "kie",                 // kie | fal | replicate — which provider content:video uses by default
-    "providers": {
-      "kie": { "keyRef": "KIE_AI_API_KEY" },
-      "fal": { "keyRef": "FAL_KEY" },
-      "replicate": { "keyRef": "REPLICATE_API_TOKEN" }
-    }
-  },
-
-  "llm": {                                 // app-features skills: smoke tests and evals
-    "baseUrl": "https://openrouter.ai/api/v1",   // any OpenAI-compatible Chat Completions API
-    "model": "",                           // the provider's model id
-    "keyRef": "LLM_API_KEY"                 // secret reference
-  },
-
-  "tracing": {                             // optional; tracing is off unless set up
-    "otlpEndpoint": "",                    // e.g. https://cloud.langfuse.com/api/public/otel
-    "authRef": "LANGFUSE_OTLP_AUTH"         // secret reference to the base64 "pk:sk" value
   }
 }
 ```
-
-`media.imageProvider`/`media.videoProvider` pick the provider; `--provider` on
-either skill's script overrides it for one call. `media.providers.<name>.keyRef`
-is a secret reference, resolved the same way as any other (see **Secrets**
-above) — it is never itself a secret value.
-
-The old `images.provider` and `images.keyRef` keys still work: if `media` is
-absent, `content:image` falls back to them for the kie.ai case, so an existing
-config with just `images` keeps working unchanged. `content:video` only reads
-`media` (it postdates the old keys) and defaults to `kie` /
-`media.providers.kie.keyRef` / `KIE_AI_API_KEY` if `media` is absent entirely.
 
 ## Rule for skill authors
 

@@ -1,6 +1,6 @@
 ---
 name: draw-app-icon
-description: Draw or refine a precise SVG app logo from a reference or a sketch, including hairline blueprint and architectural marks, and package it as a validated Apple app icon (Icon Composer .icon plus an opaque 1024 px PNG) for an Expo or native iOS app. Use when the user asks to make an app icon, turn a logo into an iOS icon, fix an icon that looks blurry or thin on the home screen, set up Icon Composer or Liquid Glass icons, or when App Store Connect rejects the icon. Not for naming research, UI icon sets (use draw-icon-set) or store screenshots.
+description: Draw or refine a precise SVG app logo from a reference or a sketch, including hairline blueprint and architectural marks, and package it as a validated Apple app icon (Icon Composer .icon plus an opaque 1024 px PNG) for an Expo or native iOS app. Use when the user asks to make an app icon, turn a logo into an iOS icon, fix an icon that looks blurry or thin on the home screen, set up Icon Composer or Liquid Glass icons, or when App Store Connect rejects the icon. Not for naming research, in-app UI icons or store screenshots.
 ---
 
 # Draw App Icon

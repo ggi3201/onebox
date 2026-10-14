@@ -104,9 +104,9 @@ REF=$(cfg | jq -r '.box.cloudflareTokenRef // "CLOUDFLARE_API_TOKEN"')
 ## Choices, and why
 
 - **SSH on a VPS.** Default: port 22 open, keys only. Simple, and fine with
-  password login off. Stricter: install Tailscale first (see
-  `https://onebox.lokkesveen.com/guides/remote-access.md`), then
-  `--ssh-tailscale-only` closes 22 to the internet. Keep the provider's web
+  password login off. Stricter: install Tailscale on the box and your Mac
+  first (https://tailscale.com/download), then `--ssh-tailscale-only` closes
+  22 to the internet. Keep the provider's web
   console as the way back in. A home box sits behind the router, so 22 is
   LAN-only anyway.
 - **No 80/443 open.** The tunnel dials out, so nothing needs to reach the box.
@@ -157,7 +157,7 @@ line is a real protection, not a formality:
 | unattended-upgrades on | known holes in the OS staying open for months | run `base` again; reboot when it says a reboot is pending |
 | no "updates waiting" warning | Docker, runc and cloudflared holes. Automatic updates skip them. | `references/updates.md` |
 | SSH on tailscale0 only, sudo needs a password | a stricter choice quietly undone (shown only if you chose it) | run `base` again: it keeps the choice |
-| no container port on all interfaces | a database or admin UI on the public IP. **Docker-published ports skip ufw**, so ufw's "deny" does not cover them. | remove `ports:`, or bind to `127.0.0.1:`. If a port really must be public, limit it in the provider's firewall. |
+| no container port on all interfaces | a database or admin UI on the public IP. **Docker-published ports skip ufw**, so ufw's "deny" does not cover them. | remove `ports:`, or bind to `127.0.0.1:`. If a port really must be public, limit it in the provider's firewall. At home, onebox's own Traefik is left out: it binds `0.0.0.0` on purpose. |
 | docker socket only in traefik | a public container with the socket is root on the box. `:ro` does not help: it limits the file, not the API. | remove the socket mount from that service. Tools that need it (backups, updaters) stay off the proxy network. |
 
 On a box set up by hand, the fixes differ: `references/adopt.md`. It also

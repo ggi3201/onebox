@@ -14,8 +14,9 @@ Read the release notes. For a new minor (v3.7 -> v3.8) also read the migration
 guide on doc.traefik.io. Then on the box, edit `image:` in
 `<appsDir>/traefik/docker-compose.yml`, and run
 `docker compose -p traefik pull && docker compose -p traefik up -d`, then
-`box-setup.sh check`. Pass `--traefik-image traefik:vX.Y.Z` on later runs, or
-the proxy phase writes the old pin back. Do not edit the installed copy of
+`box-setup.sh check`. A later `proxy` run keeps the `image:` in that file;
+`--traefik-image traefik:vX.Y.Z` replaces it. It rewrites the rest of the file,
+so put lasting changes in `dynamic/*.yml`. Do not edit the installed copy of
 `box-setup.sh`: a plugin update replaces it. If the kit's pin is behind, open
 an issue on ggi3201/onebox.
 

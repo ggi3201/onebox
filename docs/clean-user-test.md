@@ -17,7 +17,7 @@ A second user is not a clean Mac. Some things are shared with the first user.
 |---|---|---|
 | Home folder, `~/.zshrc`, rbenv, fnm, `~/.config` | nothing (clean) | Tested for real |
 | Logins: Claude, GitHub, Expo, Doppler, Apple ID in Xcode | nothing (clean) | Tested for real |
-| Xcode, Docker, Tailscale, Claude app | shared, in `/Applications` | Not tested: install |
+| Xcode, Docker, Claude app | shared, in `/Applications` | Not tested: install |
 | Homebrew tools (`jq`, `gh`, `fastlane`, `doppler`) | shared, in `/opt/homebrew` | Not tested: install |
 | `pod` (old, from `/usr/local/bin`), `dotnet` | shared | The old `pod` uses the old macOS Ruby. Good: this tests that trap. |
 

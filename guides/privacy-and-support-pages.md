@@ -4,7 +4,8 @@ Runs on: your browser. No server needed.
 
 Apple asks every app for two public web pages, even a free app with no
 accounts: a **privacy policy** and a **support page**. If you use
-`box:new-landing-page`, those pages come with it and you can skip this guide.
+`box:new-landing-page`, those pages come with it: you still need "Deleting the
+account: the wording" below.
 If you do not want a landing page, this guide gets you the two pages for free
 in about half an hour.
 
@@ -64,7 +65,7 @@ sentences:
 - [ ] **Who else gets it** (processors): your hosting, RevenueCat, an AI
       provider, an analytics or crash tool. Name each one.
 - [ ] **AI features**: what is sent to the model provider, and that the user
-      agreed to it in the app (see `app-features:ai-consent` if you have AI).
+      agreed to it in the app (see [ai-consent.md](ai-consent.md)).
 - [ ] **Where it is stored** and **how long**.
 - [ ] **Deleting the account**: where in the app, and what gets deleted.
       Apple requires in-app account deletion when the app has sign-up. Use

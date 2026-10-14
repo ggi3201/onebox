@@ -53,13 +53,10 @@ const CONFIG_KEYS = [
   { keys: ["secrets.tool"] },
   { keys: ["apple.teamId", "apple.ascKeyId", "apple.ascIssuerId", ["apple.ascKeyRef", "apple.ascKeyPath"]] },
   { keys: ["expo.tokenRef", "expo.buildMode"] },
-  { when: { paid: ["subs"] }, keys: ["revenuecat.apiKeyRef"] },
   { when: { backend: ["box"] }, keys: [...BOX_KEYS, "box.runnerLabel"] },
   { when: { site: ["yes"] }, keys: BOX_KEYS },
-  { when: { ai: ["chat", "import"] }, keys: ["llm.baseUrl", "llm.model", "llm.keyRef", "tracing.otlpEndpoint", "tracing.authRef"] },
-  { when: { ai: ["media"] }, keys: ["media.imageProvider", "media.videoProvider", "media.providers.kie.keyRef"] },
 ];
-const HEADERS = { stage: "Stage", backend: "Server", login: "Sign-in", paid: "Payments", site: "Landing page", ai: "AI", remote: "Remote" };
+const HEADERS = { stage: "Stage", backend: "Server", login: "Sign-in", paid: "Payments", site: "Landing page", ai: "AI" };
 
 // ---------- arguments ----------
 
@@ -79,7 +76,7 @@ for (let i = 1; i < argv.length; i++) {
 // plan went to another file with --out: then the root .md file that starts
 // with the onebox mark. Without this, later runs forgot that file.
 function findPlan(dir) {
-  const isOnebox = (f) => { try { return fs.readFileSync(path.join(dir, f), "utf8").startsWith("<!-- onebox-plan v1"); } catch { return false; } };
+  const isOnebox = (f) => { try { return /^<!-- onebox-plan v1 /m.test(fs.readFileSync(path.join(dir, f), "utf8")); } catch { return false; } };
   if (isOnebox("PLAN.md")) return "PLAN.md";
   let names = [];
   try { names = fs.readdirSync(dir).filter((f) => f.endsWith(".md") && f !== "PLAN.md").sort(); } catch { /* no folder */ }
@@ -111,7 +108,9 @@ function normalize(qid, v, where = "") {
   if (!q) die(`unknown question "${qid}". Known: ${[...Q.keys()].join(", ")}`);
   const ids = q.options.map((o) => o.id);
   if (q.multi) {
-    const arr = (Array.isArray(v) ? v : v == null || v === "" ? [] : [v]).filter((x) => x !== "none");
+    // An old plan's header (`where`) may hold an option a later catalog dropped
+    // (AI "media"): drop it there, refuse it in new answers.
+    const arr = (Array.isArray(v) ? v : v == null || v === "" ? [] : [v]).filter((x) => x !== "none" && (!where || ids.includes(x)));
     for (const x of arr) if (!ids.includes(x)) die(`${where}"${x}" is not an option of ${qid}. Options: ${ids.join(", ")}`);
     return ids.filter((x) => arr.includes(x)); // catalog order, no duplicates
   }
@@ -319,19 +318,24 @@ function render(answers, sources, detect) {
 
 function readOldPlan() {
   let text;
-  try { text = fs.readFileSync(outPath, "utf8"); } catch { return null; }
-  if (!text.startsWith(MARK)) return { foreign: true, text };
-  const first = text.slice(0, text.indexOf("\n") >>> 0);
+  try { text = fs.readFileSync(outPath, "utf8").replace(/\r\n/g, "\n"); } catch { return null; }
+  // Lines the user added above the header line are theirs: they stay above it.
+  const at = text.search(/^<!-- onebox-plan v1 /m);
+  if (at < 0) return { foreign: true, text };
+  const prefix = text.slice(0, at), body = text.slice(at);
+  const first = body.slice(0, body.indexOf("\n") >>> 0);
   let meta = {};
   try { meta = JSON.parse(first.slice(MARK.length, first.lastIndexOf(" -->"))); } catch {
     // Say it: a silent reset would drop every answer the user gave.
     process.stderr.write(`plan.mjs: the first line of ${path.relative(repo, outPath) || outPath} does not parse, so its answers are not read. Give them again with --answers, or fix that line.\n`);
   }
-  return { foreign: false, text, meta };
+  return { foreign: false, text, prefix, body, meta };
 }
 
 const ITEM_RE = /^\s*- \[( |x|X)\] (.*<!-- ((?:guide|skill):\S+) -->)\s*$/;
 const NOTE_RE = /^ {2}- (detected|likely done|found): /;
+// Plans from before meta.gen: lines of these shapes, in these sections, are the planner's.
+const GEN_SECTIONS = new Set(["## Your answers", "## Install", "## Config keys"]);
 const GEN_RE = [
   /^- `[\w.]+`( or `[\w.]+`)* — (set|not set)$/,
   /^\/plugin install \S+@onebox$/,
@@ -348,7 +352,9 @@ const GEN_RE = [
 // old words were the planner's, not the user's, and drops them.
 const genHash = (heading, line) => crypto.createHash("sha1").update(`${heading}\n${line}`).digest("hex").slice(0, 10);
 
-function parseOld(text, isStatic, genHeadings) {
+// meta.notes holds the hashes of the planner's own note lines under items;
+// without it (an older plan), every such line is the planner's.
+function parseOld(text, isStatic, genHeadings, { legacy, notes }) {
   const lines = text.split("\n").slice(1);
   const items = new Map();
   const blocks = [];
@@ -359,21 +365,25 @@ function parseOld(text, isStatic, genHeadings) {
   };
   for (const line of lines) {
     const m = line.match(ITEM_RE);
-    if (m) {
+    // A second line for one item is the user's copy, a reminder in their notes.
+    if (m && !items.has(m[3])) {
       flush();
       curItem = { key: m[3], ticked: m[1] !== " ", body: m[2], line, autoTicked: false };
-      if (!items.has(m[3])) items.set(m[3], curItem);
+      items.set(m[3], curItem);
       anchor = { type: "item", key: m[3] };
       continue;
     }
     if (!line.trim()) { (cur ? cur.lines : blanks).push(line); continue; }
-    if (NOTE_RE.test(line) && curItem && anchor.type === "item") {
+    // Under "Kept from your old plan", after --convert, sits the user's own
+    // old plan: its headings and lines are theirs.
+    const kept = heading === KEPT;
+    if (!kept && NOTE_RE.test(line) && curItem && anchor.type === "item" && (!notes || notes.has(genHash(`item:${curItem.key}`, line)))) {
       if (line.startsWith("  - detected: ") || line.startsWith("  - likely done: ")) curItem.autoTicked = true;
       blanks = [];
       continue;
     }
-    if (genHeadings.has(line)) { flush(); heading = line; anchor = { type: "heading" }; occ = new Map(); curItem = null; continue; }
-    if (GEN_RE.some((r) => r.test(line)) || isStatic(heading, line)) {
+    if (!kept && genHeadings.has(line)) { flush(); heading = line; anchor = { type: "heading" }; occ = new Map(); curItem = null; continue; }
+    if ((legacy && GEN_SECTIONS.has(heading) && GEN_RE.some((r) => r.test(line))) || isStatic(heading, line)) {
       flush();
       const n = (occ.get(line) ?? 0) + 1; occ.set(line, n);
       anchor = { type: "line", text: line, n };
@@ -436,7 +446,8 @@ function buildPlan({ readonly = false } = {}) {
   }
   const oldGen = new Set(Array.isArray(old?.meta?.gen) ? old.meta.gen : []);
   const isStatic = (h, l) => staticLines.has(`${h}\n${l}`) || oldGen.has(genHash(h, l));
-  const parsed = old && !old.foreign ? parseOld(old.text, isStatic, genHeadings) : { items: new Map(), blocks: [] };
+  const notes = Array.isArray(old?.meta?.notes) ? new Set(old.meta.notes) : null;
+  const parsed = old && !old.foreign ? parseOld(old.body, isStatic, genHeadings, { legacy: !Array.isArray(old.meta?.gen), notes }) : { items: new Map(), blocks: [] };
   if (old?.foreign) parsed.blocks.push({ heading: KEPT, anchor: { type: "kept" }, lines: old.text.replace(/\s+$/, "").split("\n") });
 
   // Build the output, section by section, placing the user's blocks.
@@ -446,7 +457,7 @@ function buildPlan({ readonly = false } = {}) {
   const userLines = (b) => b.lines.map((user) => ({ user }));
   const out = [];
   let doneCount = 0, next = null;
-  const left = [], newlyDone = [], tickedKeys = new Set(), autoKeys = [];
+  const left = [], newlyDone = [], tickedKeys = new Set(), autoKeys = [], noteGen = [];
   const oldAuto = Array.isArray(old?.meta?.auto) ? new Set(old.meta.auto) : null;
   for (const s of secs) {
     out.push("", s.heading, "");
@@ -470,9 +481,8 @@ function buildPlan({ readonly = false } = {}) {
         const fresh = l.text;
         const body = prev && !staticLooksGenerated(prev.body) ? prev.body : fresh;
         out.push(`- [${ticked ? "x" : " "}] ${body}`);
-        if (done) out.push(`  - detected: ${done}`);
-        else if (likely) out.push(`  - likely done: ${likely}`);
-        else if (found) out.push(`  - found: ${found}`);
+        const note = done ? `  - detected: ${done}` : likely ? `  - likely done: ${likely}` : found ? `  - found: ${found}` : null;
+        if (note) { out.push(note); noteGen.push(genHash(`item:${key}`, note)); }
         out.push(...blocksFor((b) => b.anchor.type === "item" && b.anchor.key === key).flatMap(userLines));
         const item = items.find((it) => keyOf(it) === key);
         if (ticked) {
@@ -504,8 +514,8 @@ function buildPlan({ readonly = false } = {}) {
   if (kept.length) out.push("", KEPT, "", KEPT_INTRO, "", ...kept);
 
   const gen = [...new Set(secs.flatMap((sec) => sec.lines.filter((l) => !l.item && l.text.trim()).map((l) => genHash(sec.heading, l.text))))];
-  const meta = { answers, sources, auto: autoKeys, gen };
-  const file = `${MARK}${JSON.stringify(meta)} -->\n${mergeBlanks(out)}\n`;
+  const meta = { answers, sources, auto: autoKeys, gen, notes: noteGen };
+  const file = `${old?.prefix ?? ""}${MARK}${JSON.stringify(meta)} -->\n${mergeBlanks(out)}\n`;
   return { detect, old, answers, sources, items, plugins, keys, file, doneCount, next, left, newlyDone, tickedKeys };
 }
 
@@ -524,6 +534,9 @@ function writeMode() {
   const setKeys = new Set([...(detect.config?.user?.keysSet ?? []), ...(detect.config?.project?.keysSet ?? [])]);
   const missing = keys.filter((k) => !keyIsSet(k, setKeys)).map((k) => keyLabel(k));
   log(`Config keys not set: ${missing.length ? missing.join(", ") : "none"}`);
+  for (const [where, c] of [["~/.config/onebox/config.json", detect.config?.user], [".onebox.json", detect.config?.project]]) {
+    if (c?.present && !c.valid) log(`Check: ${where} is not plain JSON (a comment or a trailing comma?), so no skill can read it (CONFIG.md, "Keys").`);
+  }
   for (const q of catalog.questions) {
     const d = detect.answers?.[q.id];
     // An answer can agree with what detection sees: "sign in later" and a
