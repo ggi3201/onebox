@@ -27,6 +27,18 @@ consent rule is now a guide: https://onebox.lokkesveen.com/guides/ai-consent/.
 
 ## start
 
+### 0.2.16 (2026-10-14)
+
+- `plan`: the AI chat, agent, budget, jobs, share-import and image/video items
+  are gone with their plugins. AI apps get the new AI consent guide, and an
+  API that calls a model needs a per-user usage count before its backend
+  step is ticked. Paid apps no longer need a RevenueCat secret key.
+- `plan`: a re-run keeps every line you wrote, even one that looks like the
+  planner's, a title above the header, and the old plan kept by `--convert`.
+- `plan`: the box SSH check can no longer be handed an ssh option by a
+  repo's `.onebox.json`. The setup list for `new-app` no longer contradicts
+  itself, and its pnpm fix runs.
+
 ### 0.2.15 (2026-10-09)
 
 - `new-app`: the `.npmrc` comment gives the current reason for
@@ -274,6 +286,18 @@ consent rule is now a guide: https://onebox.lokkesveen.com/guides/ai-consent/.
 
 ## ship-ios
 
+### 0.1.13 (2026-10-14)
+
+- `appstore-connect`, `app-store-screenshots`: a mistyped flag such as
+  `--dryrun` stops with "Nothing sent" instead of making the real change.
+- `app-store-screenshots`: backups go to a folder per locale and per run, and
+  every set is saved before any is deleted.
+- `appstore-connect`: a `subs-create` re-run leaves the price of a product
+  that already has one; its dry run shows the same writes as the real run.
+- `app-store-ready`: `'image/*'` in the code no longer hides a LAN URL or a
+  secret from the checks. `expo-local-build`: a Mac whose Xcode cannot run
+  stops with the fix instead of exiting silently.
+
 ### 0.1.12 (2026-10-09)
 
 - `appstore-connect`: the subscription commission is right. Apple keeps 30%
@@ -379,6 +403,16 @@ consent rule is now a guide: https://onebox.lokkesveen.com/guides/ai-consent/.
 
 ## box
 
+### 0.1.10 (2026-10-14)
+
+- `box-setup`: `preflight` refuses a box with two or more Traefik containers
+  it did not make, or a cloudflared set up from Cloudflare's dashboard.
+- `box-setup`: a config that does not parse stops the run, and config values
+  are checked before they reach files root reads. A later `proxy` run keeps
+  your Traefik version. Docker is not restarted while containers run.
+- `expose-service`: the exposure audit also checks admin hostnames behind a
+  dashboard-managed tunnel. The nightly backup includes pgvector databases.
+
 ### 0.1.9 (2026-10-09)
 
 - `box-setup`, `expose-service`: script commands start with `<skill-dir>/`, so
@@ -462,6 +496,10 @@ consent rule is now a guide: https://onebox.lokkesveen.com/guides/ai-consent/.
   host a landing page, and run a staging backend.
 
 ## dev
+
+### 0.2.0 (2026-10-14)
+
+- `trim-tests` left the kit. `test-loop` is unchanged.
 
 ### 0.1.7 (2026-10-09)
 
