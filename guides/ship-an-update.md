@@ -75,8 +75,13 @@ git tag v1.1.0 && git push origin v1.1.0
 
 With the fingerprint policy, `version` is one of the fingerprint's inputs
 by default. So raising it gives a new runtime version. An update made after
-the raise reaches only the new build. To fix the old build with an update,
-publish from its tag.
+the raise reaches only the new build.
+
+To fix the old build with an update, make a release branch from its tag
+(`git switch -c release/1.0.0 v1.0.0`), cherry-pick each fix onto it, and
+publish only from that branch. An update replaces all the JavaScript of the
+builds on its runtime: published a second time from the bare tag, it takes
+the first fix away from every user.
 
 ### 3. Backend first, app second
 
