@@ -241,10 +241,9 @@ Why it looks like this:
   `api`). Two stacks with the same router name break each other.
 - **`certresolver=cloudflare`** is the DNS-01 resolver `box:box-setup`
   created. Other challenge types cannot renew behind the tunnel.
-- **Name the Postgres image `postgres:...`.** The nightly backup from
-  `box:box-setup` finds databases by image name. An image such as
-  `pgvector/pgvector` has no `postgres` in its name; check that the backup
-  picks it up, or it is not backed up.
+- **Use the official `postgres` image, or one built on it** (such as
+  `pgvector/pgvector`). The nightly backup from `box:box-setup` finds
+  databases by that image.
 
 ### 3. Secrets
 
@@ -741,7 +740,7 @@ builder.Services.AddRateLimiter(o =>
     // Every request: a backstop against a script in a loop.
     o.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(c =>
         RateLimitPartition.GetTokenBucketLimiter(UserOrIp(c), _ => new TokenBucketRateLimiterOptions
-        { TokenLimit = 100, TokensPerPeriod = 50, ReplenishmentPeriod = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+        { TokenLimit = 100, TokensPerPeriod = 100, ReplenishmentPeriod = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
 
     // Sign-in, token refresh and sign-out. No user yet, so per IP.
     o.AddPolicy("auth", c => RateLimitPartition.GetFixedWindowLimiter(Ip(c), _ => new FixedWindowRateLimiterOptions

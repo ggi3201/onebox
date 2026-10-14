@@ -62,37 +62,6 @@ and file storage need it.
 A Google Cloud budget on Blaze sends you alerts. It does not stop the
 spending. Set one anyway, and check your usage in the first weeks.
 
-### The others
-
-These came up in the research. They are not the default here, for the reason
-given.
-
-- **Appwrite Cloud.** A full backend (database, auth, functions, storage),
-  open source, and you can self-host it. Free plan: 2 projects. Pro: $25 a
-  month (Appwrite's own announcement; its pricing page did not load its plan
-  numbers for me). A Free project with no development activity in the
-  Console for 7 days is paused, and a project that stays paused for 90 days
-  is deleted. Native Sign in with Apple from an ID token arrived on
-  2026-09-24. It is very new, so test it well.
-- **PocketBase.** One Go binary with SQLite, auth, files and an admin UI. MIT
-  licence. There is no hosted service from the project: you run it on a
-  server, so it is really a box option. It is not at v1.0 yet (v0.40.4), and
-  its README says backward compatibility is not guaranteed before v1.0. It
-  has an Apple OAuth2 provider (a web flow). I did not find a built-in route
-  for the native Apple sheet's ID token.
-- **Neon.** Hosted Postgres that scales to zero. Free: 1 GB of storage per
-  project (20 GB across all projects) and 100 compute-unit hours per project
-  (https://neon.com/pricing, checked 2026-10-09). Paid (Launch): $0.106 per
-  compute-unit hour and $0.35 per GB-month, no monthly minimum. It also
-  offers Neon Auth (managed Better Auth). It is a database first. You still need your server
-  code to run somewhere.
-- **PlanetScale Postgres.** Hosted Postgres from $5 a month (single node,
-  no high availability) or $15 a month (one primary and two replicas). No
-  free plan is listed. Like Neon, it is only the database.
-
-Neon or PlanetScale make sense later, when you run the API yourself and want
-someone else to run the database.
-
 ## Before you start, for any of them
 
 1. **One project per environment.** A production project and a development
@@ -100,10 +69,11 @@ someone else to run the database.
    projects. Convex gives each project a development and a production
    deployment. On Firebase, make two projects.
 2. **The URL per build profile.** The app reads the backend URL from an
-   `EXPO_PUBLIC_*` variable. Set it per profile in `eas.json`, exactly like
-   `EXPO_PUBLIC_API_URL` in [expo-app.md](expo-app.md) (step 4). The
-   `development` profile points at the development project, `production` at
-   production.
+   `EXPO_PUBLIC_*` variable, exactly like `EXPO_PUBLIC_API_URL` in
+   [expo-app.md](expo-app.md) (steps 4 and 6). Preview and production builds
+   take it from `eas.json`. The development client takes it from
+   `apps/mobile/.env.local` on your Mac, and points at the development
+   project.
 3. **What may go in the app.** A Supabase publishable key, a Convex URL and a
    Firebase config file are public by design. The vendor's secret or admin
    key is not. It never goes in the app or in an `EXPO_PUBLIC_*` variable.
@@ -126,7 +96,8 @@ someone else to run the database.
    It installs `@supabase/supabase-js`, `react-native-url-polyfill` and
    `expo-sqlite`, and makes one client for the whole app.
 3. Put `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
-   in `eas.json`, per profile.
+   in `eas.json` for preview and production, and in `.env.local` for the
+   development client.
 4. Install the Supabase CLI on your Mac and link the repo to the project.
    Keep the database schema in migration files in git, not only in the
    dashboard.
@@ -293,7 +264,8 @@ the same value you stored as `REVENUECAT_WEBHOOK_AUTH`. In the app, call
    and starts a development deployment.
 2. Wrap the app in `ConvexProvider` (or the auth version, below) with a
    `ConvexReactClient`.
-3. Put `EXPO_PUBLIC_CONVEX_URL` in `eas.json`, per profile. The `production`
+3. Put `EXPO_PUBLIC_CONVEX_URL` in `eas.json` for preview and production,
+   and in `.env.local` for the development client. The `production`
    profile gets the production deployment's URL.
 4. Deploy to production with `npx convex deploy`. `npx convex dev` only
    touches the development deployment.
@@ -637,7 +609,7 @@ old one running until most users have updated, then turn it off.
 
 | Value | Secret? | Where |
 |---|---|---|
-| Supabase URL, publishable key (`sb_publishable_...`) | no | `eas.json` `env`, per profile |
+| Supabase URL, publishable key (`sb_publishable_...`) | no | `eas.json` `env` (preview, production); `.env.local` (development) |
 | Supabase secret key (`sb_secret_...`) or the legacy `service_role` key | **yes** | your secrets tool; Edge Functions get it by default. Never in the app |
 | Convex deployment URL | no | `eas.json` `env` (`EXPO_PUBLIC_CONVEX_URL`) |
 | Convex deploy key (for CI) | **yes** | your secrets tool, as `CONVEX_DEPLOY_KEY` in CI |

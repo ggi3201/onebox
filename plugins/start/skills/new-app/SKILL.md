@@ -39,7 +39,7 @@ exception: pnpm is pinned to major 10 (step 0).
   ```
 
   `backend` is `box` with an API in the repo, else `hosted` or `none`. Add
-  `--need dotnet` only for a .NET API. It checks git, Node 22 or newer,
+  `--need dotnet` only for a .NET API. It checks git, Node 22.18 or newer,
   pnpm 10, `eas` and its login, Xcode, CocoaPods and its Ruby, a UTF-8
   locale, and, with an API, Docker. pnpm stays on 10 (`tools.md`). The check
   is read-only.

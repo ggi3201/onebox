@@ -103,30 +103,11 @@ create a subscription group, then products with product IDs, durations and
 prices. The first subscription must be submitted together with an app
 version. Each product needs a review screenshot of your paywall.
 
-### 8. The store listing and review information
+### 8. The store page, and submit
 
-On your app's pages in App Store Connect:
-
-- **App Information:** name, subtitle (30 characters), category, **Content
-  Rights**, **Age Rating** (answer the questionnaire; the updated questions
-  were due 2026-01-31).
-- **App Privacy:** the privacy policy URL, and the data-collection answers
-  ("nutrition labels"). Answer from what your code and SDKs really collect.
-- **Pricing and Availability:** price (Free is fine) and countries.
-- The **version page** (1.0 Prepare for Submission): screenshots, promotional
-  text, description, keywords, support URL, marketing URL, the build, and
-  **App Review Information** (contact details, a demo account or a note on how
-  to sign in, and notes for the reviewer).
-- **EU trader status** (Digital Services Act): declare whether you are a
-  trader. Without it the app is not shown in the EU. Apple's help page
-  "Manage European Union Digital Services Act trader requirements" shows where.
-
-### 9. Submit
-
-On the version page, click the button to add it for review, then submit.
-Watch for messages in App Review (on your app's pages) and your email.
-Every field on the version page, and what to answer:
-[submit-for-review.md](submit-for-review.md).
+The store listing, App Privacy, pricing, EU trader status and the review
+details all live on your app's pages. What each field means, what to answer
+and how to submit: [submit-for-review.md](submit-for-review.md).
 
 ## What the onebox skills automate afterwards
 

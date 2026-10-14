@@ -157,7 +157,7 @@ screen: "Please update the app", with a button that opens the store page
 var minAppVersion = Version.Parse(builder.Configuration["MIN_APP_VERSION"] ?? "1.0.0");
 
 var app = builder.Build();
-app.UseForwardedHeaders();
+if (trusted.Length > 0) app.UseForwardedHeaders();   // backend.md, "Protect the API", step 1
 app.Use(async (ctx, next) =>
 {
     // No header: curl, the health check, or a build from before the header.

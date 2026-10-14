@@ -196,8 +196,9 @@ The fix:
 2. When macOS asks "codesign wants to use the key …", enter your login
    password and click **Always Allow**.
 
-After that, remote and agent-driven builds sign without asking. If you are
-away and have not done this yet, build on EAS instead
+After that, builds your agent starts in your Mac session sign without
+asking. Over SSH, `ship-ios:expo-local-build` still refuses to build. If you
+are away, build on EAS instead
 (`expo.buildMode: "cloud"`). It costs build credits, but needs no keychain.
 
 ## Where the values go

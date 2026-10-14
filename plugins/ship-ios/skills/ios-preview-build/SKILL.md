@@ -79,7 +79,7 @@ variables, edit the shared variable so it is set for production only. Then
 create the preview one:
 
 ```bash
-eas env:create --name EXPO_PUBLIC_API_URL --value https://staging-api.example.com \
+eas env:create --name EXPO_PUBLIC_API_URL --value https://api-stg.example.com \
   --environment preview --visibility plaintext --scope project --non-interactive
 ```
 

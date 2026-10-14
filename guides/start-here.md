@@ -129,16 +129,15 @@ Make the Expo project fit this setup: a fixed bundle identifier, an API URL
 per build profile, a development build instead of Expo Go, and three EAS
 build profiles.
 
-Guide: [expo-app.md](expo-app.md). Skill: `ship-ios:expo-local-build` (for the first
-development build on your phone).
+Guide: [expo-app.md](expo-app.md).
 
 Then give your agent a way to check its own work: lint, strict types, tests,
 and a look at the change in the Simulator before it says "done". Guide:
 [agent-test-loop.md](agent-test-loop.md). Skill: `dev:test-loop`.
 
-Done when: a development build of your app runs on your iPhone, the API URL
-comes from `eas.json`, not from a file only your laptop has, and your agent
-runs the test loop without you.
+Done when: a development build of your app runs on your iPhone, the preview
+and production API URLs come from `eas.json`, and your agent runs the test
+loop without you.
 
 ### Phase 2: the box
 
@@ -185,15 +184,19 @@ Done when: you can sign in on your phone, the server logs show a verified
 Apple `sub`, and deleting the account in the app removes the user and
 revokes the Apple token.
 
-### Phase 5: payments (optional)
+### Phase 5: App Store Connect
+
+Create the app record and an App Store Connect API key. The key lets scripts
+and skills upload builds and read their state without your Apple password.
+
+Guides: [app-store-connect-setup.md](app-store-connect-setup.md), [app-store-connect-api-key.md](app-store-connect-api-key.md).
+Skill: `ship-ios:appstore-connect`.
+
+Done when: `ship-ios:appstore-connect` lists your app by its bundle ID.
+
+### Phase 6: payments (optional)
 
 Skip this phase if the app is free.
-
-The products live on the app record, so create the app record first
-([app-store-connect-setup.md](app-store-connect-setup.md), step 2).
-RevenueCat also needs the Issuer ID of an App Store Connect API key
-([app-store-connect-api-key.md](app-store-connect-api-key.md)). Both are Phase 6 steps. If
-you sell anything, do those two first.
 
 1. Sign the Paid Apps agreement and add tax and bank details. Nothing can be
    sold before that. Guide: [app-store-connect-setup.md](app-store-connect-setup.md) (the agreements part).
@@ -204,20 +207,11 @@ you sell anything, do those two first.
 Done when: a sandbox purchase in a development build unlocks the paid
 feature, and your server agrees that the user is paid.
 
-### Phase 6: App Store Connect
-
-Create the app record and an App Store Connect API key. The key lets scripts
-and skills upload builds and read their state without your Apple password.
-
-Guides: [app-store-connect-setup.md](app-store-connect-setup.md), [app-store-connect-api-key.md](app-store-connect-api-key.md).
-Skill: `ship-ios:appstore-connect`.
-
-Done when: `ship-ios:appstore-connect` lists your app by its bundle ID.
-
 ### Phase 7: builds
 
 1. **Preview build on your phone.** A release build that installs directly on
-   registered devices, pointed at your real API. Skill:
+   registered devices, pointed at your API (staging, once you have
+   `box:staging-env`). Skill:
    `ship-ios:ios-preview-build`.
 2. **TestFlight.** A production build, made on your Mac and uploaded to App
    Store Connect. Guide: [expo-eas.md](expo-eas.md). Skills: `ship-ios:expo-local-build`,
@@ -330,8 +324,8 @@ Done when: the app is approved and released.
 - [ ] Push to `main` deploys the API
 - [ ] Sign in with Apple works, server verifies the token
 - [ ] Account deletion in the app, with Apple token revocation
-- [ ] (Optional) Paid Apps agreement signed, products created, RevenueCat connected
 - [ ] App record in App Store Connect, API key stored
+- [ ] (Optional) Paid Apps agreement signed, products created, RevenueCat connected
 - [ ] Preview build tested on your phone
 - [ ] TestFlight build tested end to end
 - [ ] (Optional) Product analytics: opt-in, privacy policy and App Privacy match ([product-analytics.md](product-analytics.md))

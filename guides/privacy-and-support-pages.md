@@ -4,7 +4,8 @@ Runs on: your browser. No server needed.
 
 Apple asks every app for two public web pages, even a free app with no
 accounts: a **privacy policy** and a **support page**. If you use
-`box:new-landing-page`, those pages come with it and you can skip this guide.
+`box:new-landing-page`, those pages come with it: you still need "Deleting the
+account: the wording" below.
 If you do not want a landing page, this guide gets you the two pages for free
 in about half an hour.
 

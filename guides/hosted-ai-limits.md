@@ -670,7 +670,7 @@ catch (e: any) { const code = e.details?.code; const message = e.message; }
 | `LLM_BASE_URL`, `LLM_MODEL` | no | Supabase secrets, Convex environment variables, or `functions/.env` on Firebase |
 | `LLM_INPUT_USD_PER_M`, `LLM_OUTPUT_USD_PER_M` | no | the same place as `LLM_MODEL`. Update them when you change the model |
 | Per-user daily calls, app daily budget | no | the database: `ai_limits` (Supabase), `aiLimits` (Convex), `aiConfig/limits` (Firebase). Change them in the dashboard, with no deploy |
-| `EXPO_PUBLIC_APP_CHECK_DEBUG_TOKEN` (Firebase) | treat as private | the `development` profile in `eas.json` only. Never in a production build |
+| `EXPO_PUBLIC_APP_CHECK_DEBUG_TOKEN` (Firebase) | treat as private | `apps/mobile/.env.local`, for the development client only. Never in `eas.json` or a production build |
 
 The model's prices come from its provider's pricing page.
 
