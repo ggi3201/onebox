@@ -72,9 +72,10 @@ const files = [];
   }
 })(DIR, 0);
 // Comments are blanked (newlines kept, so line numbers stay right): a comment that
-// explains why localhost is refused is not a localhost URL.
-const stripComments = t => t.replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' '))
-  .replace(/(^|[^:'"`\\])\/\/.*$/gm, '$1');
+// explains why localhost is refused is not a localhost URL. Strings are skipped
+// whole, so 'image/*' or 'http://host' does not start a comment.
+const stripComments = t => t.replace(/(["'])(?:\\.|(?!\1)[^\\\n])*\1|`(?:\\[\s\S]|[^\\`])*`|\/\*[\s\S]*?\*\/|(?<![:\\])\/\/.*$/gm,
+  m => m[0] === '/' ? m.replace(/[^\n]/g, ' ') : m);
 const src = files.map(f => ({ f: path.relative(DIR, f), t: stripComments(fs.readFileSync(f, 'utf8')) }));
 const grep = (re, filter = () => true) => src.filter(s => filter(s.f)).flatMap(s => {
   const out = []; const lines = s.t.split('\n');
@@ -87,7 +88,7 @@ const first = (arr, n = 3) => arr.slice(0, n).join(', ') + (arr.length > n ? ` (
 // ---- Identity and versions ------------------------------------------------------
 const bid = ios.bundleIdentifier;
 if (!bid) add('bundle-id', 'BLOCKED', 'ios.bundleIdentifier is not set.', 'Set a reverse-DNS ID you own, e.g. com.yourname.myapp. It is permanent once the app is on the store.');
-else if (/^(com\.example|com\.anonymous|host\.exp|org\.reactjs)/i.test(bid) || /example|test|demo/i.test(bid.split('.').pop()))
+else if (/^(com\.example|com\.anonymous|host\.exp|org\.reactjs)/i.test(bid) || /^(example|test|demo|sample)\d*$/i.test(bid.split('.').pop()))
   add('bundle-id', 'FIX', `Bundle ID looks like a placeholder: ${bid}`, 'Choose the final ID before creating the App Store Connect record. It cannot be changed later.');
 else add('bundle-id', 'OK', `Bundle ID ${bid}`);
 

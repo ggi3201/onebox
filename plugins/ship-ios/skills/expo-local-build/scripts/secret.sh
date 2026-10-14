@@ -21,8 +21,12 @@ set -euo pipefail
 REF="${1:?usage: secret.sh <reference>}"
 HOW='Put it in the environment (start your agent through your secrets tool, for example `doppler run -- claude`), set secrets.command in your onebox config, or add it to a git-ignored .env file. CONFIG.md, "Secrets".'
 
-cfg() { jq -s '.[0] * .[1]' ~/.config/onebox/config.json .onebox.json 2>/dev/null \
-  || cat ~/.config/onebox/config.json 2>/dev/null || cat .onebox.json 2>/dev/null || echo '{}'; }
+# Your config, then the nearest .onebox.json from here up (a monorepo keeps it at the root).
+cfg() {
+  local f=() d="$PWD"; [ -f ~/.config/onebox/config.json ] && f+=(~/.config/onebox/config.json)
+  while :; do [ -f "$d/.onebox.json" ] && { f+=("$d/.onebox.json"); break; }; [ "$d" = / ] && break; d="$(dirname "$d")"; done
+  if [ ${#f[@]} -gt 0 ]; then jq -s 'reduce .[] as $x ({}; . * $x)' "${f[@]}" 2>/dev/null || echo '{}'; else echo '{}'; fi
+}
 quote() { printf "'%s'" "$(printf '%s' "$1" | sed "s/'/'\\\\''/g")"; }
 is_name=0; [[ "$REF" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] && is_name=1
 

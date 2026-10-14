@@ -106,6 +106,10 @@ for (let i = 1; i < argv.length; i++) {
   if (x.startsWith('--')) { const n = argv[i + 1]; if (n !== undefined && !n.startsWith('--')) { args[x.slice(2)] = n; i++; } else args[x.slice(2)] = true; }
   else pos.push(x);
 }
+// A mistyped flag (--dryrun) must not run the real command.
+const KNOWN = ['app', 'build', 'email', 'equalize', 'first', 'group', 'json', 'last', 'limit', 'locale', 'minutes', 'dry-run', 'no-encryption'];
+const unknownFlag = Object.keys(args).find(k => !KNOWN.includes(k));
+if (unknownFlag) { console.error(`unknown flag --${unknownFlag}. Nothing sent.`); process.exit(2); }
 const DRY = !!args['dry-run'], JSON_OUT = !!args.json;
 const q = o => '?' + new URLSearchParams(o).toString(); // encodes [ and ] for us
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -142,13 +146,16 @@ const VERSION_FIELDS = ['description', 'keywords', 'promotionalText', 'whatsNew'
 const EDITABLE = ['PREPARE_FOR_SUBMISSION', 'DEVELOPER_REJECTED', 'REJECTED', 'METADATA_REJECTED', 'INVALID_BINARY', 'READY_FOR_REVIEW'];
 const LIVE = ['READY_FOR_SALE', 'READY_FOR_DISTRIBUTION'];
 const stateOf = a => a.appVersionState || a.appStoreState || a.state;
+// The app info that can change now, or null. One in review (WAITING_FOR_REVIEW) cannot.
+const editableInfo = infos => infos.find(i => EDITABLE.includes(stateOf(i.attributes)))
+  || infos.find(i => !LIVE.includes(stateOf(i.attributes)) && !OPEN_SUBMISSION.includes(stateOf(i.attributes))) || null;
 const size = (k, v) => k === 'keywords' ? Buffer.byteLength(v || '', 'utf8') : [...(v || '')].length;
 async function listingParts(app, locale) {
   const versions = await all(`/v1/apps/${app.id}/appStoreVersions` + q({ 'filter[platform]': 'IOS', limit: 20 }));
   const edit = versions.find(v => EDITABLE.includes(stateOf(v.attributes)));
   const live = versions.find(v => LIVE.includes(stateOf(v.attributes)));
   const infos = await all(`/v1/apps/${app.id}/appInfos` + q({ limit: 10 }));
-  const info = infos.find(i => EDITABLE.includes(stateOf(i.attributes))) || infos.find(i => !LIVE.includes(stateOf(i.attributes))) || null;
+  const info = editableInfo(infos);
   const locOf = async (base, id, kind) => {
     if (!id) return null;
     const ls = await all(`/v1/${base}/${id}/${kind}` + q({ limit: 50 }));
@@ -221,7 +228,7 @@ async function versionPage(app) {
 }
 async function infoPage(app) {
   const infos = await all(`/v1/apps/${app.id}/appInfos` + q({ limit: 10 }));
-  const info = infos.find(i => EDITABLE.includes(stateOf(i.attributes))) || infos.find(i => !LIVE.includes(stateOf(i.attributes))) || null;
+  const info = editableInfo(infos);
   if (!info) return { info: null };
   const r = await api('GET', `/v1/appInfos/${info.id}` + q({ include: 'ageRatingDeclaration,primaryCategory,secondaryCategory' }));
   const inc = incOf(r);
@@ -297,7 +304,7 @@ const commands = {
     for (const t of ts) { const a = t.attributes; console.log(`${a.email || '(no email)'}  ${a.firstName || ''} ${a.lastName || ''}  ${a.state || ''}  id=${t.id}`); }
   },
 
-  async get() { console.log(JSON.stringify(await api('GET', need(pos[0], '<path>')), null, 2)); },
+  async get() { console.log(JSON.stringify(await api('GET', need(pos[0], '<path>')), hide, 2)); },
 
   async expire() {
     const id = need(pos[0], '<buildId>');
@@ -339,7 +346,7 @@ const commands = {
   },
 
   async listing() {
-    const app = await appOf(args.app), locale = args.locale || 'en-US';
+    const app = await appOf(args.app), locale = args.locale || app.attributes.primaryLocale || 'en-US';
     const p = await listingParts(app, locale);
     if (JSON_OUT) return console.log(JSON.stringify(p, null, 2));
     const show = (k, v) => {
@@ -364,8 +371,8 @@ const commands = {
 
   async 'listing-set'() {
     const want = JSON.parse(fs.readFileSync(need(pos[0], '<listing.json>'), 'utf8'));
-    const locale = want.locale || args.locale || 'en-US';
     const app = await appOf(want.app || args.app);
+    const locale = want.locale || args.locale || app.attributes.primaryLocale || 'en-US';
     const unknown = Object.keys(want).filter(k => !['app', 'locale', ...INFO_FIELDS, ...VERSION_FIELDS].includes(k));
     if (unknown.length) throw new Error(`unknown fields: ${unknown.join(', ')}. Allowed: ${[...INFO_FIELDS, ...VERSION_FIELDS].join(', ')}`);
     const over = Object.keys(LIMITS).filter(k => want[k] != null && size(k, want[k]) > LIMITS[k]);
@@ -621,7 +628,7 @@ const commands = {
     let group = groups.find(g => g.attributes.referenceName === plan.group.referenceName);
     // A re-run finishes what an earlier run left out (it may have stopped at
     // a bad locale): each step below checks what exists, by locale.
-    const haveLocales = async (p) => DRY || !p ? new Set() : new Set((await all(p + q({ limit: 50 }))).map(l => l.attributes.locale));
+    const haveLocales = async (p) => !p ? new Set() : new Set((await all(p + q({ limit: 50 }))).map(l => l.attributes.locale));
     if (group) console.log(`group "${plan.group.referenceName}" exists, id=${group.id}`);
     else {
       group = (await write('POST', '/v1/subscriptionGroups', { data: { type: 'subscriptionGroups', attributes: { referenceName: plan.group.referenceName },
@@ -633,7 +640,7 @@ const commands = {
       await write('POST', '/v1/subscriptionGroupLocalizations', { data: { type: 'subscriptionGroupLocalizations', attributes: l,
         relationships: { subscriptionGroup: { data: { type: 'subscriptionGroups', id: group.id } } } } });
     }
-    const existing = DRY || group.id === '(dry-run)' ? [] : await all(`/v1/subscriptionGroups/${group.id}/subscriptions` + q({ limit: 50 }));
+    const existing = group.id === '(dry-run)' ? [] : await all(`/v1/subscriptionGroups/${group.id}/subscriptions` + q({ limit: 50 }));
     const territories = DRY ? [] : (await all('/v1/territories' + q({ limit: 200 }))).map(t => ({ type: 'territories', id: t.id }));
     for (const s of plan.subscriptions) {
       let sub = existing.find(x => x.attributes.productId === s.productId);
@@ -653,13 +660,18 @@ const commands = {
       // Availability must exist before a price can be set. Without it the price POST
       // answers 409 and blames the price point.
       let available = false;
-      if (!isNew && !DRY) { try { available = !!(await api('GET', `/v1/subscriptions/${sub.id}/subscriptionAvailability`))?.data; } catch { available = false; } }
+      if (!isNew) { try { available = !!(await api('GET', `/v1/subscriptions/${sub.id}/subscriptionAvailability`))?.data; } catch { available = false; } }
       if (!available)
         await write('POST', '/v1/subscriptionAvailabilities', { data: { type: 'subscriptionAvailabilities', attributes: { availableInNewTerritories: true },
           relationships: { subscription: { data: { type: 'subscriptions', id: sub.id } }, availableTerritories: { data: DRY ? ['(all territories)'] : territories } } } });
-      if (!DRY && sub.attributes?.groupLevel && s.level && sub.attributes.groupLevel !== s.level)
+      if (sub.attributes?.groupLevel && s.level && sub.attributes.groupLevel !== s.level)
         await write('PATCH', `/v1/subscriptions/${sub.id}`, { data: { type: 'subscriptions', id: sub.id, attributes: { groupLevel: s.level } } });
       if (!s.price) continue;
+      // A live product keeps its price: a re-run must not set it again.
+      if (!isNew && (await api('GET', `/v1/subscriptions/${sub.id}/prices` + q({ limit: 1 }))).data?.length) {
+        console.log(`  ${s.productId}: already priced; change prices in App Store Connect`);
+        continue;
+      }
       const terr = s.price.territory || 'USA';
       if (DRY) { console.log(`dry run: find price point ${s.price.customerPrice} in ${terr}, POST /v1/subscriptionPrices${args.equalize ? ', then one per territory from its equalizations' : ''}`); continue; }
       const points = await all(`/v1/subscriptions/${sub.id}/pricePoints` + q({ 'filter[territory]': terr, limit: 200 }));
@@ -687,7 +699,7 @@ const commands = {
     const [method, p, file] = pos; need(method, '<METHOD>'); need(p, '<path>');
     const body = file ? JSON.parse(fs.readFileSync(file, 'utf8')) : undefined;
     const r = method.toUpperCase() === 'GET' ? await api('GET', p) : await write(method.toUpperCase(), p, body);
-    if (r) console.log(JSON.stringify(r, null, 2));
+    if (r) console.log(JSON.stringify(r, hide, 2));
   },
 };
 

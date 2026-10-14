@@ -40,6 +40,7 @@ const sharp = load('sharp');
       names: [...document.querySelectorAll('.slide')].map((e, i) => e.dataset.name || 'slide-' + (i + 1)),
     }));
     await page.close();
+    if (!/^[\w-][\w.-]*$/.test(cfg.out)) throw new Error('data-out must be a plain folder name');
     const p = await browser.newPage({ viewport: { width: cfg.w * cfg.n, height: cfg.h }, deviceScaleFactor: cfg.dpr });
     await p.goto(url);
     await p.evaluate(async () => { await document.fonts.ready; await Promise.all([...document.images].map(i => i.decode().catch(() => {}))); });
