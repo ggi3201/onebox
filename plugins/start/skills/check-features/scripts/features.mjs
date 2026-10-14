@@ -51,7 +51,7 @@ const NEXT = ["failed", "stale", "unproven", "missing", "done"];
 
 // ---------- files ----------
 
-const readText = (f) => { try { return fs.readFileSync(f, "utf8"); } catch { return null; } };
+const readText = (f) => { try { return fs.readFileSync(f, "utf8").replace(/\r\n/g, "\n"); } catch { return null; } };
 const isDir = (f) => { try { return fs.statSync(f).isDirectory(); } catch { return false; } };
 const isFile = (f) => { try { return fs.statSync(f).isFile(); } catch { return false; } };
 const rel = (repo, f) => path.relative(repo, f).split(path.sep).join("/");
@@ -107,7 +107,7 @@ function baseId(s) {
 // plan went to another file with --out: then the root .md file that starts
 // with the onebox mark. Without this, later runs forgot that file.
 function findPlan(dir) {
-  const isOnebox = (f) => { try { return fs.readFileSync(path.join(dir, f), "utf8").startsWith("<!-- onebox-plan v1"); } catch { return false; } };
+  const isOnebox = (f) => { try { return /^<!-- onebox-plan v1 /m.test(fs.readFileSync(path.join(dir, f), "utf8")); } catch { return false; } };
   if (isOnebox("PLAN.md")) return "PLAN.md";
   let names = [];
   try { names = fs.readdirSync(dir).filter((f) => f.endsWith(".md") && f !== "PLAN.md").sort(); } catch { /* no folder */ }

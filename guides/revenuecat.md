@@ -78,11 +78,7 @@ Apple side.
 - Secret key (`sk_...`): only on your server, and only if your server calls
   the RevenueCat REST API or you use the MCP server without OAuth. Create it
   on the project's API keys page (**+ New secret API key**). Store it in your
-  secrets tool and reference it in `~/.config/onebox/config.json`:
-  ```json
-  { "revenuecat": { "apiKeyRef": "REVENUECAT_API_KEY" } }
-  ```
-  RevenueCat has two REST API versions, and a secret key is made for one of
+  secrets tool. RevenueCat has two REST API versions, and a secret key is made for one of
   them. A v2 key does not work on v1 endpoints (for example
   `GET /v1/subscribers/{id}`), and the reverse. Make the version your code
   calls.

@@ -7,7 +7,7 @@
       "label": "Xcode",
       "kind": "tool",
       "check": { "run": "ls -d /Applications/Xcode*.app >/dev/null 2>&1" },
-      "fix": "install Xcode from the Mac App Store",
+      "fix": "install the Xcode your Expo SDK needs: the Mac App Store has the newest, and the guide says which one fits",
       "guide": "https://onebox.lokkesveen.com/guides/xcode/#steps",
       "yours": true
     },
@@ -47,7 +47,7 @@
       "kind": "tool",
       "after": ["node"],
       "check": { "run": "pnpm -v", "version": { "major": 10 }, "timeout": 8 },
-      "fix": "corepack disable pnpm 2>/dev/null; npm install -g pnpm@10 (the first part removes a corepack pnpm, which makes the install fail with EEXIST)",
+      "fix": "corepack disable pnpm 2>/dev/null; npm install -g pnpm@10",
       "takes": "under a minute",
       "safe": true,
       "guide": "https://onebox.lokkesveen.com/guides/tools/#everyone-needs-these"
@@ -206,7 +206,7 @@
       "kind": "login",
       "after": ["ssh-key", "vps-rented"],
       "problem": "I cannot log in to your box",
-      "check": { "run": "ssh -o BatchMode=yes -o ConnectTimeout=5 \"$BOX\" true >/dev/null 2>&1", "env": { "BOX": "box.ssh" }, "timeout": 8 },
+      "check": { "run": "ssh -o BatchMode=yes -o ConnectTimeout=5 -- \"$BOX\" true >/dev/null 2>&1", "env": { "BOX": "box.ssh" }, "timeout": 8 },
       "fix": "check that the box is on, and that your SSH key can log in to it",
       "guide": "https://onebox.lokkesveen.com/guides/vps/#check-it-works",
       "yours": true
@@ -318,17 +318,6 @@
       "fix": "make a Sign in with Apple key in your Apple Developer account, and keep it in your secrets",
       "hint": "5 minutes, I will show you where",
       "guide": "https://onebox.lokkesveen.com/guides/sign-in-with-apple/#make-the-sign-in-with-apple-key",
-      "yours": true
-    },
-    {
-      "id": "revenuecat-key",
-      "label": "The RevenueCat key",
-      "kind": "secret",
-      "after": ["secrets-cli"],
-      "check": { "secret": { "ref": "revenuecat.apiKeyRef", "default": "REVENUECAT_API_KEY" } },
-      "fix": "make a RevenueCat secret API key, and keep it in your secrets",
-      "hint": "I will show you where",
-      "guide": "https://onebox.lokkesveen.com/guides/revenuecat/#steps",
       "yours": true
     },
     {

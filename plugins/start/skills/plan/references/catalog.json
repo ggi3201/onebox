@@ -736,8 +736,7 @@
       "title": "Subscriptions with RevenueCat",
       "nudge": "In-app purchases with RevenueCat",
       "needs": [
-        "paid-apps-agreement",
-        "revenuecat-key"
+        "paid-apps-agreement"
       ],
       "proves": "the paywall shows the price, a sandbox purchase opens the paid part, and Restore works.",
       "when": {

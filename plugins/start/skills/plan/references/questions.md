@@ -41,7 +41,7 @@ the limits hold.
 
 ## Will users pay inside the app? (`paid`)
 
-Paid apps add the RevenueCat guide and the `revenuecat.apiKeyRef` config key.
+Paid apps add the RevenueCat guide.
 You also sign Apple's Paid Apps agreement before you can sell anything.
 
 ## Do you want a landing page? (`site`)

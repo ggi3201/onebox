@@ -332,7 +332,7 @@ for (const b of backends) {
   } else {
     const pkg = pkgs.find((x) => rel(x.dir) === b.dir)?.pkg;
     const trust = [...t.matchAll(/\btrustProxy\s*:\s*([^,}\n]+)|["']trust proxy["']\s*,\s*([^)\n]+)/g)].map((m) => (m[1] ?? m[2]).trim());
-    if (!cfIp && !trust.some((v) => !/^true\b/.test(v))) {
+    if (!cfIp && !trust.some((v) => !/^(true|false)\b/.test(v))) {
       lackP.push(trust.length
         ? `the real client IP behind the tunnel (trust proxy is true, so the client picks its own address; trust the proxy subnet)${at}`
         : `the real client IP behind the tunnel (trust proxy or trustProxy set to the proxy subnet)${at}`);
@@ -396,7 +396,8 @@ function leafKeys(obj, prefix = "") {
 }
 function configInfo(p) {
   if (!exists(p)) return { present: false };
-  const j = readJson(p);
+  // Plain JSON only (CONFIG.md): the skills read it with jq and JSON.parse.
+  const j = (() => { try { return JSON.parse(readText(p)); } catch { return null; } })();
   if (!j) return { present: true, valid: false };
   return { present: true, valid: true, keysSet: leafKeys(j) };
 }
@@ -410,12 +411,13 @@ const hasKey = (k) => keySet.has(k);
 // ---------- the Mac, the plan ----------
 
 // Like the tool checks, this reads the Mac, so ONEBOX_DETECT_NO_RUN=1 skips it.
-const xcode = process.env.ONEBOX_DETECT_NO_RUN !== "1" && exists("/Applications/Xcode.app");
+// Any Xcode*.app counts (Xcode-beta.app, the xcodes tool's Xcode-26.0.app), as in needs.json.
+const xcode = process.env.ONEBOX_DETECT_NO_RUN !== "1" && (() => { try { return fs.readdirSync("/Applications").some((f) => /^Xcode.*\.app$/.test(f)); } catch { return false; } })();
 // The plan file. PLAN.md, unless the user kept their own PLAN.md and the
 // plan went to another file with --out: then the root .md file that starts
 // with the onebox mark. Without this, later runs forgot that file.
 function findPlan(dir) {
-  const isOnebox = (f) => { try { return fs.readFileSync(path.join(dir, f), "utf8").startsWith("<!-- onebox-plan v1"); } catch { return false; } };
+  const isOnebox = (f) => { try { return /^<!-- onebox-plan v1 /m.test(fs.readFileSync(path.join(dir, f), "utf8")); } catch { return false; } };
   if (isOnebox("PLAN.md")) return "PLAN.md";
   let names = [];
   try { names = fs.readdirSync(dir).filter((f) => f.endsWith(".md") && f !== "PLAN.md").sort(); } catch { /* no folder */ }
@@ -423,7 +425,7 @@ function findPlan(dir) {
 }
 const planPath = path.join(root, findPlan(root));
 const planText = readText(planPath);
-const plan = planText == null ? { exists: false } : { exists: true, file: rel(planPath), format: planText.startsWith("<!-- onebox-plan v1") ? "onebox" : "other" };
+const plan = planText == null ? { exists: false } : { exists: true, file: rel(planPath), format: /^<!-- onebox-plan v1 /m.test(planText) ? "onebox" : "other" };
 
 // ---------- test scripts ----------
 
@@ -438,7 +440,7 @@ const say = (id, value, confidence, why) => { answers[id] = { value, confidence,
 if (!expo.found) say("stage", "idea", "likely", "no Expo app in this folder");
 else if (expo.eas?.ascAppId) say("stage", "testflight", "likely",
   "eas.json has an App Store Connect app id. The repo cannot show if the app is on TestFlight only or on the App Store");
-else say("stage", "expo", "high", `Expo app in ${expo.dir}`);
+else say("stage", "expo", "likely", `Expo app in ${expo.dir}`);
 
 const hostedHit = [...hosted.supabase, ...hosted.firebase, ...hosted.convex];
 if (backends.length) say("backend", "box", compose.length ? "high" : "likely",

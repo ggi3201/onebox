@@ -272,7 +272,7 @@ async function evaluate(c, ctx) {
 
 // ---------- steps ----------
 
-const lcFirst = (s) => (/^(The|A|An|Your)\b/.test(s) ? s[0].toLowerCase() + s.slice(1) : s);
+const lcFirst = (s) => (/^(The|A|An|Your|This)\b/.test(s) ? s[0].toLowerCase() + s.slice(1) : s);
 function problemOf(n, r) {
   const l = lcFirst(n.label);
   if (r.status === "old") return r.want.endsWith("or newer") ? `${l} needs an update (to ${r.want})` : `${l} must be version ${r.want}, not ${r.have}`;
@@ -324,16 +324,15 @@ export async function checkNeeds(steps, NEEDS, ctx) {
         x.safe = !!n.safe && !n.yours;
         x.yours = !!n.yours;
         x.waits = r.status === "unknown";
+        // Its own sentence ("Xcode is installed, but ...") may not be true until
+        // the need it waits for is done: the list says it is checked again.
+        if (x.waits && n.problem) x.recheck = true;
         if (n.takes) x.takes = n.takes;
       }
       if (BLOCKS.has(r.status)) {
-        x.problem = problemOf(n, r);
-        x.fix = n.fix;
         if (n.hint) x.hint = n.hint;
         if (n.ask) x.ask = n.ask;
         if (n.guide) x.guide = n.guide;
-        x.yours = !!n.yours;
-        x.safe = !!n.safe && !n.yours;
       }
       return x;
     }));
@@ -367,7 +366,9 @@ export function listFor(s) {
   const one = (n, how) => {
     const why = n.appOnly ? " (this app finds it, your Terminal does not)" : "";
     const took = n.takes ? ` Takes ${n.takes}.` : "";
-    lines.push(`${++i}. ${n.problem.replace(/^you\b/, "You").replace(/^./, (c) => (/^(pnpm|eas)\b/.test(n.problem) ? c : c.toUpperCase()))}${why}. ${how}${how.endsWith(".") ? "" : "."}${took}`);
+    const what = n.recheck ? `${n.label}: I check it again once the steps above are done. If it still fails, ${lcFirst(how)}`
+      : `${n.problem.replace(/^you\b/, "You").replace(/^./, (c) => (/^(pnpm|eas)\b/.test(n.problem) ? c : c.toUpperCase()))}${why}. ${how}`;
+    lines.push(`${++i}. ${what}${what.endsWith(".") ? "" : "."}${took}`);
   };
   for (const n of mine) one(n, `I can install it with \`${n.fix}\``);
   for (const n of yours) one(n, n.ask ? n.ask : `This part is yours: ${n.fix}`);

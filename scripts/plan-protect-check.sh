@@ -74,6 +74,9 @@ o="$(get "$r" 'r.open["guide:backend"]')"
 has "$o" "trust proxy is true" node-bare
 has "$o" "a rate limiter" node-bare
 hasnt "$o" "body size" node-bare
+echo '{ "name": "api", "dependencies": { "fastify": "^5.0.0", "@fastify/rate-limit": "^10.0.0" } }' > "$r/apps/api/package.json"
+echo 'const app = Fastify({ trustProxy: false });' > "$r/apps/api/server.ts"
+has "$(get "$r" 'r.open["guide:backend"]')" "the real client IP" node-false
 echo "ok: Node API without protection is not ticked"
 
 # 4. Node API with the guide's code.

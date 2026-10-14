@@ -38,7 +38,6 @@ Skills read these from `~/.config/onebox/config.json`, or `.onebox.json` for thi
 - `apple.ascKeyRef` or `apple.ascKeyPath` — not set
 - `expo.tokenRef` — not set
 - `expo.buildMode` — not set
-- `revenuecat.apiKeyRef` — not set
 - `box.type` — not set
 - `box.ssh` — not set
 - `box.domain` — not set

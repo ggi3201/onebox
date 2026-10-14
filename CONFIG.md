@@ -84,10 +84,6 @@ them out of your file, or every script that reads it fails.
     "supportUrl": ""                       // the support page URL, e.g. https://example.com/support
   },
 
-  "revenuecat": {
-    "apiKeyRef": "REVENUECAT_API_KEY"       // secret reference (v2 secret key)
-  },
-
   "box": {
     "type": "home",                        // home (mini PC on your LAN) | vps
     "ssh": "user@host",                    // how to reach it
