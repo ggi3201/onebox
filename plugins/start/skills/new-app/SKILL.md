@@ -250,7 +250,10 @@ simulator, so the build does not land on one another session uses.
 ```bash
 # CocoaPods on a Ruby from rbenv or Homebrew (not /usr/bin/ruby), and a UTF-8 LANG
 node <plan-dir>/scripts/plan.mjs ready --need cocoapods-ruby,utf8-locale --repo .
-U=$(xcrun simctl create "MyApp" "iPhone 17 Pro") && xcrun simctl boot "$U"
+# The app's own simulator. A second run reuses it, so they do not pile up.
+U=$(xcrun simctl list devices -j | jq -r '.devices[][] | select(.name == "MyApp" and .isAvailable) | .udid' | head -1)
+[ -n "$U" ] || U=$(xcrun simctl create "MyApp" "iPhone 17 Pro")
+xcrun simctl boot "$U" 2>/dev/null || true
 pnpm ios --device "$U"
 ```
 

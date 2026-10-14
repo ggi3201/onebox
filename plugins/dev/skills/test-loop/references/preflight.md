@@ -106,10 +106,19 @@ another bundle id is connected to your Metro.
 
 - **One simulator per worktree** when two sessions test at the same time. Two
   sessions that share a simulator install over each other's builds, because the
-  bundle id is the same. Create one: `xcrun simctl clone <udid> "<name>"` or
-  `xcrun simctl create "<name>" "iPhone 17 Pro"`, then
-  `xcrun simctl boot <new-udid>`. Some agent simulator tools ask the user to
-  allow each new device once.
+  bundle id is the same. Name it after the worktree and reuse it: each
+  simulator keeps its own app data and caches, so a new one every session
+  fills the disk. Create it only when it is missing:
+  ```bash
+  NAME="myapp-$(basename "$(git rev-parse --show-toplevel)")"
+  U=$(xcrun simctl list devices -j | jq -r --arg n "$NAME" '.devices[][] | select(.name == $n and .isAvailable) | .udid' | head -1)
+  [ -n "$U" ] || U=$(xcrun simctl clone <base udid> "$NAME")   # or: xcrun simctl create "$NAME" "iPhone 17 Pro"
+  xcrun simctl boot "$U" 2>/dev/null || true                   # already booted is fine
+  ```
+  Clone a shut-down base simulator: a clone shares disk with it until it
+  changes. When you remove the worktree, delete its simulator too:
+  `xcrun simctl delete "$U"`. Some agent simulator tools ask the user to allow
+  each new device once.
 - **Do not stop a Metro or an API you did not start.** Check its project root
   first (the preflight prints it).
 - **A `dotnet watch` API needs `--non-interactive`.** Without it, a change

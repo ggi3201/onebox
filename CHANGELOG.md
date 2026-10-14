@@ -35,7 +35,8 @@ a guide: https://onebox.lokkesveen.com/guides/ai-consent/.
   too, and asks about accounts. Sign-in with no server is a conflict the plan
   asks about. `check-features` left: the plan writes only `PLAN.md`, and no
   longer asks what the app should do. The `remote` question and the
-  remote-access guide are gone.
+  remote-access guide are gone. `new-app` reuses the app's simulator on a
+  second run.
 - `plan`: the AI chat, agent, budget, jobs, share-import and image/video items
   are gone with their plugins. AI apps get the new AI consent guide, and an
   API that calls a model needs a per-user usage count before its backend
@@ -511,6 +512,9 @@ a guide: https://onebox.lokkesveen.com/guides/ai-consent/.
 
 - `trim-tests` left the kit. `test-loop` flows lose their `Covers:` line,
   which only `check-features` read.
+- `test-loop`: one simulator per worktree is found by name and reused, and
+  deleted with the worktree, instead of a new one each session filling the
+  disk.
 
 ### 0.1.7 (2026-10-09)
 
