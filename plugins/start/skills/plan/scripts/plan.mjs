@@ -56,7 +56,7 @@ const CONFIG_KEYS = [
   { when: { backend: ["box"] }, keys: [...BOX_KEYS, "box.runnerLabel"] },
   { when: { site: ["yes"] }, keys: BOX_KEYS },
 ];
-const HEADERS = { stage: "Stage", backend: "Server", login: "Sign-in", paid: "Payments", site: "Landing page", ai: "AI", remote: "Remote" };
+const HEADERS = { stage: "Stage", backend: "Server", login: "Sign-in", paid: "Payments", site: "Landing page", ai: "AI" };
 
 // ---------- arguments ----------
 

@@ -77,9 +77,8 @@ hcloud firewall add-rule box --direction in --protocol tcp --port 22 \
 hcloud firewall apply-to-resource box --type server --server box
 ```
 
-Closing SSH too (Tailscale only) is possible. Then the Hetzner console is your
-only way in when Tailscale breaks. [remote-access.md](remote-access.md) sets up
-Tailscale on the box, your Mac and your phone.
+Closing SSH too (Tailscale only) is possible: `box:box-setup` has a flag for
+it. Then the Hetzner console is your only way in when Tailscale breaks.
 
 ### 5. Run `box:box-setup`
 

@@ -181,15 +181,6 @@
       "yours": true
     },
     {
-      "id": "tailscale",
-      "label": "Tailscale",
-      "kind": "tool",
-      "check": { "run": "command -v tailscale >/dev/null 2>&1 || ls -d /Applications/Tailscale.app >/dev/null 2>&1" },
-      "fix": "install Tailscale from the Mac App Store",
-      "guide": "https://onebox.lokkesveen.com/guides/remote-access/#1-install-tailscale-on-all-three",
-      "yours": true
-    },
-    {
       "id": "ssh-key",
       "label": "An SSH key",
       "kind": "login",

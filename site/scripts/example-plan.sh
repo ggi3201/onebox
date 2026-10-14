@@ -21,7 +21,7 @@ JSON
 # ONEBOX_DETECT_NO_RUN: no tool checks, which mean nothing with a fake HOME.
 HOME="$tmp" ONEBOX_DETECT_NO_RUN=1 node "$plan/detect.mjs" "$tmp" > "$tmp/detect.json"
 node "$plan/plan.mjs" write --repo "$tmp" --detect "$tmp/detect.json" --out EXAMPLE.md \
-  --answers '{"stage":"expo","backend":"box","login":"apple","paid":"subs","site":"yes","ai":["chat"],"remote":"yes"}' >/dev/null
+  --answers '{"stage":"expo","backend":"box","login":"apple","paid":"subs","site":"yes","ai":["chat"]}' >/dev/null
 # Drop the machine-readable first line; the page does not need it.
 tail -n +2 "$tmp/EXAMPLE.md" > "$here/src/data/example-plan.md"
 echo "wrote src/data/example-plan.md"

@@ -123,13 +123,13 @@ and terms pages that App Store Connect and your paywall link to.
 
 ## What is in the box
 
-17 skills in 4 plugins, and 31 guides. Install the `start` plugin first. It
+15 skills in 4 plugins, and 30 guides. Install the `start` plugin first. It
 tells you which of the others you need.
 
 | Plugin | Runs on | What it does | Skills |
 |---|---|---|---|
-| `start` | your Mac | Makes the repo, writes your plan, and says what is next | plan, new-app, check-features |
-| `ship-ios` | your Mac | From a working app to TestFlight and the store | app-store-ready, expo-local-build, eas-update, appstore-connect, ios-preview-build, app-store-screenshots, store-listing, draw-app-icon, draw-icon-set |
+| `start` | your Mac | Makes the repo, writes your plan, and says what is next | plan, new-app |
+| `ship-ios` | your Mac | From a working app to TestFlight and the store | app-store-ready, expo-local-build, eas-update, appstore-connect, ios-preview-build, app-store-screenshots, store-listing, draw-app-icon |
 | `box` | your server | A safe, small server for the API and the site | box-setup, expose-service, new-landing-page, staging-env |
 | `dev` | your Mac | Makes the agent prove its work before it says "done" | test-loop |
 

@@ -11,7 +11,6 @@ To change an answer, run `/start:plan` again and say which one.
 - Will users pay inside the app? **Yes, subscriptions or one-time purchases** (you)
 - Do you want a landing page? **Yes, a page for the app on my own domain** (you)
 - Does the app use AI? **A chat or an agent that uses the app's data** (you)
-- Do you want to fix things from your phone? **Yes, let me (or my coding agent) reach the box from anywhere** (you)
 
 ## Install
 
@@ -67,7 +66,6 @@ Skills read these from `~/.config/onebox/config.json`, or `.onebox.json` for thi
 - [ ] Rent a small VPS (or use a mini PC) — guide: https://onebox.lokkesveen.com/guides/vps/ (raw: https://onebox.lokkesveen.com/guides/vps.md) <!-- guide:vps -->
 - [ ] Put the domain on Cloudflare, with a tunnel — guide: https://onebox.lokkesveen.com/guides/cloudflare/ (raw: https://onebox.lokkesveen.com/guides/cloudflare.md) <!-- guide:cloudflare -->
 - [ ] Bring the box to a safe baseline — skill: /box:box-setup <!-- skill:box/box-setup -->
-- [ ] Reach the box from your phone — guide: https://onebox.lokkesveen.com/guides/remote-access/ (raw: https://onebox.lokkesveen.com/guides/remote-access.md) <!-- guide:remote-access -->
 - [ ] Get an alert when the box or the API is down — guide: https://onebox.lokkesveen.com/guides/uptime-alerts/ (raw: https://onebox.lokkesveen.com/guides/uptime-alerts.md) <!-- guide:uptime-alerts -->
 
 ## The backend
@@ -99,10 +97,8 @@ Skills read these from `~/.config/onebox/config.json`, or `.onebox.json` for thi
 
 - [ ] The landing page with privacy, support and terms — skill: /box:new-landing-page <!-- skill:box/new-landing-page -->
 - [ ] The app icon — skill: /ship-ios:draw-app-icon <!-- skill:ship-ios/draw-app-icon -->
-- [ ] Custom icons, if the app needs its own — skill: /ship-ios:draw-icon-set <!-- skill:ship-ios/draw-icon-set -->
 - [ ] Store screenshots from real screens — skill: /ship-ios:app-store-screenshots <!-- skill:ship-ios/app-store-screenshots -->
 - [ ] Store page text that search finds — skill: /ship-ios:store-listing <!-- skill:ship-ios/store-listing -->
-- [ ] Check that every feature works, with proof — skill: /start:check-features <!-- skill:start/check-features -->
 - [ ] Find what Apple will reject, before Apple does — skill: /ship-ios:app-store-ready <!-- skill:ship-ios/app-store-ready -->
 - [ ] See crashes and errors after launch — guide: https://onebox.lokkesveen.com/guides/crash-reports/ (raw: https://onebox.lokkesveen.com/guides/crash-reports.md) <!-- guide:crash-reports -->
 - [ ] Optional: see where new users drop off, before your first release — guide: https://onebox.lokkesveen.com/guides/product-analytics/ (raw: https://onebox.lokkesveen.com/guides/product-analytics.md) <!-- guide:product-analytics -->

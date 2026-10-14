@@ -108,6 +108,11 @@ skill asks you for a missing value once and offers to save it.
 Do them in order. Each phase ends with a "done when" line. Do not start the
 next phase before that line is true.
 
+**No server?** That is the shortest road, and the plan's default. Skip
+Phases 2, 3 and 4 (the box, the backend, Sign in with Apple): accounts need a
+server. The privacy policy and support page go on a free host instead
+([privacy-and-support-pages.md](privacy-and-support-pages.md)).
+
 ### Phase 0: accounts and tools
 
 1. Join the Apple Developer Program. Approval can take from minutes to a few
@@ -147,9 +152,7 @@ firewall, Docker, Traefik, a Cloudflare Tunnel, nightly backups.
 1. Register a domain that stays cheap at renewal. Guide: [domain.md](domain.md).
 2. Put your domain on Cloudflare and make an API token. Guide: [cloudflare.md](cloudflare.md).
 3. Rent a small VPS ([vps.md](vps.md)), or install Ubuntu Server on a mini PC you own.
-4. Put the box, your Mac and your phone on one private network, so you (or
-   your coding agent) can fix things from anywhere. Guide: [remote-access.md](remote-access.md).
-5. Run the setup. Skill: `box:box-setup`.
+4. Run the setup. Skill: `box:box-setup`.
 
 Done when: `box:box-setup`'s `check` phase ends with `0 fail`, and the backup
 has run once to an off-box target.
@@ -223,8 +226,7 @@ the main feature end to end against the production API.
 
 ### Phase 8: the store page
 
-1. **Icon.** Skill: `ship-ios:draw-app-icon`. For a matching set of in-app
-   icons: `ship-ios:draw-icon-set`.
+1. **Icon.** Skill: `ship-ios:draw-app-icon`.
 2. **Screenshots.** Skill: `ship-ios:app-store-screenshots`.
 3. **Product analytics (optional).** Before your first public release, you
    can add PostHog to see where new users drop off. Do it before the privacy

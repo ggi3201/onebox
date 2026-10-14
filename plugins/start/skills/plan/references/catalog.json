@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "about": "One source for the planner skill and the picker on the website. Each question has options; each item says which answers include it. An option with `agreesWith` does not conflict with detection that finds that other option (sign in later, and Sign in with Apple found in the app). An item with no `when` is always in the plan. `when` lists question ids with the option ids that turn the item on; all listed questions must match (AND), any option within one question matches (OR). `doneWhen` uses the same shape: when it matches, the item is still listed but starts ticked as likely done (the user can untick it). `nudge` is the short name the agent says (\"Next: <nudge>. Continue?\"). `needs` lists ids from needs.json: what the step needs before it starts, in the order `plan.mjs ready` checks them. An entry can also be {\"id\", \"when\"}, with `when` in the same shape as an item's. `proves` (optional) says what a flow must show before the feature counts as built; /start:check-features copies it into FEATURES.md. `conflicts` lists answers that do not work together, or need a warning: `when` (and `unless`) in the same shape as an item's, `ids` the questions involved, `level` \"conflict\" (ask the user before you write the plan) or \"warning\" (say it once), and `say`, the plain sentence to show.",
+  "about": "One source for the planner skill and the picker on the website. Each question has options; each item says which answers include it. An option with `agreesWith` does not conflict with detection that finds that other option (sign in later, and Sign in with Apple found in the app). An item with no `when` is always in the plan. `when` lists question ids with the option ids that turn the item on; all listed questions must match (AND), any option within one question matches (OR). `doneWhen` uses the same shape: when it matches, the item is still listed but starts ticked as likely done (the user can untick it). `nudge` is the short name the agent says (\"Next: <nudge>. Continue?\"). `needs` lists ids from needs.json: what the step needs before it starts, in the order `plan.mjs ready` checks them. An entry can also be {\"id\", \"when\"}, with `when` in the same shape as an item's. `conflicts` lists answers that do not work together, or need a warning: `when` (and `unless`) in the same shape as an item's, `ids` the questions involved, `level` \"conflict\" (ask the user before you write the plan) or \"warning\" (say it once), and `say`, the plain sentence to show.",
   "questions": [
     {
       "id": "stage",
@@ -42,7 +42,7 @@
           "label": "Yes, my own API and database on one cheap box"
         }
       ],
-      "default": "box"
+      "default": "none"
     },
     {
       "id": "login",
@@ -62,7 +62,7 @@
           "agreesWith": "apple"
         }
       ],
-      "default": "apple"
+      "default": "none"
     },
     {
       "id": "paid",
@@ -93,7 +93,7 @@
           "label": "No, just the privacy and support pages somewhere"
         }
       ],
-      "default": "yes"
+      "default": "no"
     },
     {
       "id": "ai",
@@ -110,21 +110,6 @@
         }
       ],
       "default": []
-    },
-    {
-      "id": "remote",
-      "q": "Do you want to fix things from your phone?",
-      "options": [
-        {
-          "id": "yes",
-          "label": "Yes, let me (or my coding agent) reach the box from anywhere"
-        },
-        {
-          "id": "no",
-          "label": "Not now"
-        }
-      ],
-      "default": "yes"
     }
   ],
   "conflicts": [
@@ -145,6 +130,24 @@
         ]
       },
       "say": "AI needs a server to keep the AI key secret. Pick a hosted backend or your own box, or leave AI out."
+    },
+    {
+      "id": "sign-in-without-server",
+      "ids": [
+        "backend",
+        "login"
+      ],
+      "level": "conflict",
+      "when": {
+        "backend": [
+          "none"
+        ],
+        "login": [
+          "apple",
+          "later"
+        ]
+      },
+      "say": "Sign-in needs a server to check Apple's token and keep the accounts. Pick a hosted backend or your own box, or leave sign-in out."
     },
     {
       "id": "ai-without-sign-in",
@@ -485,24 +488,6 @@
       }
     },
     {
-      "id": "remote-access",
-      "kind": "guide",
-      "phase": "box",
-      "title": "Reach the box from your phone",
-      "nudge": "Reach the box from your phone",
-      "needs": [
-        "tailscale"
-      ],
-      "when": {
-        "remote": [
-          "yes"
-        ],
-        "backend": [
-          "box"
-        ]
-      }
-    },
-    {
       "id": "uptime-alerts",
       "kind": "guide",
       "phase": "box",
@@ -526,7 +511,6 @@
         "gh-login",
         "box-ssh"
       ],
-      "proves": "one user never sees another user's data, and too many requests get 429.",
       "when": {
         "backend": [
           "box"
@@ -540,7 +524,6 @@
       "title": "Supabase, Convex or Firebase: set up, keep users apart, secrets",
       "nudge": "Your hosted backend",
       "needs": [],
-      "proves": "one user never sees another user's data.",
       "when": {
         "backend": [
           "hosted"
@@ -616,7 +599,6 @@
         "siwa-capability",
         "siwa-key"
       ],
-      "proves": "sign in, sign out, and delete the account from Settings.",
       "when": {
         "login": [
           "apple"
@@ -633,7 +615,6 @@
         "eas-login",
         "apns-key"
       ],
-      "proves": "the app asks for permission at a good moment, and a push sent from your API arrives.",
       "when": {
         "backend": [
           "box"
@@ -661,7 +642,6 @@
       "title": "A cost budget per user on your hosted backend",
       "nudge": "An AI budget per user",
       "needs": [],
-      "proves": "a user over the budget sees a clear message, not an error.",
       "when": {
         "ai": [
           "chat",
@@ -679,7 +659,6 @@
       "title": "The AI consent Apple asks for",
       "nudge": "The AI consent screen",
       "needs": [],
-      "proves": "the app asks before it sends data to an AI service, and No keeps the AI parts off.",
       "when": {
         "ai": [
           "chat",
@@ -693,8 +672,7 @@
       "phase": "features",
       "title": "Ask for a rating at a good moment",
       "nudge": "Ask for a rating",
-      "needs": [],
-      "proves": "the rating prompt shows after the good moment, never on the first launch."
+      "needs": []
     },
     {
       "id": "app-store-connect-setup",
@@ -738,7 +716,6 @@
       "needs": [
         "paid-apps-agreement"
       ],
-      "proves": "the paywall shows the price, a sandbox purchase opens the paid part, and Restore works.",
       "when": {
         "paid": [
           "subs"
@@ -798,7 +775,6 @@
         "siwa-capability",
         "siwa-key"
       ],
-      "proves": "sign in, sign out, and delete the account from Settings.",
       "when": {
         "login": [
           "later"
@@ -887,17 +863,6 @@
       }
     },
     {
-      "id": "draw-icon-set",
-      "kind": "skill",
-      "plugin": "ship-ios",
-      "phase": "launch",
-      "title": "Custom icons, if the app needs its own",
-      "nudge": "Custom icons in one style, if the app needs its own",
-      "needs": [
-        "plugin-ship-ios"
-      ]
-    },
-    {
       "id": "app-store-screenshots",
       "kind": "skill",
       "plugin": "ship-ios",
@@ -929,17 +894,6 @@
           "store"
         ]
       }
-    },
-    {
-      "id": "check-features",
-      "kind": "skill",
-      "plugin": "start",
-      "phase": "launch",
-      "title": "Check that every feature works, with proof",
-      "nudge": "Check that every feature works",
-      "needs": [
-        "node"
-      ]
     },
     {
       "id": "app-store-ready",

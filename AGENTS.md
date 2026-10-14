@@ -28,7 +28,6 @@ node scripts/versions.mjs check          # a changed plugin needs a new version 
 bash site/scripts/example-plan.sh && git diff --stat site/src/data/example-plan.md
 node plugins/start/skills/plan/scripts/plan.mjs write --answers '{"stage":"idea"}' --repo "$(mktemp -d)" --dry-run
 bash scripts/plan-notes-check.sh         # a re-run keeps the user's notes byte for byte
-bash scripts/features-check.sh            # the feature check gives the same answer for the same files
 bash scripts/plan-protect-check.sh        # the backend is ticked only when protected; AI answer conflicts
 bash scripts/secret-copies.sh check       # every skill's copy of the secret reader matches scripts/shared/
 bash scripts/personal-values-check.sh     # no home path, private address or email in the diff

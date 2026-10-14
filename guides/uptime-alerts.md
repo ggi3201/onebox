@@ -247,7 +247,7 @@ reach your phone:
   shows it while locked.
 
 Your coding agent can help once an alert arrives: "the box check failed, read
-the output and tell me what to do" (see [remote-access.md](remote-access.md)).
+the output and tell me what to do".
 
 ## Uptime Kuma, the self-hosted option
 

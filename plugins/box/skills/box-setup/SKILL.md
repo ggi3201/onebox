@@ -104,9 +104,9 @@ REF=$(cfg | jq -r '.box.cloudflareTokenRef // "CLOUDFLARE_API_TOKEN"')
 ## Choices, and why
 
 - **SSH on a VPS.** Default: port 22 open, keys only. Simple, and fine with
-  password login off. Stricter: install Tailscale first (see
-  `https://onebox.lokkesveen.com/guides/remote-access.md`), then
-  `--ssh-tailscale-only` closes 22 to the internet. Keep the provider's web
+  password login off. Stricter: install Tailscale on the box and your Mac
+  first (https://tailscale.com/download), then `--ssh-tailscale-only` closes
+  22 to the internet. Keep the provider's web
   console as the way back in. A home box sits behind the router, so 22 is
   LAN-only anyway.
 - **No 80/443 open.** The tunnel dials out, so nothing needs to reach the box.

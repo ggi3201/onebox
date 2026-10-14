@@ -12,7 +12,6 @@ const ORDER = [
   "domain",
   "cloudflare",
   "vps",
-  "remote-access",
   "uptime-alerts",
   "backend",
   "hosted-backend",

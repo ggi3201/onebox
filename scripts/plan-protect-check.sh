@@ -92,6 +92,7 @@ r="$tmp/empty"; mkdir -p "$r"
 q() { node "$plan" questions --repo "$r" --answers "$1" | node -e "console.log(JSON.parse(require('fs').readFileSync(0,'utf8')).conflicts.map((c) => c.level + ':' + c.id).join(' '))"; }
 [ "$(q '{"backend":"none","ai":["chat"],"login":"none"}')" = "conflict:ai-without-server warning:ai-without-sign-in" ] || fail "no server + AI + no accounts: $(q '{"backend":"none","ai":["chat"],"login":"none"}')"
 [ -z "$(q '{"backend":"box","ai":["chat"],"login":"apple"}')" ] || fail "box + AI + Sign in with Apple raised a conflict"
+[ "$(q '{"backend":"none","login":"apple"}')" = "conflict:sign-in-without-server" ] || fail "no server + sign-in: $(q '{"backend":"none","login":"apple"}')"
 [ -z "$(q '{"ai":["chat"]}')" ] || fail "a conflict before the server question has an answer"
 out="$(node "$plan" write --repo "$r" --dry-run --answers '{"stage":"idea","backend":"none","ai":["chat"]}' 2>&1 >/dev/null)"
 has "$out" "Check: AI needs a server" write

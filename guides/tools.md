@@ -39,7 +39,6 @@ Install [Homebrew](https://brew.sh) first. Most of the tools below come from it.
 | `python3` | `ship-ios:app-store-screenshots` (contact sheets, with Pillow) | comes with Xcode. Then `python3 -m pip install --user Pillow`. |
 | Playwright and sharp | `ship-ios:app-store-screenshots` (rendering) | `mkdir -p ~/.cache/onebox-render && cd ~/.cache/onebox-render && npm i playwright sharp` |
 | `hcloud` | renting a Hetzner VPS | `brew install hcloud`. See [vps.md](vps.md). |
-| Tailscale | reaching the box from anywhere | the app from the Mac App Store. See [remote-access.md](remote-access.md). |
 
 ### Your secrets tool, one of these
 
@@ -69,8 +68,6 @@ that already runs a tunnel or a proxy it did not set up.
 
 Two more, and only if you want them:
 
-- **Tailscale**, to reach the box from anywhere without an open SSH port:
-  [remote-access.md](remote-access.md).
 - **The GitHub Actions runner**, for deploy on push. `box:box-setup` sets it
   up (its `references/runner.md`). You do not install it by hand.
 
