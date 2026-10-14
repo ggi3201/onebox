@@ -311,8 +311,8 @@ for (const f of srcFiles) {
 //   MaxRequestBodySize (Kestrel's default is 30 MB).
 // - Node ("On Node"): trust proxy / trustProxy set to a subnet, or
 //   CF-Connecting-IP; a rate-limit package. The body limit is fine by default.
-// - Per-user AI quota (part 3, and app-features:ai-usage-limits): the
-//   ai_usage table from the guide, or UserUsages / IUsageRecorder from the skill.
+// - Per-user AI quota (part 3), only for an API that calls a model: the
+//   ai_usage table from the guide (UserUsages / IUsageRecorder: older apps).
 const NODE_LIMITERS = ["express-rate-limit", "@fastify/rate-limit", "hono-rate-limiter", "@nestjs/throttler"];
 const AI_QUOTA = /\bai_usage\b|\bUserUsages\b|\bIUsageRecorder\b/;
 let aiQuota = null;
@@ -526,6 +526,7 @@ if (backends.length) {
   if (!deployWorkflows.length) lackB.push("a deploy workflow in .github/workflows");
   // Deployed is not done: the guide's title says "protected" too.
   lackB.push(...lackP);
+  if (aiServer && !aiQuota) lackB.push(`a per-user AI usage count, because the API calls an AI model (${aiServer}; "Protect the API", part 3)`);
   // Name the production deploy, not the staging one, when both exist.
   const prodDeploys = workflows.filter((w) => deployWorkflows.includes(w.file) && !stagingCompose.some((f) => w.text.includes(f))).map((w) => w.file);
   const by = (prodDeploys.length ? prodDeploys : deployWorkflows).join(", ");
@@ -533,9 +534,6 @@ if (backends.length) {
   // "open", not "seen": it also drops a tick an older run made before these checks.
   else open["guide:backend"] = `${where}; still missing ${list(lackB)}`;
 }
-// The per-user AI quota: only an API that calls a model needs one.
-if (aiQuota) done["skill:app-features/ai-usage-limits"] = `a per-user AI usage count in ${aiQuota} (ai_usage, UserUsages or IUsageRecorder)`;
-else if (aiServer) open["skill:app-features/ai-usage-limits"] = `the API calls an AI model (${aiServer}); no per-user usage count found (ai_usage, UserUsages or IUsageRecorder)`;
 if (stagingCompose.length) {
   const deploys = workflows.filter((w) => stagingCompose.some((f) => w.text.includes(f))).map((w) => w.file);
   if (deploys.length) done["skill:box/staging-env"] = `${stagingCompose.join(", ")}, deployed by ${deploys.join(", ")}`;
@@ -569,8 +567,7 @@ if (sites.length) seen["skill:box/new-landing-page"] = `site folder: ${sites.joi
 if (ai.inApp) {
   open["guide:llm-api-key"] = `the app itself names ${ai.inApp}, so the AI key ships inside the app, where anyone can read it. Move the AI call to the server`;
   notes.push(`The app names ${ai.inApp}: an AI key in the app is readable by anyone who has the app.`);
-} else if (aiHits.length || hasKey("llm.keyRef")) seen["guide:llm-api-key"] = "the code already calls an AI API";
-if (hasKey("tracing.otlpEndpoint")) done["guide:langfuse"] = "tracing.otlpEndpoint is in the onebox config";
+} else if (aiHits.length) seen["guide:llm-api-key"] = "the code already calls an AI API";
 
 // The tools item: done when every check it needs passes on this Mac. These are
 // the checks `ready` runs before the step. "unknown" (a check that could not

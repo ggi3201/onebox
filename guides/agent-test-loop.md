@@ -150,8 +150,6 @@ Either way:
 
 - Pin the time zone in the test config, to one with DST (`TZ: "Europe/Berlin"`
   or `"America/New_York"`). Date code that only ever runs in UTC is untested.
-- Add a coverage provider now (`@vitest/coverage-v8` for Vitest; Jest has one
-  built in). The `dev:trim-tests` skill needs it later.
 - Add the script: `"test": "vitest run"` or `"test": "jest"`. For Jest, the
   script can pin the time zone too: `"test": "TZ=Europe/Berlin jest"`.
 

@@ -21,7 +21,6 @@ Only the plugins this plan uses. In Claude Code:
 /plugin install dev@onebox
 /plugin install box@onebox
 /plugin install ship-ios@onebox
-/plugin install app-features@onebox
 ```
 
 In Codex: `codex plugin add <plugin>@onebox` for each of them.
@@ -48,11 +47,6 @@ Skills read these from `~/.config/onebox/config.json`, or `.onebox.json` for thi
 - `box.tunnelName` — not set
 - `box.cloudflareTokenRef` — not set
 - `box.runnerLabel` — not set
-- `llm.baseUrl` — not set
-- `llm.model` — not set
-- `llm.keyRef` — not set
-- `tracing.otlpEndpoint` — not set
-- `tracing.authRef` — not set
 
 ## Accounts and tools
 
@@ -68,7 +62,6 @@ Skills read these from `~/.config/onebox/config.json`, or `.onebox.json` for thi
   - detected: Expo app in apps/mobile with a bundle id, a dev client and the three EAS profiles
 - [ ] Give your agent a test loop — guide: https://onebox.lokkesveen.com/guides/agent-test-loop/ (raw: https://onebox.lokkesveen.com/guides/agent-test-loop.md) <!-- guide:agent-test-loop -->
 - [ ] Agent checks its own work, then proves it in the Simulator — skill: /dev:test-loop <!-- skill:dev/test-loop -->
-- [ ] Trim the test suite now and then — skill: /dev:trim-tests <!-- skill:dev/trim-tests -->
 
 ## The box
 
@@ -90,12 +83,7 @@ Skills read these from `~/.config/onebox/config.json`, or `.onebox.json` for thi
 - [ ] Sign in with Apple, verified on the server — guide: https://onebox.lokkesveen.com/guides/sign-in-with-apple/ (raw: https://onebox.lokkesveen.com/guides/sign-in-with-apple.md) <!-- guide:sign-in-with-apple -->
 - [ ] Send push notifications from your API — guide: https://onebox.lokkesveen.com/guides/push-notifications/ (raw: https://onebox.lokkesveen.com/guides/push-notifications.md) <!-- guide:push-notifications -->
 - [ ] Get an LLM API key — guide: https://onebox.lokkesveen.com/guides/llm-api-key/ (raw: https://onebox.lokkesveen.com/guides/llm-api-key.md) <!-- guide:llm-api-key -->
-- [ ] An agent in your API that calls your tools — skill: /app-features:agent-harness <!-- skill:app-features/agent-harness -->
-- [ ] A streamed chat screen — skill: /app-features:chat-feature <!-- skill:app-features/chat-feature -->
-- [ ] A cost budget per user — skill: /app-features:ai-usage-limits <!-- skill:app-features/ai-usage-limits -->
-- [ ] The AI consent Apple asks for — skill: /app-features:ai-consent <!-- skill:app-features/ai-consent -->
-- [ ] Slow AI work as background jobs — skill: /app-features:durable-jobs <!-- skill:app-features/durable-jobs -->
-- [ ] Trace and cost every AI call — guide: https://onebox.lokkesveen.com/guides/langfuse/ (raw: https://onebox.lokkesveen.com/guides/langfuse.md) <!-- guide:langfuse -->
+- [ ] The AI consent Apple asks for — guide: https://onebox.lokkesveen.com/guides/ai-consent/ (raw: https://onebox.lokkesveen.com/guides/ai-consent.md) <!-- guide:ai-consent -->
 - [ ] Ask for a rating at a good moment — guide: https://onebox.lokkesveen.com/guides/ask-for-a-rating/ (raw: https://onebox.lokkesveen.com/guides/ask-for-a-rating.md) <!-- guide:ask-for-a-rating -->
 
 ## App Store Connect and builds

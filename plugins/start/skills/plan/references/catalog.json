@@ -107,10 +107,6 @@
         {
           "id": "import",
           "label": "Turn a shared link or page into data (recipes, products, …)"
-        },
-        {
-          "id": "media",
-          "label": "Generated images or video (store page, social, in-app)"
         }
       ],
       "default": []
@@ -149,29 +145,6 @@
         ]
       },
       "say": "AI needs a server to keep the AI key secret. Pick a hosted backend or your own box, or leave AI out."
-    },
-    {
-      "id": "media-without-server",
-      "ids": [
-        "backend",
-        "ai"
-      ],
-      "level": "warning",
-      "when": {
-        "backend": [
-          "none"
-        ],
-        "ai": [
-          "media"
-        ]
-      },
-      "unless": {
-        "ai": [
-          "chat",
-          "import"
-        ]
-      },
-      "say": "Images made inside the app need a server too, to keep the image key secret. Images for the store page and social posts are fine without one."
     },
     {
       "id": "ai-without-sign-in",
@@ -397,18 +370,6 @@
         "cocoapods-ruby",
         "utf8-locale"
       ]
-    },
-    {
-      "id": "trim-tests",
-      "kind": "skill",
-      "plugin": "dev",
-      "phase": "app",
-      "title": "Trim the test suite now and then",
-      "nudge": "Trim the tests",
-      "needs": [
-        "plugin-dev"
-      ],
-      "repeat": true
     },
     {
       "id": "vps",
@@ -685,92 +646,11 @@
       "phase": "features",
       "title": "Get an LLM API key",
       "nudge": "An LLM API key",
-      "needs": [
-        "llm-key"
-      ],
+      "needs": [],
       "when": {
         "ai": [
           "chat",
           "import"
-        ]
-      }
-    },
-    {
-      "id": "agent-harness",
-      "kind": "skill",
-      "plugin": "app-features",
-      "phase": "features",
-      "title": "An agent in your API that calls your tools",
-      "nudge": "An AI agent in your API",
-      "needs": [
-        "plugin-app-features",
-        "llm-key"
-      ],
-      "when": {
-        "ai": [
-          "chat"
-        ],
-        "backend": [
-          "box"
-        ]
-      }
-    },
-    {
-      "id": "chat-feature",
-      "kind": "skill",
-      "plugin": "app-features",
-      "phase": "features",
-      "title": "A streamed chat screen",
-      "nudge": "A chat screen",
-      "needs": [
-        "plugin-app-features",
-        "llm-key"
-      ],
-      "proves": "a message gets an answer that streams in, and a failed answer shows a clear message.",
-      "when": {
-        "ai": [
-          "chat"
-        ],
-        "backend": [
-          "box"
-        ]
-      }
-    },
-    {
-      "id": "share-import",
-      "kind": "skill",
-      "plugin": "app-features",
-      "phase": "features",
-      "title": "Import from a shared link",
-      "nudge": "Import from a shared link",
-      "needs": [
-        "plugin-app-features"
-      ],
-      "proves": "a page shared from Safari opens the import screen with its data.",
-      "when": {
-        "ai": [
-          "import"
-        ]
-      }
-    },
-    {
-      "id": "ai-usage-limits",
-      "kind": "skill",
-      "plugin": "app-features",
-      "phase": "features",
-      "title": "A cost budget per user",
-      "nudge": "An AI budget per user",
-      "needs": [
-        "plugin-app-features"
-      ],
-      "proves": "a user over the budget sees a clear message, not an error.",
-      "when": {
-        "ai": [
-          "chat",
-          "import"
-        ],
-        "backend": [
-          "box"
         ]
       }
     },
@@ -794,116 +674,16 @@
     },
     {
       "id": "ai-consent",
-      "kind": "skill",
-      "plugin": "app-features",
+      "kind": "guide",
       "phase": "features",
       "title": "The AI consent Apple asks for",
       "nudge": "The AI consent screen",
-      "needs": [
-        "plugin-app-features"
-      ],
+      "needs": [],
       "proves": "the app asks before it sends data to an AI service, and No keeps the AI parts off.",
       "when": {
         "ai": [
           "chat",
           "import"
-        ]
-      }
-    },
-    {
-      "id": "durable-jobs",
-      "kind": "skill",
-      "plugin": "app-features",
-      "phase": "features",
-      "title": "Slow AI work as background jobs",
-      "nudge": "Slow AI work in the background",
-      "needs": [
-        "plugin-app-features"
-      ],
-      "when": {
-        "ai": [
-          "chat",
-          "import"
-        ],
-        "backend": [
-          "box"
-        ]
-      }
-    },
-    {
-      "id": "langfuse",
-      "kind": "guide",
-      "phase": "features",
-      "title": "Trace and cost every AI call",
-      "nudge": "See what each AI call costs",
-      "needs": [],
-      "when": {
-        "ai": [
-          "chat",
-          "import"
-        ]
-      }
-    },
-    {
-      "id": "media-providers",
-      "kind": "guide",
-      "phase": "features",
-      "title": "Pick an image and video provider",
-      "nudge": "Pick a provider for images and video: kie.ai, fal.ai or Replicate",
-      "needs": [],
-      "when": {
-        "ai": [
-          "media"
-        ]
-      }
-    },
-    {
-      "id": "kie-ai",
-      "kind": "guide",
-      "phase": "features",
-      "title": "A kie.ai key for images and video",
-      "nudge": "A kie.ai key for images and video",
-      "needs": [
-        "kie-key"
-      ],
-      "when": {
-        "ai": [
-          "media"
-        ]
-      }
-    },
-    {
-      "id": "image",
-      "kind": "skill",
-      "plugin": "content",
-      "phase": "features",
-      "title": "Generate images",
-      "nudge": "Generate images",
-      "needs": [
-        "plugin-content",
-        "kie-key"
-      ],
-      "when": {
-        "ai": [
-          "media"
-        ]
-      }
-    },
-    {
-      "id": "video",
-      "kind": "skill",
-      "plugin": "content",
-      "phase": "features",
-      "title": "Generate video from approved stills",
-      "nudge": "Generate video",
-      "needs": [
-        "plugin-content",
-        "kie-key",
-        "ffmpeg"
-      ],
-      "when": {
-        "ai": [
-          "media"
         ]
       }
     },

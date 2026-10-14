@@ -38,7 +38,6 @@ Install [Homebrew](https://brew.sh) first. Most of the tools below come from it.
 | `ssh` | every `box` skill | comes with macOS. Make a key: see [vps.md](vps.md), step 1. |
 | `python3` | `ship-ios:app-store-screenshots` (contact sheets, with Pillow) | comes with Xcode. Then `python3 -m pip install --user Pillow`. |
 | Playwright and sharp | `ship-ios:app-store-screenshots` (rendering) | `mkdir -p ~/.cache/onebox-render && cd ~/.cache/onebox-render && npm i playwright sharp` |
-| `ffmpeg` | `content:video` (chained shots) | `brew install ffmpeg` |
 | `hcloud` | renting a Hetzner VPS | `brew install hcloud`. See [vps.md](vps.md). |
 | Tailscale | reaching the box from anywhere | the app from the Mac App Store. See [remote-access.md](remote-access.md). |
 

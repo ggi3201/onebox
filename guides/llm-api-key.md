@@ -1,10 +1,9 @@
 # An LLM API key
 
-Runs on: your browser (the provider's console). The key then goes to your box
-and, for smoke tests, to your Mac.
+Runs on: your browser (the provider's console). The key then goes to your
+server.
 
-Used by: `app-features:agent-harness`, and every AI feature in your API
-(`plugins/app-features`).
+Used by: every AI feature in your API.
 
 Your API calls a model provider with a secret key. You need one only if the
 app has an AI feature. The key lives on the server, never in the app.
@@ -29,7 +28,6 @@ Prices change often and differ by model by 10x or more. Checked on
 2026-09-28, examples per million tokens (input / output): Claude Sonnet 5
 $2 / $10, Claude Haiku 4.5 $1 / $5, on OpenRouter's public list. **Treat these
 as a ballpark** and check the provider's pricing page.
-`app-features:ai-usage-limits` has a script that prints current prices.
 
 All of them bill a card or prepaid credit. Set a monthly spending limit in
 the provider's billing settings before you ship. It still protects you when
@@ -47,12 +45,10 @@ your own budget code has a bug.
 6. **Data policy.** Check the provider's API data policy: retention, and
    whether API data is used for training. On OpenRouter, the privacy settings
    let you allow only providers that do not train on your data, and turn on
-   zero data retention. Your consent text (`app-features:ai-consent`) must match
-   what you choose here.
+   zero data retention. Your consent text ([ai-consent.md](ai-consent.md))
+   must match what you choose here.
 
 ## Where the values go
-
-Two places.
 
 **The running API** reads environment variables. [backend.md](backend.md)
 ("Secrets") shows how the box gets them from your secrets tool:
@@ -64,24 +60,6 @@ Llm__Model=anthropic/claude-sonnet-5
 ```
 
 For a Node API: `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`.
-
-**The onebox skills** (smoke tests, evals) read the key by reference, like every
-secret (see [CONFIG.md](https://github.com/ggi3201/onebox/blob/main/CONFIG.md)):
-
-```jsonc
-{
-  "secrets": { "tool": "env" },
-  "llm": {
-    "baseUrl": "https://openrouter.ai/api/v1",
-    "model": "anthropic/claude-sonnet-5",
-    "keyRef": "LLM_API_KEY"
-  }
-}
-```
-
-With `env`, put `LLM_API_KEY` in your shell or a `.env` file that git ignores.
-With `doppler` or `1password`, `keyRef` is the secret name or the `op://`
-reference.
 
 ## Check it works
 

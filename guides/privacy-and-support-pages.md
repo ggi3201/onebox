@@ -64,7 +64,7 @@ sentences:
 - [ ] **Who else gets it** (processors): your hosting, RevenueCat, an AI
       provider, an analytics or crash tool. Name each one.
 - [ ] **AI features**: what is sent to the model provider, and that the user
-      agreed to it in the app (see `app-features:ai-consent` if you have AI).
+      agreed to it in the app (see [ai-consent.md](ai-consent.md)).
 - [ ] **Where it is stored** and **how long**.
 - [ ] **Deleting the account**: where in the app, and what gets deleted.
       Apple requires in-app account deletion when the app has sign-up. Use

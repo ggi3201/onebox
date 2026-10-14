@@ -181,15 +181,6 @@
       "yours": true
     },
     {
-      "id": "ffmpeg",
-      "label": "ffmpeg",
-      "kind": "tool",
-      "check": { "run": "ffmpeg -version >/dev/null 2>&1" },
-      "fix": "brew install ffmpeg",
-      "safe": true,
-      "guide": "https://onebox.lokkesveen.com/guides/tools/#only-for-some-skills"
-    },
-    {
       "id": "tailscale",
       "label": "Tailscale",
       "kind": "tool",
@@ -341,28 +332,6 @@
       "yours": true
     },
     {
-      "id": "llm-key",
-      "label": "The LLM API key",
-      "kind": "secret",
-      "after": ["secrets-cli"],
-      "check": { "secret": { "ref": "llm.keyRef", "default": "LLM_API_KEY" } },
-      "fix": "get an API key from your LLM provider, and keep it in your secrets",
-      "hint": "I will show you where",
-      "guide": "https://onebox.lokkesveen.com/guides/llm-api-key/#steps",
-      "yours": true
-    },
-    {
-      "id": "kie-key",
-      "label": "The kie.ai key",
-      "kind": "secret",
-      "after": ["secrets-cli"],
-      "check": { "secret": { "ref": ["media.providers.kie.keyRef", "images.keyRef"], "default": "KIE_AI_API_KEY" } },
-      "fix": "get a kie.ai API key, and keep it in your secrets",
-      "hint": "I will show you where",
-      "guide": "https://onebox.lokkesveen.com/guides/kie-ai/#steps",
-      "yours": true
-    },
-    {
       "id": "cloudflare-token",
       "label": "The Cloudflare API token",
       "kind": "secret",
@@ -418,24 +387,6 @@
       "problem": "the box plugin is not installed",
       "check": { "plugin": "box" },
       "fix": "Claude Code: type `/plugin install box@onebox`, then restart it. Codex: run `codex plugin add box@onebox`",
-      "yours": true
-    },
-    {
-      "id": "plugin-app-features",
-      "label": "The app-features plugin",
-      "kind": "tool",
-      "problem": "the app-features plugin is not installed",
-      "check": { "plugin": "app-features" },
-      "fix": "Claude Code: type `/plugin install app-features@onebox`, then restart it. Codex: run `codex plugin add app-features@onebox`",
-      "yours": true
-    },
-    {
-      "id": "plugin-content",
-      "label": "The content plugin",
-      "kind": "tool",
-      "problem": "the content plugin is not installed",
-      "check": { "plugin": "content" },
-      "fix": "Claude Code: type `/plugin install content@onebox`, then restart it. Codex: run `codex plugin add content@onebox`",
       "yours": true
     }
   ]

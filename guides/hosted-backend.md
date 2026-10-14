@@ -33,8 +33,7 @@ The box is the better choice when:
   nothing. A hosted Pro plan costs about $25 a month per app or per developer.
 - The app does long or heavy work on the server: slow AI jobs, imports that
   fetch web pages, background queues. Server functions have time limits (see
-  "Pick one"). The onebox skills `app-features:agent-harness` and
-  `app-features:durable-jobs` are written for an API on the box.
+  "Pick one").
 - You want one bill you can predict. On a box, a traffic spike makes the app
   slow. On a pay-as-you-go plan, it makes the bill bigger.
 - You want to leave without a rewrite. See "Moving to the box later".

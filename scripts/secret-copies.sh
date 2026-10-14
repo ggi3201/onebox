@@ -8,8 +8,6 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 COPIES=(
-  "scripts/shared/secret.mjs plugins/content/skills/image/scripts/secret.mjs"
-  "scripts/shared/secret.mjs plugins/content/skills/video/scripts/secret.mjs"
   "scripts/shared/secret.mjs plugins/ship-ios/skills/appstore-connect/scripts/secret.mjs"
   "scripts/shared/secret.mjs plugins/ship-ios/skills/app-store-screenshots/scripts/secret.mjs"
   "scripts/shared/secret.mjs plugins/start/skills/plan/scripts/secret.mjs"

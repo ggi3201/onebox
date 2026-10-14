@@ -37,8 +37,7 @@ TestFlight build. **No accounts** leaves it out.
 
 **No accounts** with AI is a warning: AI limits can then only count per
 device and per IP, and a person can reset them. Sign in with Apple makes
-the limits hold. `app-features:ai-usage-limits`, "No accounts", says what to
-do without it.
+the limits hold.
 
 ## Will users pay inside the app? (`paid`)
 
@@ -54,20 +53,13 @@ means you host those two pages somewhere else yourself.
 
 ## Does the app use AI? (`ai`, pick any)
 
-- **Chat or agent**: an LLM key, a chat screen, a cost budget per user, the AI
-  consent Apple asks for, and tracing. With your own box it also adds a
-  server-side agent and background jobs.
-- **Turn a shared link into data**: the share extension skill. The import
-  itself is your own code; with a model it also needs the key, budget and
-  consent.
-- **Generated images or video**: a kie.ai key and the image and video
-  skills. The skills also work with fal.ai or Replicate.
+- **Chat or agent**, or **turn a shared link into data**: an LLM key kept on
+  your server, a cost limit per user, and the AI consent Apple asks for. The
+  feature itself is your own code.
 
 **No server** with chat or import is a conflict. The AI key would have to
 ship inside the app, and anyone can read it from the app file. The plan asks
 the user to pick a hosted backend or their own box, or to leave AI out.
-With images or video only, it is a warning: images made inside the app need
-a server too, but images for the store page and social posts do not.
 
 ## Do you want to fix things from your phone? (`remote`)
 

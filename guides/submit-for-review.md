@@ -76,7 +76,7 @@ What the usual parts of this setup add:
 - Data that stays on the phone and never leaves it is not "collected" in
   Apple's sense.
 - An AI feature must also ask the user before it sends their data to the
-  provider (`app-features:ai-consent`). Name the provider in the privacy
+  provider ([ai-consent.md](ai-consent.md)). Name the provider in the privacy
   policy.
 - Pick a purpose for each type. For this setup it is usually App
   Functionality. Analytics only when you really measure use.

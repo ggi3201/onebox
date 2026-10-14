@@ -206,9 +206,7 @@ sender's query as an `IgnoreQueryFilters()` review point.
 
 ### 6. Send from the API
 
-Send from a background job, not inside a user's request. The skill
-`app-features:durable-jobs` has the job pattern and already sends a push when a
-job is done.
+Send from a background job, not inside a user's request.
 
 **Node**, with Expo's own SDK (`npm install expo-server-sdk`). It batches,
 throttles, retries and compresses for you:

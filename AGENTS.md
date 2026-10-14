@@ -32,7 +32,6 @@ bash scripts/features-check.sh            # the feature check gives the same ans
 bash scripts/plan-protect-check.sh        # the backend is ticked only when protected; AI answer conflicts
 bash scripts/secret-copies.sh check       # every skill's copy of the secret reader matches scripts/shared/
 bash scripts/personal-values-check.sh     # no home path, private address or email in the diff
-bash scripts/dotnet-assets.sh             # the app-features C# builds in a new-app API (needs .NET 10)
 ```
 
 `.github/workflows/checks.yml` runs all of these on every PR. The repo is
@@ -105,8 +104,8 @@ gh issue create --repo ggi3201/onebox --label dogfood --label <plugin> \
   --title "<skill>: <what is wrong>" --body-file <file>
 ```
 
-`<plugin>` is `start`, `ship-ios`, `box`, `content`, `dev`, `app-features` or
-`guides`. Add `blocks-dogfood` when the dogfood app cannot go on. The body
+`<plugin>` is `start`, `ship-ios`, `box`, `dev` or `guides`. Add
+`blocks-dogfood` when the dogfood app cannot go on. The body
 follows `.github/ISSUE_TEMPLATE/dogfood.md`: the skill and step, what you ran,
 what you expected, what happened, the first error in full, and the fix you
 suggest. Write "the app" or `myapp`, never the real app name, host, domain or

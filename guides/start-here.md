@@ -77,8 +77,7 @@ folder first. It makes the Expo app, the API and the checks in the layout
 below.
 
 The plugins: `ship-ios` is the app and App Store side. `box` is the server
-side. `dev` is the agent's test loop. `content` makes images and video. `app-features` adds features to your app and API: an AI chat and
-agent, cost limits, AI consent, background jobs, import from a shared link.
+side. `dev` is the agent's test loop.
 
 In Codex:
 
@@ -232,8 +231,7 @@ the main feature end to end against the production API.
 
 1. **Icon.** Skill: `ship-ios:draw-app-icon`. For a matching set of in-app
    icons: `ship-ios:draw-icon-set`.
-2. **Screenshots.** Skill: `ship-ios:app-store-screenshots`. For extra
-   artwork: `content:image` (needs [kie-ai.md](kie-ai.md)).
+2. **Screenshots.** Skill: `ship-ios:app-store-screenshots`.
 3. **Product analytics (optional).** Before your first public release, you
    can add PostHog to see where new users drop off. Do it before the privacy
    step, so the policy and the answers include it. Guide:
@@ -285,8 +283,6 @@ Done when: the app is approved and released.
   it).
 - **A landing page** for the app, on the same box. Skill:
   `box:new-landing-page`.
-- **Images and video** for the store page, the landing page and social posts.
-  Skills: `content:image`, `content:video`.
 - **Keep the box healthy.** About 15 minutes a month, and an agent can do it
   with `box:box-setup`:
   - Security updates install themselves. Reboot when the box says a reboot

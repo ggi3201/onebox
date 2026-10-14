@@ -56,8 +56,6 @@ const CONFIG_KEYS = [
   { when: { paid: ["subs"] }, keys: ["revenuecat.apiKeyRef"] },
   { when: { backend: ["box"] }, keys: [...BOX_KEYS, "box.runnerLabel"] },
   { when: { site: ["yes"] }, keys: BOX_KEYS },
-  { when: { ai: ["chat", "import"] }, keys: ["llm.baseUrl", "llm.model", "llm.keyRef", "tracing.otlpEndpoint", "tracing.authRef"] },
-  { when: { ai: ["media"] }, keys: ["media.imageProvider", "media.videoProvider", "media.providers.kie.keyRef"] },
 ];
 const HEADERS = { stage: "Stage", backend: "Server", login: "Sign-in", paid: "Payments", site: "Landing page", ai: "AI", remote: "Remote" };
 
@@ -111,7 +109,9 @@ function normalize(qid, v, where = "") {
   if (!q) die(`unknown question "${qid}". Known: ${[...Q.keys()].join(", ")}`);
   const ids = q.options.map((o) => o.id);
   if (q.multi) {
-    const arr = (Array.isArray(v) ? v : v == null || v === "" ? [] : [v]).filter((x) => x !== "none");
+    // An old plan's header (`where`) may hold an option a later catalog dropped
+    // (AI "media"): drop it there, refuse it in new answers.
+    const arr = (Array.isArray(v) ? v : v == null || v === "" ? [] : [v]).filter((x) => x !== "none" && (!where || ids.includes(x)));
     for (const x of arr) if (!ids.includes(x)) die(`${where}"${x}" is not an option of ${qid}. Options: ${ids.join(", ")}`);
     return ids.filter((x) => arr.includes(x)); // catalog order, no duplicates
   }

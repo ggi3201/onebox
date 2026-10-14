@@ -1,6 +1,6 @@
 {
   "name": "onebox",
-  "description": "Get your Expo app onto the App Store. Skills for readiness checks, builds, App Store Connect and content, plus an optional backend on one cheap box: a mini PC or a small VPS.",
+  "description": "Get your Expo app onto the App Store. Skills for readiness checks, builds and App Store Connect, plus an optional backend on one cheap box: a mini PC or a small VPS.",
   "owner": {
     "name": "Geir-Stian Løkkesveen",
     "url": "https://github.com/ggi3201"
@@ -21,13 +21,6 @@
       "license": "MIT"
     },
     {
-      "name": "content",
-      "source": "./plugins/content",
-      "description": "Generate images and video for the store page, the landing page and social posts, with kie.ai, fal.ai or Replicate. Runs on your Mac.",
-      "version": "0.1.5",
-      "license": "MIT"
-    },
-    {
       "name": "box",
       "source": "./plugins/box",
       "description": "Run your backend and sites on one cheap box: a mini PC at home or a small VPS, with Docker, Traefik and Cloudflare Tunnel.",
@@ -37,15 +30,8 @@
     {
       "name": "dev",
       "source": "./plugins/dev",
-      "description": "Make the coding agent prove its change before it says done: lint, strict types, unit and database tests, then a check in the iOS Simulator with a screenshot. Also trims a bloated test suite. Runs on your Mac.",
+      "description": "Make the coding agent prove its change before it says done: lint, strict types, unit and database tests, then a check in the iOS Simulator with a screenshot. Runs on your Mac.",
       "version": "0.1.7",
-      "license": "MIT"
-    },
-    {
-      "name": "app-features",
-      "source": "./plugins/app-features",
-      "description": "Features for an Expo app with its own backend: a streamed AI chat, a server-side agent with tools, cost limits, the AI consent Apple requires, background jobs, and import from a shared link. Runs in your app and your API.",
-      "version": "0.2.3",
       "license": "MIT"
     }
   ]

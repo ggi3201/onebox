@@ -43,7 +43,7 @@ o="$(get "$r" 'r.open["guide:backend"]')"
 has "$o" "AddRateLimiter and UseRateLimiter" dotnet-bare
 has "$o" "UseForwardedHeaders" dotnet-bare
 has "$o" "MaxRequestBodySize" dotnet-bare
-has "$(get "$r" 'r.open["skill:app-features/ai-usage-limits"]')" "no per-user usage count" dotnet-bare
+has "$o" "a per-user AI usage count" dotnet-bare
 has "$(get "$r" 'r.open["guide:llm-api-key"]')" "EXPO_PUBLIC_OPENAI_API_KEY" dotnet-bare
 echo "ok: .NET API without protection is not ticked"
 
@@ -63,7 +63,6 @@ CS
 echo 'public class Usage { const string Sql = "insert into ai_usage (user_id, day, calls) values (@u, @d, 1)"; }' > "$r/apps/api/Usage.cs"
 [ -z "$(get "$r" 'r.open["guide:backend"]')" ] || fail "dotnet-guide: $(get "$r" 'r.open["guide:backend"]')"
 has "$(get "$r" 'r.done["guide:backend"]')" "a rate limiter and a body size limit" dotnet-guide
-has "$(get "$r" 'r.done["skill:app-features/ai-usage-limits"]')" "per-user AI usage count" dotnet-guide
 [ -z "$(get "$r" 'r.open["guide:llm-api-key"]')" ] || fail "dotnet-guide: the app has no AI key, but llm-api-key is open"
 echo "ok: .NET API with the guide's code is ticked"
 
@@ -89,7 +88,6 @@ echo "ok: Node API with the guide's code is ticked"
 r="$tmp/empty"; mkdir -p "$r"
 q() { node "$plan" questions --repo "$r" --answers "$1" | node -e "console.log(JSON.parse(require('fs').readFileSync(0,'utf8')).conflicts.map((c) => c.level + ':' + c.id).join(' '))"; }
 [ "$(q '{"backend":"none","ai":["chat"],"login":"none"}')" = "conflict:ai-without-server warning:ai-without-sign-in" ] || fail "no server + AI + no accounts: $(q '{"backend":"none","ai":["chat"],"login":"none"}')"
-[ "$(q '{"backend":"none","ai":["media"]}')" = "warning:media-without-server" ] || fail "no server + media: $(q '{"backend":"none","ai":["media"]}')"
 [ -z "$(q '{"backend":"box","ai":["chat"],"login":"apple"}')" ] || fail "box + AI + Sign in with Apple raised a conflict"
 [ -z "$(q '{"ai":["chat"]}')" ] || fail "a conflict before the server question has an answer"
 out="$(node "$plan" write --repo "$r" --dry-run --answers '{"stage":"idea","backend":"none","ai":["chat"]}' 2>&1 >/dev/null)"
