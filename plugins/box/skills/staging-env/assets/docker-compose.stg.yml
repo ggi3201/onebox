@@ -41,7 +41,7 @@ services:
       - "traefik.http.services.myapp-api-stg.loadbalancer.server.port=8080"
 
   db-stg:
-    image: postgres:17                        # the SAME image and major as production
+    image: postgres:17-alpine                 # the SAME image and major as production
     container_name: myapp_db_stg
     restart: unless-stopped
     environment:

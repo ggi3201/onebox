@@ -220,7 +220,10 @@ def main():
             print(f"  {len(cn)} hostnames, DNS and ingress match")
 
     print("\n== admin-looking hostnames without Cloudflare Access ==")
-    admin_hosts = sorted(h for h in ing_hosts if ADMIN_NAMES.search(h.split(".")[0]))
+    # A remote (token) tunnel has no local ingress: its hosts show only as CNAMEs to the tunnel.
+    tunnelled = ing_hosts | {r["name"] for rs in by_zone.values() for r in rs
+                             if r["type"] == "CNAME" and r["content"].endswith(".cfargotunnel.com")}
+    admin_hosts = sorted(h for h in tunnelled if ADMIN_NAMES.search(h.split(".")[0]))
     for h in admin_hosts:
         if h in a.public_ok:
             print(f"  {h}: public on purpose (--public-ok)")
@@ -259,7 +262,7 @@ def main():
     unit_list = [] if a.tunnel == "none" else [
         line.split()[0] for line in
         sh(["systemctl", "list-units", "cloudflared*.service", "--all", "--plain", "--no-legend"]).splitlines()
-        if line.strip()]
+        if line.strip() and line.split()[0] != "cloudflared-update.service"]   # a timer-run oneshot
     if a.tunnel == "none":
         print("  skipped (box.tunnel is none)")
         conf = ""

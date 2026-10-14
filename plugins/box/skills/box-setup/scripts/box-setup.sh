@@ -75,15 +75,18 @@ DRY=0
 # Pinned. To bump: references/updates.md.
 TRAEFIK_IMAGE=traefik:v3.7.14
 SUDO_PW=0
+IMAGE_SET=0
 
 # Config defaults. python3 is on every Ubuntu install; jq may not be yet.
 CONFIG_FILE=""
 prev=""; for a in "$@"; do [ "$prev" = --config ] && CONFIG_FILE="$a"; prev="$a"; done
+# SKILL.md copies the merged config next to this script on the box.
+[ -z "$CONFIG_FILE" ] && [ -f "$(dirname "$0")/onebox.json" ] && CONFIG_FILE="$(dirname "$0")/onebox.json"
 [ -z "$CONFIG_FILE" ] && [ -f "$HOME/.config/onebox/config.json" ] && CONFIG_FILE="$HOME/.config/onebox/config.json"
 if [ -n "$CONFIG_FILE" ]; then
   [ -f "$CONFIG_FILE" ] || { echo "config not found: $CONFIG_FILE" >&2; exit 2; }
   command -v python3 >/dev/null || { echo "reading --config needs python3 (apt-get install -y python3)" >&2; exit 2; }
-  eval "$(python3 - "$CONFIG_FILE" <<'PY'
+  cfg_out="$(python3 - "$CONFIG_FILE" <<'PY'
 import json, shlex, sys
 b = (json.load(open(sys.argv[1])) or {}).get("box", {}) or {}
 m = {"type": "TYPE", "appsDir": "APPS_DIR", "proxyNetwork": "NET", "tunnel": "TUNNEL",
@@ -93,6 +96,7 @@ for k, v in m.items():
         print(f"{v}={shlex.quote(b[k])}")
 PY
 )" || { echo "could not read $CONFIG_FILE" >&2; exit 2; }
+  eval "$cfg_out"
 fi
 
 while [ $# -gt 0 ]; do
@@ -113,9 +117,9 @@ while [ $# -gt 0 ]; do
     --allow-existing) ALLOW_EXISTING=1 ;;
     --dry-run) DRY=1 ;;
     --config) shift ;;   # read before this loop
-    --traefik-image) TRAEFIK_IMAGE="$2"; shift ;;
+    --traefik-image) TRAEFIK_IMAGE="$2"; IMAGE_SET=1; shift ;;
     --sudo-password) SUDO_PW=1 ;;
-    -h|--help) sed -n '2,50p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,54p' "$0"; exit 0 ;;
     *) echo "unknown option: $1" >&2; exit 2 ;;
   esac
   shift
@@ -133,11 +137,18 @@ fi
 
 case "$TYPE" in home|vps) ;; *) echo "--type must be home or vps" >&2; exit 2 ;; esac
 case "$TUNNEL" in cloudflare|none) ;; *) echo "--tunnel must be cloudflare or none" >&2; exit 2 ;; esac
+# These reach files root reads (backup.env, YAML), and the config can come from a
+# cloned repo's .onebox.json: plain characters only.
+[[ "$APPS_DIR" =~ ^/[A-Za-z0-9._/-]+$ ]] || { echo "appsDir must be an absolute path of letters, digits and . _ / -" >&2; exit 2; }
+[[ "$NET" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || { echo "proxyNetwork must be letters, digits and . _ -" >&2; exit 2; }
+[[ "$TUNNEL_NAME" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || { echo "tunnelName must be letters, digits and . _ -" >&2; exit 2; }
+[[ -z "$ACME_EMAIL" || "$ACME_EMAIL" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+$ ]] || { echo "acmeEmail must be an email address" >&2; exit 2; }
 
 MARK="# managed by onebox box-setup"
 TRAEFIK_DIR="$APPS_DIR/traefik"
 CF_DIR=/etc/cloudflared
 CF_CONF="$CF_DIR/config.yml"
+CF_UNIT="${CF_UNIT:-/etc/systemd/system/cloudflared.service}"
 BACKUP_ENV=/etc/onebox/backup.env
 # Choices that make the box stricter. A later run without the flag keeps them.
 STATE=/etc/onebox
@@ -149,7 +160,7 @@ die()  { printf '  ERROR: %s\n' "$1" >&2; exit "${2:-1}"; }
 run()  { if [ "$DRY" = 1 ]; then say "(dry run) would run: $*"; else "$@"; fi; }
 have() { command -v "$1" >/dev/null 2>&1; }
 # Root for reads that need it (sshd -T, /etc/cloudflared). Never prompts.
-as_root() { if [ "$(id -u)" = 0 ]; then "$@"; else sudo -n "$@"; fi; }
+S() { if [ "$(id -u)" = 0 ]; then "$@"; else sudo -n "$@"; fi; }
 
 # Write a file only if its content differs. Prints what happened.
 put() {  # put PATH MODE OWNER <<< content
@@ -161,7 +172,7 @@ put() {  # put PATH MODE OWNER <<< content
   if [ "$DRY" = 1 ]; then
     say "(dry run) would write $path"; rm -f "$tmp"; return 0
   fi
-  install -D -m "$mode" -o "${owner%:*}" -g "${owner#*:}" "$tmp" "$path"
+  install -D -m "$mode" -o "${owner%:*}" -g "${owner#*:}" "$tmp" "$path" || { rm -f "$tmp"; die "could not write $path"; }
   rm -f "$tmp"; say "wrote: $path"; return 0
 }
 
@@ -171,15 +182,20 @@ need_root() { [ "$(id -u)" = 0 ] || die "run as root: sudo bash $0 $PHASE ..." 2
 
 foreign_traefik() {
   have docker || return 1
-  docker ps -a --format '{{.ID}} {{.Image}} {{.Names}}' 2>/dev/null | grep -i traefik \
+  [ -n "$(docker ps -a --format '{{.ID}} {{.Image}} {{.Names}}' 2>/dev/null | grep -i traefik \
     | while read -r id _; do
         [ "$(docker inspect -f '{{index .Config.Labels "onebox.managed"}}' "$id" 2>/dev/null)" = true ] || echo "$id"
-      done | grep -q .
+      done)" ]
 }
 
 foreign_cloudflared() {
-  # Unreadable counts as foreign: refusing is the safe answer.
-  [ -f "$CF_CONF" ] && ! as_root grep -qF "$MARK" "$CF_CONF" 2>/dev/null
+  # Unreadable counts as foreign: refusing is the safe answer. A tunnel from the
+  # dashboard (cloudflared service install <token>) writes only the unit.
+  local f
+  for f in "$CF_CONF" "$CF_UNIT"; do
+    [ -f "$f" ] && ! S grep -qF "$MARK" "$f" 2>/dev/null && return 0
+  done
+  return 1
 }
 
 port_busy() { ss -ltnH "sport = :$1" 2>/dev/null | grep -q .; }
@@ -199,7 +215,7 @@ preflight() {
   have cloudflared && say "cloudflared: $(cloudflared --version 2>/dev/null | head -1)" || say "cloudflared: not installed"
   local refuse=0
   if foreign_traefik; then say "FOUND: a Traefik container that onebox did not create."; refuse=1; fi
-  if foreign_cloudflared; then say "FOUND: $CF_CONF that onebox did not write."; refuse=1; fi
+  if foreign_cloudflared; then say "FOUND: a cloudflared config or unit that onebox did not write."; refuse=1; fi
   if ! [ -f "$TRAEFIK_DIR/docker-compose.yml" ] && { port_busy 80 || port_busy 443; }; then
     say "FOUND: something already listens on port 80 or 443."; refuse=1
   fi
@@ -307,6 +323,8 @@ EOF
 Unattended-Upgrade::Automatic-Reboot "true";
 Unattended-Upgrade::Automatic-Reboot-Time "04:00";
 EOF
+  elif [ -f /etc/apt/apt.conf.d/52onebox-reboot ]; then
+    say "automatic reboot: still ON from an earlier --auto-reboot run (delete /etc/apt/apt.conf.d/52onebox-reboot to undo)"
   else
     say "automatic reboot: off (check shows when a reboot is pending)"
   fi
@@ -362,6 +380,8 @@ phase_docker() {
   if docker compose version >/dev/null 2>&1; then
     say "present: $(docker --version), compose $(docker compose version --short)"
   else
+    # docker-ce replaces docker.io, containerd and runc, and stops every container.
+    have docker && die "docker is installed without the compose plugin. Installing Docker's own packages would replace it and stop every container. Ask the user, then install the plugin (docker-compose-v2 with Ubuntu's docker.io, docker-compose-plugin with docker-ce) and run this phase again." 4
     # Docker's own apt repository, as in docs.docker.com for Ubuntu.
     run install -m 0755 -d /etc/apt/keyrings
     run curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
@@ -377,10 +397,16 @@ phase_docker() {
   # Default json-file logs grow without limit and fill a small disk.
   if [ -f /etc/docker/daemon.json ]; then
     say "keeping existing /etc/docker/daemon.json"
-  else
-    put /etc/docker/daemon.json 0644 root:root <<'EOF' && run systemctl restart docker || true
+  elif put /etc/docker/daemon.json 0644 root:root <<'EOF'
 { "log-driver": "json-file", "log-opts": { "max-size": "10m", "max-file": "3" } }
 EOF
+  then
+    # A restart stops every container. Only restart an idle Docker.
+    if [ -n "$(docker ps -q 2>/dev/null)" ]; then
+      say "containers are running, so Docker is not restarted. The log limits apply after the next Docker restart: do it at a quiet time."
+    else
+      run systemctl restart docker || true
+    fi
   fi
   run systemctl enable --now docker >/dev/null 2>&1
   # Membership in the docker group is root on this box. Only the admin user gets it.
@@ -470,9 +496,16 @@ EOF
   local email_line="      # no ACME email set (optional)"
   [ -n "$ACME_EMAIL" ] && email_line="      - --certificatesresolvers.cloudflare.acme.email=$ACME_EMAIL"
 
+  # A later run keeps the image already in the file, unless --traefik-image was given.
+  if [ "$IMAGE_SET" = 0 ] && [ -f "$TRAEFIK_DIR/docker-compose.yml" ]; then
+    local cur; cur="$(awk '/^ +image: /{print $2; exit}' "$TRAEFIK_DIR/docker-compose.yml")"
+    [ -n "$cur" ] && TRAEFIK_IMAGE="$cur"
+  fi
+
   put "$TRAEFIK_DIR/docker-compose.yml" 0644 root:root <<EOF || true
 $MARK
-# Edit the flags here, then: docker compose -p traefik up -d
+# A later proxy run rewrites this file (it keeps the image). Lasting changes go in dynamic/*.yml.
+# After a change here: docker compose -p traefik up -d
 services:
   traefik:
     image: $TRAEFIK_IMAGE
@@ -578,7 +611,8 @@ phase_tunnel() {
     if [ "$DRY" = 1 ]; then say "(dry run) would create tunnel $TUNNEL_NAME and write $CF_CONF"; return 0; fi
     local existing
     existing="$(TUNNEL_ORIGIN_CERT="$cert" cloudflared tunnel list -o json 2>/dev/null \
-      | jq -r --arg n "$TUNNEL_NAME" '[.[] | select(.name==$n)][0].id // empty')"
+      | jq -r --arg n "$TUNNEL_NAME" '[.[] | select(.name==$n)][0].id // empty')" \
+      || die "could not list the tunnels in your Cloudflare account. Run cloudflared tunnel login again, then this phase."
     if [ -n "$existing" ]; then
       say "A tunnel named $TUNNEL_NAME already exists in Cloudflare ($existing),"
       say "but this box has no config for it. Either copy its credentials JSON to"
@@ -605,14 +639,16 @@ EOF
     say "  later, run cloudflared tunnel login again."
   fi
   if [ "$DRY" = 0 ]; then
-    cloudflared --config "$CF_CONF" tunnel ingress validate >/dev/null && say "ingress valid"
+    cloudflared --config "$CF_CONF" tunnel ingress validate >/dev/null \
+      || die "$CF_CONF is not a valid cloudflared config; no unit started. Run: cloudflared --config $CF_CONF tunnel ingress validate"
+    say "ingress valid"
   fi
 
   log "Units: cloudflared + cloudflared-replica"
   # Two replicas of one tunnel. Restarting them a few seconds apart reloads
   # the ingress with no downtime. Restarting both at once drops every hostname.
   local changed=0
-  unit_file primary 20241 | put /etc/systemd/system/cloudflared.service 0644 root:root && changed=1
+  unit_file primary 20241 | put "$CF_UNIT" 0644 root:root && changed=1
   unit_file replica 20243 | put /etc/systemd/system/cloudflared-replica.service 0644 root:root && changed=1
   if [ "$DRY" = 0 ]; then
     [ "$changed" = 1 ] && systemctl daemon-reload
@@ -690,7 +726,6 @@ phase_check() {
   ok()   { printf '  PASS  %s\n' "$*"; }
   bad()  { printf '  FAIL  %s\n' "$*"; fail=$((fail+1)); }
   meh()  { printf '  WARN  %s\n' "$*"; warn=$((warn+1)); }
-  S() { if [ "$(id -u)" = 0 ]; then "$@"; else sudo -n "$@"; fi; }
 
   log "Health check ($TYPE)"
   local sshd; sshd="$(S sshd -T 2>/dev/null || true)"
@@ -731,7 +766,7 @@ phase_check() {
     # Find Traefik by its image, so a box set up by hand is checked too.
     local tk; tk="$(S docker ps --format '{{.Names}} {{.Image}}' | awk '$2 ~ /^traefik(:|@|$)/ {print $1; exit}')"
     if [ -n "$tk" ]; then ok "traefik running ($tk)"; else bad "traefik not running"; fi
-    if [ "$tk" = traefik ]; then
+    if [ -n "$tk" ] && [ "$(S docker inspect -f '{{index .Config.Labels "onebox.managed"}}' "$tk" 2>/dev/null)" = true ]; then
       curl -sf --max-time 5 http://127.0.0.1:8081/ping >/dev/null 2>&1 && ok "traefik API on 127.0.0.1:8081" || bad "traefik API not answering"
     elif [ -n "$tk" ]; then
       meh "traefik $tk was not set up by box-setup; its API check is skipped (references/adopt.md)"
@@ -759,7 +794,12 @@ phase_check() {
       if [ "$TYPE" = vps ] && [ "$TUNNEL" = cloudflare ]; then
         bad "ports published on all interfaces (Docker skips ufw):"; echo "$open" | sed 's/^/          /'
       else
-        meh "ports published on all interfaces:"; echo "$open" | sed 's/^/          /'
+        # At home onebox's own Traefik binds 0.0.0.0 on purpose: LAN hostnames need it.
+        if [ "$TYPE" = home ] && [ -n "$tk" ] && [ "$(S docker inspect -f '{{index .Config.Labels "onebox.managed"}}' "$tk" 2>/dev/null)" = true ]; then
+          open="$(echo "$open" | awk -v n="$tk" '$1 != n' || true)"
+        fi
+        if [ -n "$open" ]; then meh "ports published on all interfaces:"; echo "$open" | sed 's/^/          /'
+        else ok "no container port published on all interfaces (but Traefik, on purpose at home)"; fi
       fi
     else ok "no container port published on all interfaces"; fi
     # The Docker socket is root on the box, read-only mount or not (:ro does not limit the API).
@@ -784,9 +824,10 @@ phase_check() {
   if [ "$TUNNEL" = cloudflare ]; then
     local u
     for u in $(systemctl list-units 'cloudflared*.service' --all --plain --no-legend 2>/dev/null | awk '{print $1}'); do
+      [ "$u" = cloudflared-update.service ] && continue   # a timer-run oneshot: inactive between runs
       [ "$(systemctl is-active "$u")" = active ] && ok "$u active" || bad "$u not active"
     done
-    systemctl list-units 'cloudflared*.service' --all --plain --no-legend 2>/dev/null | grep -q . || bad "no cloudflared unit"
+    systemctl list-units 'cloudflared*.service' --all --plain --no-legend 2>/dev/null | grep -qv '^cloudflared-update\.service' || bad "no cloudflared unit"
     local p; for p in 20241 20243; do
       curl -sf --max-time 5 "http://127.0.0.1:$p/ready" >/dev/null 2>&1 && ok "tunnel replica on :$p ready" || meh "nothing ready on 127.0.0.1:$p"
     done
@@ -810,7 +851,7 @@ phase_check() {
   # /var/backups/onebox is root-only: read the status as root, or say it could
   # not be read. Never report "no backup yet" for a status we could not see.
   local status=""
-  if ! S test -r /var/backups/onebox >/dev/null 2>&1; then
+  if [ -e /var/backups/onebox ] && ! S test -r /var/backups/onebox >/dev/null 2>&1; then
     meh "backup status not read: run check with sudo"
   elif S test -f "$last"; then
     status="$(S cat "$last")"
@@ -843,5 +884,5 @@ case "$PHASE" in
   backup)       phase_backup ;;
   check)        phase_check ;;
   all)          phase_base; phase_docker; phase_proxy; phase_tunnel; phase_backup; phase_check ;;
-  *) sed -n '2,50p' "$0"; exit 2 ;;
+  *) sed -n '2,54p' "$0"; exit 2 ;;
 esac
