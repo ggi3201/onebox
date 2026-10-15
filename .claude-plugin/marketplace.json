@@ -31,7 +31,7 @@
       "name": "dev",
       "source": "./plugins/dev",
       "description": "Make the coding agent prove its change before it says done: lint, strict types, unit and database tests, then a check in the iOS Simulator with a screenshot. Runs on your Mac.",
-      "version": "0.3.1",
+      "version": "0.3.2",
       "license": "MIT"
     }
   ]

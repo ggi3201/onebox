@@ -5,8 +5,8 @@ steps run.
 
 You built an app idea with an AI coding agent, such as Claude Code, Codex or
 Cursor. It runs on your phone or in the simulator. Now you want it in the App
-Store, with a real backend, real sign-in and maybe a subscription. This page
-is the map for that. New words on the way? They are all in
+Store: signed, on TestFlight, with a store page, through App Review, and maybe
+with a subscription. This page is the map for that. New words on the way? They are all in
 [glossary.md](glossary.md). Stuck on a step? Read
 [when-you-are-stuck.md](when-you-are-stuck.md).
 
@@ -16,11 +16,12 @@ skill here covers the Play Store yet.
 This is the whole setup:
 
 - an **Expo / React Native** iOS app,
-- a **backend API and Postgres** in Docker on **one cheap box** (a mini PC at
-  home or a small VPS), behind **Traefik** and a **Cloudflare Tunnel**,
-- **Sign in with Apple**,
+- **local iOS builds** on your Mac, then **TestFlight**, then the **App Store**,
 - **RevenueCat** for subscriptions (optional),
-- **local iOS builds** on your Mac, then **TestFlight**, then the **App Store**.
+- **no server**, unless the app needs data off the phone: accounts, sync
+  between devices or AI with a secret key. Then a hosted backend (Supabase,
+  Convex or Firebase), or your own API and Postgres on **one cheap box** (a
+  mini PC at home or a small VPS), with **Sign in with Apple**.
 
 It is not the only way. It is a way that works, costs little, and has no
 parts you do not need on day one.
@@ -30,18 +31,22 @@ parts you do not need on day one.
 | Item | Cost | Notes |
 |---|---|---|
 | Apple Developer Program | $99 a year | Required to ship on the App Store. See [apple-developer.md](apple-developer.md). |
-| The box | about €6 a month, or €0 | A small VPS ([vps.md](vps.md)), or a mini PC you already own. |
-| A domain | about €10–15 a year | `.com` or `.app` at cost on Cloudflare Registrar ([domain.md](domain.md)). The DNS moves to Cloudflare. |
-| Cloudflare | free | DNS, the tunnel and the edge certificate are on the free plan. See [cloudflare.md](cloudflare.md). |
 | iOS builds | free | Local builds on your Mac with Xcode. Cloud builds on EAS are optional. See [expo-eas.md](expo-eas.md). |
 | Expo account | free | Needed for `eas` commands, also for local builds. |
 | RevenueCat | free to start | Optional. It charges only after your app earns real money. See [revenuecat.md](revenuecat.md). |
+| The box | about €6 a month, or €0 | Only with your own server. A small VPS ([vps.md](vps.md)), or a mini PC you already own. |
+| A domain | about €10–15 a year | Only with your own server or a landing page. `.com` or `.app` at cost on Cloudflare Registrar ([domain.md](domain.md)). |
+| Cloudflare | free | Only with your own server. DNS, the tunnel and the edge certificate are on the free plan. See [cloudflare.md](cloudflare.md). |
+
+With no server, that is $99 a year to Apple and nothing else.
 
 Apple also keeps a share of each sale. Prices on the other guides are checked
 when they were written. Treat every number as a ballpark and check the
 provider's own page.
 
-## The whole thing in one picture
+## With your own server, in one picture
+
+Skip this part if the app has no server.
 
 ```
 iPhone app  ──https──>  api.example.com  (Cloudflare, proxied DNS)
@@ -130,9 +135,9 @@ Xcode builds and runs any app on your own iPhone.
 
 ### Phase 1: the app
 
-Make the Expo project fit this setup: a fixed bundle identifier, an API URL
-per build profile, a development build instead of Expo Go, and three EAS
-build profiles.
+Make the Expo project fit this setup: a fixed bundle identifier, a
+development build instead of Expo Go, three EAS build profiles, and, with a
+server, an API URL per build profile.
 
 Guide: [expo-app.md](expo-app.md).
 
@@ -140,9 +145,9 @@ Then give your agent a way to check its own work: lint, strict types, tests,
 and a look at the change in the Simulator before it says "done". Guide:
 [agent-test-loop.md](agent-test-loop.md). Skill: `dev:test-loop`.
 
-Done when: a development build of your app runs on your iPhone, the preview
-and production API URLs come from `eas.json`, and your agent runs the test
-loop without you.
+Done when: a development build of your app runs on your iPhone, your agent
+runs the test loop without you, and, with a server, the preview and
+production API URLs come from `eas.json`.
 
 ### Phase 2: the box
 

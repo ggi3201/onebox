@@ -553,6 +553,11 @@ a guide: https://onebox.lokkesveen.com/guides/ai-consent/.
 
 ## dev
 
+### 0.3.2 (2026-10-15)
+
+- `test-loop`: the description no longer assumes a backend; it works with
+  or without one.
+
 ### 0.3.1 (2026-10-15)
 
 - `test-loop`: a reinstall keeps the Keychain token. For a fresh user, run
