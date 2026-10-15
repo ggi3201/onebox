@@ -2,7 +2,7 @@
 import Base from "../layouts/Base.astro";
 import RouteMap from "../components/RouteMap.astro";
 import Picker from "../components/Picker.astro";
-import { PLUGINS, SKILLS, skillsFor, APPS, REPO, REPO_SLUG, SKIPPABLE, OTHERS } from "../data/kit";
+import { PLUGINS, SKILLS, skillsFor, APPS, REPO, REPO_SLUG, OTHERS } from "../data/kit";
 import { GUIDES } from "../data/guides";
 import catalog from "../../../plugins/start/skills/plan/references/catalog.json";
 
@@ -28,7 +28,6 @@ const tested = [
 ];
 
 const count = SKILLS.length;
-const skipTotal = SKIPPABLE.reduce((t, x) => t + x.cost, 0);
 const n = (k: number, word: string) => `${k} ${word}${k === 1 ? "" : "s"}`;
 const mailto =
   "mailto:geir@lokkesveen.com?subject=" +
@@ -43,7 +42,6 @@ const bill = [
   { item: "Apple Developer Program", cost: "$99", per: "year" },
   { item: "Cloudflare DNS and Tunnel", cost: "€0", per: "" },
   { item: "iOS builds on your own Mac", cost: "€0", per: "" },
-  { item: "AWS, Kubernetes, a DevOps person", cost: "—", per: "not needed" },
 ];
 ---
 
@@ -52,7 +50,7 @@ const bill = [
   description="Free agent skills and plain guides for getting an Expo app onto the App Store. Need a backend? Run it on one cheap box."
 >
   <main>
-    <!-- ============ HERO: the label ============ -->
+    <!-- ============ HERO ============ -->
     <section class="hero">
       <div class="wrap hero-grid">
         <div class="hero-copy">
@@ -70,25 +68,6 @@ const bill = [
           </div>
         </div>
 
-        <aside class="label-card" aria-label="Shipping label">
-          <div class="label-head">
-            <span class="kicker">Shipping label</span>
-            <span class="label">Nº 001</span>
-          </div>
-          <dl class="label-rows">
-            <div><dt class="label">From</dt><dd>Your Mac and your coding agent</dd></div>
-            <div><dt class="label">To</dt><dd class="big">The App Store</dd></div>
-            <div><dt class="label">Contents</dt><dd>{n(count, "skill")} · {n(PLUGINS.length, "plugin")} · {n(GUIDES.length, "guide")}</dd></div>
-            <div><dt class="label">Postage</dt><dd>$99 a year to Apple. A backend from €5 a month, if you need one.</dd></div>
-            <div><dt class="label">Handling</dt><dd>No AWS. No Kubernetes. No purple gradients.</dd></div>
-          </dl>
-          <div class="barcode" aria-hidden="true">
-            {Array.from({ length: 46 }, (_, i) => (
-              <i style={`--w:${[1, 3, 1, 2, 1, 1, 4, 1, 2, 3][i % 10]}px`} />
-            ))}
-          </div>
-          <span class="stamp" aria-hidden="true">Free<br />MIT</span>
-        </aside>
       </div>
     </section>
 
@@ -251,37 +230,24 @@ const bill = [
       </div>
     </section>
 
-    <!-- ============ THE BILL ============ -->
+    <!-- ============ A SERVER, IF YOU NEED ONE ============ -->
     <section class="bill-section">
       <div class="wrap bill-grid">
         <div class="bill-copy">
-          <h2 class="display h2">Need a backend? One box is enough.</h2>
+          <h2 class="display h2">Need a server? One box is enough.</h2>
           <p>
-            Many apps need no server at all. If yours does, you don’t need AWS for your first thousand users.
-            One machine runs the API, the database and the landing page. Cloudflare Tunnel puts it on the
-            internet without opening a port. Your Mac builds the app for free. When one box is not enough,
-            you will know, and you will have users to pay for the next one.
+            Many apps need no server at all. If yours does, one machine runs the API, the database and the
+            landing page. Cloudflare Tunnel puts it on the internet without opening a port. It takes about
+            15 minutes a month: your agent checks the box, and you say yes to what it found.
           </p>
-          <div class="skip">
-            <p class="label skip-head">Subscriptions you can skip for now</p>
-            <ul>
-              {SKIPPABLE.map((x) => (
-                <li>
-                  <span class="skip-what">{x.what} <small>({x.example})</small></span>
-                  <span class="skip-instead">→ {x.instead}</span>
-                </li>
-              ))}
-            </ul>
-            <p class="skip-note">
-              These are good products, and they save time. Together they cost about ${skipTotal} a month
-              before you know if anyone wants your app. Test the idea first. Pay for comfort when users
-              make it worth it. Free tiers have limits: Vercel’s is for non-commercial use, Supabase
-              pauses a free project after a week without traffic, and PlanetScale has no free tier.
-            </p>
-          </div>
+          <p>
+            One box is one point of failure. Move to a second server or a managed database when downtime
+            costs you money or trust. A big app, sensitive data such as health or children’s data, or a
+            team: plan a larger setup from the start.
+          </p>
         </div>
         <figure class="receipt" aria-label="Monthly cost">
-          <p class="label receipt-head">Receipt · one app with a backend</p>
+          <p class="label receipt-head">One app with a server</p>
           <ul>
             {bill.map((b) => (
               <li>
@@ -292,38 +258,8 @@ const bill = [
             ))}
           </ul>
           <p class="total"><span>Total</span><span>≈ €14 a month</span></p>
-          <p class="label receipt-foot">Apple’s fee spread over 12 months. Your Claude plan not included.</p>
+          <p class="label receipt-foot">Apple’s fee spread over 12 months.</p>
         </figure>
-      </div>
-    </section>
-
-    <!-- ============ CARE ============ -->
-    <section id="care" class="care">
-      <div class="wrap">
-        <header class="section-head">
-          <h2 class="display h2">One box needs a little care.</h2>
-          <p class="muted">About 15 minutes a month. An agent does the work over SSH with the box skills. You read what it found and say yes.</p>
-        </header>
-        <div class="care-grid">
-          <div>
-            <p class="label">What it asks of you</p>
-            <ul class="care-list">
-              <li>Security updates install themselves. Reboot when the box says a reboot is pending.</li>
-              <li>Once a month, and after any change, ask your agent to “check the box”. The check must end with 0 fail.</li>
-              <li>Update Traefik, Postgres and your images a few times a year. Read the release notes first.</li>
-              <li>Make sure last night’s backup ran. Restore one once, so you know it works.</li>
-              <li>Watch the disk. Docker images and logs grow.</li>
-            </ul>
-          </div>
-          <div>
-            <p class="label">When to go further</p>
-            <ul class="care-list">
-              <li>One box is one point of failure. If it dies, the app is down until you restore it. At home, a power cut or an internet outage takes it down too.</li>
-              <li>Move on when downtime costs you money or trust: a second server, a managed database with point-in-time recovery, and monitoring that wakes you up.</li>
-              <li>A big app, sensitive data such as health or children’s data, or a team: plan a larger setup from the start, and get advice.</li>
-            </ul>
-          </div>
-        </div>
       </div>
     </section>
 
@@ -331,8 +267,8 @@ const bill = [
     <section class="proof">
       <div class="wrap">
         <header class="section-head">
-          <h2 class="display h2">Shipped with these skills</h2>
-          <p class="muted">Real apps, built and released with the skills on this page.</p>
+          <h2 class="display h2">Apps I have shipped</h2>
+          <p class="muted">The skills come from building and releasing these.</p>
         </header>
         <div class="about">
           <p>
@@ -419,9 +355,7 @@ const bill = [
   .hero { padding-block: clamp(40px, 7vw, 96px) clamp(48px, 8vw, 104px); }
   .hero-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
-    gap: clamp(32px, 5vw, 72px);
-    align-items: center;
+    grid-template-columns: minmax(0, 1fr);
   }
   .hero-title { font-size: clamp(2.4rem, 5.4vw, 4.7rem); margin-block: 14px 26px; }
   .hero-title span { display: inline-block; }
@@ -429,43 +363,6 @@ const bill = [
   .lede code { background: var(--code-bg); padding: 1px 6px; color: var(--ink); }
   .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
 
-  .label-card {
-    position: relative;
-    border: 2px solid var(--ink);
-    background: var(--paper);
-    box-shadow: 10px 10px 0 var(--paper-3);
-    padding: 0;
-  }
-  .label-head {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 12px 16px; background: var(--ink); color: var(--paper);
-  }
-  .label-head .label { color: var(--paper); opacity: 0.7; }
-  .label-rows { margin: 0; }
-  .label-rows > div {
-    display: grid; grid-template-columns: 92px 1fr; gap: 12px;
-    padding: 12px 16px; border-bottom: 1px solid var(--ink);
-    animation: print 520ms cubic-bezier(.2,.8,.2,1) both;
-  }
-  .label-rows > div:nth-child(1) { animation-delay: 120ms; }
-  .label-rows > div:nth-child(2) { animation-delay: 220ms; }
-  .label-rows > div:nth-child(3) { animation-delay: 320ms; }
-  .label-rows > div:nth-child(4) { animation-delay: 420ms; }
-  .label-rows > div:nth-child(5) { animation-delay: 520ms; }
-  .label-rows dt { padding-top: 3px; }
-  .label-rows dd { margin: 0; font-family: var(--display); font-stretch: 100%; font-weight: 500; font-size: 1rem; line-height: 1.3; }
-  .label-rows dd.big { font-stretch: 125%; font-weight: 800; font-size: clamp(1.5rem, 2.6vw, 2rem); letter-spacing: -0.02em; line-height: 1; }
-  .barcode { display: flex; gap: 2px; height: 46px; padding: 12px 16px; align-items: stretch; }
-  .barcode i { width: var(--w); background: var(--ink); }
-  .stamp {
-    position: absolute; right: 18px; bottom: 16px;
-    border: 2.5px solid var(--signal); color: var(--signal);
-    font-family: var(--display); font-stretch: 125%; font-weight: 800;
-    font-size: 0.82rem; line-height: 1.05; letter-spacing: 0.08em; text-transform: uppercase; text-align: center;
-    padding: 6px 10px; background: var(--paper);
-    transform: rotate(-8deg);
-    animation: stamp 420ms cubic-bezier(.2,.8,.2,1) 820ms both;
-  }
 
 
   /* start */
@@ -535,15 +432,6 @@ const bill = [
   .other-name { font-family: var(--mono); font-size: 0.95rem; font-weight: 500; }
   .other-by { text-transform: none; letter-spacing: 0.02em; }
 
-  /* skip list */
-  .skip { margin-top: 30px; max-width: 46ch; }
-  .bill-copy .skip-head { margin: 0 0 8px; font-size: 0.72rem; color: color-mix(in oklab, var(--paper) 70%, transparent); }
-  .skip ul { list-style: none; margin: 0; padding: 0; border-top: 1px solid color-mix(in oklab, var(--paper) 30%, transparent); }
-  .skip li { display: grid; gap: 2px; padding: 10px 0; border-bottom: 1px dashed color-mix(in oklab, var(--paper) 25%, transparent); }
-  .skip-what { font-size: 1.05rem; }
-  .skip-what small { color: color-mix(in oklab, var(--paper) 60%, transparent); font-size: 0.85em; }
-  .skip-instead { font-family: var(--mono); font-size: 0.82rem; color: var(--signal); }
-  .bill-copy .skip-note { font-size: 1rem; margin-top: 14px; }
 
   /* bill */
   .bill-section { background: var(--ink); color: var(--paper); }
@@ -568,12 +456,6 @@ const bill = [
   .total { display: flex; justify-content: space-between; margin: 12px 0 0; padding-top: 12px; border-top: 2px solid var(--ink); font-weight: 500; font-size: 1rem; }
   .receipt-foot { margin: 14px 0 6px; text-align: center; text-transform: none; letter-spacing: 0.02em; }
 
-  /* care */
-  .care-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px clamp(32px, 6vw, 80px); }
-  .care-grid .label { margin: 0 0 8px; }
-  .care-list { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--ink); }
-  .care-list li { padding: 12px 0 12px 22px; border-bottom: 1px dashed var(--rule); position: relative; font-size: 1.05rem; color: var(--ink-2); }
-  .care-list li::before { content: ""; position: absolute; left: 2px; top: 20px; width: 8px; height: 8px; border: 1.5px solid var(--signal); }
 
   /* proof */
   .apps { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--ink); }
@@ -638,8 +520,8 @@ const bill = [
 
   /* phone */
   @media (max-width: 860px) {
-    .hero-grid, .bill-grid, .help-grid, .steps, .about, .care-grid, .feel-grid, .tested { grid-template-columns: 1fr; }
-    .label-card, .chat { box-shadow: 6px 6px 0 var(--paper-3); }
+    .hero-grid, .bill-grid, .help-grid, .steps, .about, .feel-grid, .tested { grid-template-columns: 1fr; }
+    .chat { box-shadow: 6px 6px 0 var(--paper-3); }
     .receipt { transform: none; }
   }
   @media (max-width: 640px) {
@@ -653,7 +535,6 @@ const bill = [
     .other-list li { grid-template-columns: 1fr auto; }
     .other-list .line { grid-column: 1 / -1; }
     .app-what { grid-column: 1 / -1; grid-row: 2; }
-    .label-rows > div { grid-template-columns: 76px 1fr; }
     .tag-list li { grid-template-columns: 1fr; }
     .turns li { grid-template-columns: 1fr; gap: 2px; }
   }
