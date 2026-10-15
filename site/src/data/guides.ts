@@ -17,6 +17,7 @@ const ORDER = [
   "sign-in-with-apple",
   "revenuecat",
   "push-notifications",
+  "share-links",
   "ask-for-a-rating",
   "app-store-connect-setup",
   "app-store-connect-api-key",
