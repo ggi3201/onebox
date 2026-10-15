@@ -42,18 +42,24 @@ and https://developer.apple.com/app-store/product-page/.
 - **The words people would search for.** Ask the user for five to ten, and
   add your own from the features. Plain words a user types, not marketing
   words.
+- **Which phrases people search, and who ranks for them.** Use the App Store's
+  own search suggestions and the ratings of the top apps:
+  `references/search-words.md`. It also covers keyword bytes in other
+  languages.
 
 ## 2. Write it
 
-- **Name:** the brand, plus a plain word or two if room is left, so a stranger
-  knows what it is. Do not stuff keywords into it; Apple rejects that
-  (Guideline 2.3.7).
+- **Name:** the brand, plus a plain phrase if room is left, so a stranger
+  knows what it is. Pick the phrase where only weak apps rank. Do not spend it
+  on the seller name ("by Example Labs"). Do not stuff keywords into it; Apple
+  rejects that (Guideline 2.3.7).
 - **Subtitle:** what it does for the user, in their words. Not "the best app".
 - **Keywords:** comma separated, **no spaces after the commas**. Do not repeat
   any word from the name, the subtitle or the category. Do not add a plural of
   a word already there. No competitor or other app names, no "app", no filler
   words. Single words combine with the name and subtitle in search, so
-  `meal,plan` covers "meal plan" and saves bytes. Fill close to 100 bytes.
+  `meal,plan` covers "meal plan" and saves bytes. Each word goes in one field
+  only. Fill close to 100 bytes.
 - **Description:** the first sentence is the only one most people read
   before "more". Say what the app does and for whom. Then a short paragraph,
   then a short list of the main features, then required lines such as the
@@ -97,7 +103,8 @@ node $A listing --app com.example.myapp   # read it back
 ## Rules
 
 - Never claim what the app does not do, or a result it cannot promise.
-  App Review checks the text against the app (Guideline 2.3).
+  App Review checks the text against the app (Guideline 2.3). A feature only
+  admins or testers can use stays out too (2.3.1(a)).
 - Never name a competitor, in any field.
 - Keep the old text. Save the `listing` output to a file before you replace
   anything, so the user can go back.
