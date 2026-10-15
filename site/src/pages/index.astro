@@ -223,25 +223,6 @@ const mailto =
       </div>
     </section>
 
-    <!-- ============ GOOD COMPANY ============ -->
-    <section id="others" class="others">
-      <div class="wrap">
-        <header class="section-head">
-          <h2 class="display h2">Good company</h2>
-          <p class="muted">Skills by other people that I use next to these. Not mine. Each has its own install steps and licence.</p>
-        </header>
-        <ul class="other-list">
-          {OTHERS.map((o) => (
-            <li>
-              <a class="other-name" href={o.url}>{o.name} ↗</a>
-              <span class="label other-by">{o.by}</span>
-              <span class="line">{o.line}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </section>
-
     <!-- ============ PROOF ============ -->
     <section class="proof">
       <div class="wrap">
@@ -322,6 +303,25 @@ const mailto =
       </div>
     </section>
 
+
+    <!-- ============ GOOD COMPANY ============ -->
+    <section id="others" class="others">
+      <div class="wrap">
+        <header class="section-head">
+          <h2 class="display h2">Good company</h2>
+          <p class="muted">Skills by other people that I use next to these. Not mine. Each has its own install steps and licence.</p>
+        </header>
+        <ul class="other-list">
+          {OTHERS.map((o) => (
+            <li>
+              <a class="other-name" href={o.url}>{o.name} ↗</a>
+              <span class="label other-by">{o.by}</span>
+              <span class="line">{o.line}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
   </main>
 </Base>
 
@@ -407,7 +407,6 @@ const mailto =
   .line { color: var(--ink-2); }
 
   /* good company */
-  .others { padding-top: 0; }
   .other-list { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--ink); }
   .other-list li {
     display: grid; grid-template-columns: minmax(150px, 220px) minmax(110px, 160px) 1fr; gap: 4px 20px; align-items: baseline;
