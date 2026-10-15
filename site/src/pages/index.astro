@@ -1,6 +1,5 @@
 ---
 import Base from "../layouts/Base.astro";
-import RouteMap from "../components/RouteMap.astro";
 import Picker from "../components/Picker.astro";
 import { PLUGINS, SKILLS, skillsFor, APPS, REPO, REPO_SLUG, OTHERS } from "../data/kit";
 import { GUIDES } from "../data/guides";
@@ -14,11 +13,24 @@ const nudge = (id: string) => {
 };
 const chat = { repo: nudge("new-app"), secrets: nudge("secrets"), apple: nudge("sign-in-with-apple") };
 const audience = [
-  { tag: "Yes", yes: true, text: "A developer who has never shipped an iOS app, and wants the whole road in one place: signing, TestFlight, App Review, an API, a landing page." },
+  { tag: "Yes", yes: true, text: "A developer who has never shipped an iOS app, and wants the whole road in one place: signing, TestFlight, the store page and App Review." },
   { tag: "Yes", yes: true, text: "Someone who already ships, and wants the repeatable parts done the same way every time." },
   { tag: "Not yet", yes: false, text: "Someone who has never used a terminal. The skills explain each step, but they assume you can run a command and read an error." },
   { tag: "Not covered", yes: false, text: "Android and the Play Store. iOS only for now." },
 ];
+const road = [
+  { tag: "1 · Apple", text: "Join the Apple Developer Program ($99 a year) and install Xcode. The guides show the clicks only you can make.", skills: [] },
+  { tag: "2 · TestFlight", text: "Build on your own Mac, for free, and upload. Testers install it from TestFlight.", skills: ["expo-local-build", "appstore-connect"] },
+  { tag: "3 · Your phone", text: "Put a test build on your own iPhone, without TestFlight.", skills: ["ios-preview-build"] },
+  { tag: "4 · Store page", text: "The icon, screenshots from real screens, and text that search finds. Apple also wants a privacy policy and a support page.", skills: ["draw-app-icon", "app-store-screenshots", "store-listing"] },
+  { tag: "5 · App Review", text: "Find what Apple will reject before Apple does. Then fill in the version page and submit.", skills: ["app-store-ready", "appstore-connect"] },
+  { tag: "6 · Updates", text: "Ship a JavaScript fix without App Review, and every version after the first.", skills: ["eas-update"] },
+];
+const pluginOf = (name: string) => {
+  const s = SKILLS.find((x) => x.name === name);
+  if (!s) throw new Error(`kit.ts has no skill "${name}"`);
+  return s.plugin;
+};
 const tested = [
   { tag: "Tested", yes: true, text: "A new app from an empty folder, with the skills and guides only." },
   { tag: "Tested", yes: true, text: "The three layouts (.NET API, Node API, no server), each end to end in the iOS Simulator." },
@@ -36,18 +48,11 @@ const mailto =
   encodeURIComponent(
     "The app (link or repo):\n\nWhat works now:\n\nWhere I am stuck:\n\nTestFlight or the App Store:\n\nWhen I want it live:\n",
   );
-const bill = [
-  { item: "A small VPS, or a mini PC you already own", cost: "€5", per: "month" },
-  { item: "Your domain", cost: "€10", per: "year" },
-  { item: "Apple Developer Program", cost: "$99", per: "year" },
-  { item: "Cloudflare DNS and Tunnel", cost: "€0", per: "" },
-  { item: "iOS builds on your own Mac", cost: "€0", per: "" },
-];
 ---
 
 <Base
   title="onebox — get your app on the App Store"
-  description="Free agent skills and plain guides for getting an Expo app onto the App Store. Need a backend? Run it on one cheap box."
+  description="Free agent skills and plain guides for getting an Expo app onto the App Store: signing, TestFlight, the store page and App Review."
 >
   <main>
     <!-- ============ HERO ============ -->
@@ -57,10 +62,9 @@ const bill = [
           <p class="kicker">Agent skills · Expo · iOS</p>
           <h1 class="display hero-title"><span>Get your app</span> <span>on the</span> <span>App Store.</span></h1>
           <p class="lede">
-            You built something with Claude Code, Codex or Cursor. It works on your phone. Then come certificates,
-            App Review, payments and a backend that is still on <code>localhost</code>.
+            You built something with Claude Code, Codex or Cursor. It works on your phone. Then come signing,
+            TestFlight, the store page and App Review.
             These skills and guides take you the rest of the way.
-            Need a server? Run it on one cheap box.
           </p>
           <div class="hero-actions">
             <a class="btn" href="#start">Start in three steps <span aria-hidden="true">↓</span></a>
@@ -164,14 +168,22 @@ const bill = [
       </div>
     </section>
 
-    <!-- ============ ROUTE MAP ============ -->
+    <!-- ============ THE ROAD ============ -->
     <section id="route" class="route">
       <div class="wrap">
         <header class="section-head">
-          <h2 class="display h2">The route</h2>
-          <p class="muted">Where each part lives, and what carries your app from your Mac to a phone. No backend? Skip the box.</p>
+          <h2 class="display h2">The road to the App Store</h2>
+          <p class="muted">What happens between “it works on my phone” and “it is on the App Store”, and the skill for each part.</p>
         </header>
-        <RouteMap />
+        <ol class="tag-list road">
+          {road.map((r) => (
+            <li>
+              <span class="tag">{r.tag}</span>
+              <span class="line">{r.text}{r.skills.length > 0 && <span class="road-skills">{r.skills.map((k) => <code>/{pluginOf(k)}:{k}</code>)}</span>}</span>
+            </li>
+          ))}
+        </ol>
+        <p class="muted road-note">Most apps need no server. If yours does, the <code>box</code> plugin runs the API, the database and a landing page on one cheap machine.</p>
       </div>
     </section>
 
@@ -227,39 +239,6 @@ const bill = [
             </li>
           ))}
         </ul>
-      </div>
-    </section>
-
-    <!-- ============ A SERVER, IF YOU NEED ONE ============ -->
-    <section class="bill-section">
-      <div class="wrap bill-grid">
-        <div class="bill-copy">
-          <h2 class="display h2">Need a server? One box is enough.</h2>
-          <p>
-            Many apps need no server at all. If yours does, one machine runs the API, the database and the
-            landing page. Cloudflare Tunnel puts it on the internet without opening a port. It takes about
-            15 minutes a month: your agent checks the box, and you say yes to what it found.
-          </p>
-          <p>
-            One box is one point of failure. Move to a second server or a managed database when downtime
-            costs you money or trust. A big app, sensitive data such as health or children’s data, or a
-            team: plan a larger setup from the start.
-          </p>
-        </div>
-        <figure class="receipt" aria-label="Monthly cost">
-          <p class="label receipt-head">One app with a server</p>
-          <ul>
-            {bill.map((b) => (
-              <li>
-                <span>{b.item}</span>
-                <span class="dots" aria-hidden="true"></span>
-                <span class="cost">{b.cost}{b.per && <small> / {b.per}</small>}</span>
-              </li>
-            ))}
-          </ul>
-          <p class="total"><span>Total</span><span>≈ €14 a month</span></p>
-          <p class="label receipt-foot">Apple’s fee spread over 12 months.</p>
-        </figure>
       </div>
     </section>
 
@@ -351,6 +330,11 @@ const bill = [
   .muted { color: var(--ink-2); margin: 0; }
   code { font-family: var(--mono); font-size: 0.86em; }
 
+  /* the road */
+  .road-skills { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 6px; }
+  .road-skills code { font-family: var(--mono); font-size: 0.82rem; color: var(--signal); }
+  .road-note { margin-top: 18px; }
+
   /* hero */
   .hero { padding-block: clamp(40px, 7vw, 96px) clamp(48px, 8vw, 104px); }
   .hero-grid {
@@ -432,31 +416,6 @@ const bill = [
   .other-name { font-family: var(--mono); font-size: 0.95rem; font-weight: 500; }
   .other-by { text-transform: none; letter-spacing: 0.02em; }
 
-
-  /* bill */
-  .bill-section { background: var(--ink); color: var(--paper); }
-  .bill-section a:hover { color: var(--signal); }
-  .bill-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: clamp(32px, 6vw, 80px); align-items: start; }
-  .bill-copy p { color: color-mix(in oklab, var(--paper) 78%, transparent); max-width: 40ch; margin: 22px 0 0; font-size: 1.2rem; }
-  .receipt {
-    margin: 0; background: var(--paper); color: var(--ink); padding: 22px 22px 18px;
-    font-family: var(--mono); font-size: 0.86rem;
-    transform: rotate(1.2deg);
-    -webkit-mask: radial-gradient(circle 6px at 50% 0, #0000 98%, #000) 50% 0 / 16px 100% repeat-x,
-                  radial-gradient(circle 6px at 50% 100%, #0000 98%, #000) 50% 100% / 16px 100% repeat-x;
-    -webkit-mask-composite: source-in; mask-composite: intersect;
-  }
-  .receipt-head { margin: 4px 0 14px; text-align: center; }
-  .receipt ul { list-style: none; margin: 0; padding: 0; }
-  .receipt li { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: baseline; padding: 6px 0; }
-  .receipt li > span:first-child { font-family: var(--text); font-size: 1rem; }
-  .dots { border-bottom: 1px dotted var(--ink-3); transform: translateY(-4px); min-width: 12px; }
-  .cost { text-align: right; white-space: nowrap; }
-  .cost small { color: var(--ink-3); font-size: 0.78em; }
-  .total { display: flex; justify-content: space-between; margin: 12px 0 0; padding-top: 12px; border-top: 2px solid var(--ink); font-weight: 500; font-size: 1rem; }
-  .receipt-foot { margin: 14px 0 6px; text-align: center; text-transform: none; letter-spacing: 0.02em; }
-
-
   /* proof */
   .apps { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--ink); }
   .apps li { display: grid; grid-template-columns: minmax(120px, 220px) 1fr auto; gap: 8px 24px; align-items: baseline; padding: 18px 0; border-bottom: 1px solid var(--rule); }
@@ -520,11 +479,9 @@ const bill = [
 
   /* phone */
   @media (max-width: 860px) {
-    .hero-grid, .bill-grid, .help-grid, .steps, .about, .feel-grid, .tested { grid-template-columns: 1fr; }
+    .hero-grid, .help-grid, .steps, .about, .feel-grid, .tested { grid-template-columns: 1fr; }
     .chat { box-shadow: 6px 6px 0 var(--paper-3); }
-    .receipt { transform: none; }
-  }
-  @media (max-width: 640px) {
+    @media (max-width: 640px) {
     .comp-head { grid-template-columns: auto 1fr auto; }
     .runs { grid-column: 2; grid-row: 2; white-space: normal; }
     .comp-head::after { grid-column: 3; grid-row: 1; }
