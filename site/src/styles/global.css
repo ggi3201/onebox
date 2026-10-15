@@ -214,15 +214,6 @@ img, svg { display: block; max-width: 100%; }
 
 /* ---------- motion ---------- */
 
-@keyframes print {
-  from { opacity: 0; transform: translateY(6px); clip-path: inset(0 0 100% 0); }
-  to   { opacity: 1; transform: none; clip-path: inset(0 0 0 0); }
-}
-@keyframes stamp {
-  0%   { opacity: 0; transform: rotate(-8deg) scale(1.6); }
-  60%  { opacity: 1; transform: rotate(-8deg) scale(0.96); }
-  100% { opacity: 1; transform: rotate(-8deg) scale(1); }
-}
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }

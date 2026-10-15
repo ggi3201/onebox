@@ -28,31 +28,31 @@ const atMac = SKILLS.filter((s) => s.plugin !== "box" && s.plugin !== "start" &&
 
 const STOPS: Stop[] = [
   {
-    id: "mac", x: 20, y: 60, w: 290, h: 290, tag: "01 · The workbench",
+    id: "mac", x: 20, y: 60, w: 290, h: 290, tag: "01",
     title: "Your Mac", sub: "Your coding agent runs every skill here.",
     lines: [{ t: "Your Expo app’s code" }, { t: "Xcode, for free local builds" }],
     skills: atMac.map((s) => s.name),
   },
   {
-    id: "apple", x: 455, y: 60, w: 290, h: 220, tag: "02 · The gate",
+    id: "apple", x: 455, y: 60, w: 290, h: 220, tag: "02",
     title: "Apple", sub: "App Store Connect.",
     lines: [{ t: "TestFlight" }, { t: "App Review" }, { t: "Sign in with Apple" }, { t: "Store page, privacy answers" }],
     skills: [],
   },
   {
-    id: "phone", x: 890, y: 60, w: 290, h: 220, tag: "03 · Delivered",
+    id: "phone", x: 890, y: 60, w: 290, h: 220, tag: "03",
     title: "The phone", sub: "Where your users are.",
     lines: [{ t: "Your app, via TestFlight or the store" }, { t: "Signs in with Apple" }, { t: "api.example.com", mono: true }],
     skills: AT_PHONE.filter(has),
   },
   {
-    id: "cloudflare", x: 890, y: 480, w: 290, h: 150, tag: "04 · The door",
+    id: "cloudflare", x: 890, y: 480, w: 290, h: 150, tag: "04",
     title: "Cloudflare", sub: "The free plan is enough.",
     lines: [{ t: "DNS for example.com" }, { t: "A tunnel in. No open ports." }],
     skills: [],
   },
   {
-    id: "outside", x: 890, y: 660, w: 290, h: 150, tag: "06 · Outside",
+    id: "outside", x: 890, y: 660, w: 290, h: 150, tag: "06",
     title: "Outside", sub: "Paid per use. All optional.",
     lines: [{ t: "RevenueCat: subscriptions" }, { t: "An LLM API: AI features" }],
     skills: [],
@@ -76,13 +76,12 @@ for (const s of STOPS) if (s.y >= 480) s.y += DY;
 
 // The box is drawn by hand below; this is its label and its contents.
 const BOX = {
-  x: 20, y: 480 + DY, w: 725, h: 330, tag: "05 · The box",
+  x: 20, y: 480 + DY, w: 725, h: 330, tag: "05",
   title: "The box", sub: "A mini PC at home, or a €5 VPS. Docker on one machine.",
   rooms: [
     { x: 40, y: 585 + DY, w: 195, h: 60, t: "API", s: "your backend, in Docker" },
     { x: 245, y: 585 + DY, w: 195, h: 60, t: "Postgres", s: "one database per app" },
-    { x: 40, y: 655 + DY, w: 195, h: 60, t: "Staging", s: "a second API and database" },
-    { x: 245, y: 655 + DY, w: 195, h: 60, t: "Backups", s: "nightly, kept off the box" },
+    { x: 40, y: 655 + DY, w: 400, h: 60, t: "Backups", s: "nightly, kept off the box" },
   ],
   traefik: { x: 40, y: 725 + DY, w: 400, h: 44, t: "Traefik", s: "sends each hostname to its container" },
   landing: {
@@ -150,7 +149,7 @@ const routeById = Object.fromEntries(ROUTES.map((r) => [r.id, r]));
     <title id="routemap-title">How the onebox kit fits together</title>
     <desc id="routemap-desc">
       Your Mac runs your coding agent and every skill. It builds the app and submits it to Apple, which delivers it to phones.
-      Phones call your API through a Cloudflare tunnel into one box that runs the API, Postgres, staging, backups,
+      Phones call your API through a Cloudflare tunnel into one box that runs the API, Postgres, backups,
       Traefik and the landing page with pricing, privacy policy, support and terms. App Store Connect links to that
       landing page. Outside services are RevenueCat and media APIs.
     </desc>
@@ -290,7 +289,7 @@ const routeById = Object.fromEntries(ROUTES.map((r) => [r.id, r]));
   </ol>
 
   <figcaption id="routemap-cap" class="label cap">
-    Stamps {stampLetters.map((l) => <span class="cap-stamp">{l}</span>)} are plugins, listed in “What’s in the box” below.
+    Letters {stampLetters.map((l) => <span class="cap-stamp">{l}</span>)} are plugins, listed in “What’s in the box” below.
     Tags on a route are the skills that move things along it.
   </figcaption>
 </figure>
