@@ -188,3 +188,6 @@ another bundle id is connected to your Metro.
   overlap, row wrapping and scroll position need a device.
 - **The screenshot is in pixels, taps are in points.** Divide by the screen
   scale (3 on current iPhones) before you tap by coordinates.
+- **A reinstall did not sign the user out.** Deleting the app keeps its
+  Keychain items, so the old token signs the next install in. For a fresh
+  user, also run `xcrun simctl keychain <udid> reset`.

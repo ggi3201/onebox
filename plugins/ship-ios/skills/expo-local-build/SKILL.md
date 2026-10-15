@@ -76,6 +76,9 @@ Code signing needs the user's unlocked login keychain.
   `✔ Scheduled iOS submission` is. The `eas submit` exit
   code is not: the client can die afterwards while it polls. Do not resubmit.
   A second upload of the same build number is rejected as a duplicate.
+- **A new native module: check it is in the `.ipa`.** Typecheck, tests and
+  the JS bundle all pass without it. `unzip -l build/<file>.ipa | grep <Module>`
+  must list it. If not, the app crashes or does nothing where it calls it.
 - Confirm in App Store Connect, not in EAS output: use the `appstore-connect`
   skill (`asc.mjs builds`, then `asc.mjs wait <buildId>`).
 - **Never upload one build twice.** If an eas submit is still queued, a direct

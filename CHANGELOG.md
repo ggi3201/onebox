@@ -28,6 +28,11 @@ a guide: https://onebox.lokkesveen.com/guides/ai-consent/.
 
 ## start
 
+### 0.3.2 (2026-10-15)
+
+- `new-app`: the new `AGENTS.md` tells the agent to keep `tasks/lessons.md`:
+  each correction from the user becomes a one-line rule.
+
 ### 0.3.1 (2026-10-14)
 
 - `new-app`: the app's simulator is named after its slug, not `MyApp`, so two
@@ -303,6 +308,11 @@ a guide: https://onebox.lokkesveen.com/guides/ai-consent/.
 
 ## ship-ios
 
+### 0.2.2 (2026-10-15)
+
+- `expo-local-build`: after adding a native module, check that it is in the
+  `.ipa` with `unzip -l`.
+
 ### 0.2.1 (2026-10-14)
 
 - `appstore-connect`: an approved version waiting for release no longer
@@ -530,6 +540,11 @@ a guide: https://onebox.lokkesveen.com/guides/ai-consent/.
   host a landing page, and run a staging backend.
 
 ## dev
+
+### 0.3.1 (2026-10-15)
+
+- `test-loop`: a reinstall keeps the Keychain token. For a fresh user, run
+  `xcrun simctl keychain <udid> reset`.
 
 ### 0.3.0 (2026-10-14)
 
