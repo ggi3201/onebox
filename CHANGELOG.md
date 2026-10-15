@@ -317,6 +317,8 @@ a guide: https://onebox.lokkesveen.com/guides/ai-consent/.
 
 - `store-listing`: a method to pick the search words (App Store suggestions,
   who ranks for each phrase), not just fit them.
+- `app-store-ready`, `appstore-connect`: submit only one in-app purchase with
+  the first version, and the rest after it is approved.
 
 ### 0.2.2 (2026-10-15)
 
