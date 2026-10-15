@@ -457,6 +457,9 @@ log must show the request.
 - **"Missing Compliance" on every TestFlight build.** Add
   `ITSAppUsesNonExemptEncryption: false` (if it is true for your app) and
   build again. For the build already uploaded, use `ship-ios:appstore-connect`.
+- **A bold or light word shows in the system font.** A `fontWeight` on a
+  custom font falls back to San Francisco. Load each weight as its own font,
+  and set `fontFamily` to it.
 - **A native change does nothing.** You edited `ios/` by hand, or you changed
   a config plugin without rebuilding. Change the app config and rebuild the
   dev client.

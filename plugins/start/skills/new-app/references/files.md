@@ -643,7 +643,13 @@ root one, and it has `test`, not `test:mobile`. So the last `mobile` step is:
 
 ## `AGENTS.md`
 
-Start with the block for this layout. Put the test-loop block under it.
+Start with the block for this layout. Put the test-loop block under it. Both
+layouts end their block with these lines:
+
+```markdown
+- Lessons: read `tasks/lessons.md` before you start. After the user corrects
+  you, add the lesson there in one or two lines, as a rule.
+```
 
 With an API in the repo:
 
