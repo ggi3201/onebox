@@ -1,6 +1,6 @@
 ---
 name: test-loop
-description: Make the coding agent prove a change before it says "done" in an Expo / React Native iOS app with an ASP.NET Core or Node backend. It runs lint, strict types, unit tests and integration tests against a real database, then checks the change in the iOS Simulator and saves a screenshot as proof. It starts with a preflight that catches a simulator running another worktree's Metro and a binary that needs a native rebuild. Use when the user says "verify", "test it", "make sure it works", "check it on the simulator", "is it fixed?", "it still doesn't work", "my change doesn't show up", "Fast Refresh isn't working", "wrong Metro", "do I need to rebuild?", "run the flows", "before release", or whenever you are about to report a change as done.
+description: Make the coding agent prove a change before it says "done" in an Expo / React Native iOS app, with or without a backend. It runs lint, strict types, unit tests and integration tests against a real database, then checks the change in the iOS Simulator and saves a screenshot as proof. It starts with a preflight that catches a simulator running another worktree's Metro and a binary that needs a native rebuild. Use when the user says "verify", "test it", "make sure it works", "check it on the simulator", "is it fixed?", "it still doesn't work", "my change doesn't show up", "Fast Refresh isn't working", "wrong Metro", "do I need to rebuild?", "run the flows", "before release", or whenever you are about to report a change as done.
 ---
 
 # Test loop

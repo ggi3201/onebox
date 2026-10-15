@@ -5,8 +5,8 @@
 **Get your app on the App Store.**
 
 Agent skills and plain guides that take an Expo / React Native app from idea to
-the App Store. If the app needs a backend, it runs on one cheap box.
-No AWS. No Kubernetes.
+the App Store: signing, TestFlight, the store page and App Review. Most apps
+need no server. If yours does, it can run on one cheap box.
 
 ![MIT license](https://img.shields.io/badge/license-MIT-blue)
 ![iOS only](https://img.shields.io/badge/platform-iOS-lightgrey)
@@ -47,7 +47,7 @@ only about that one thing. The full plan is in `PLAN.md` if you want it.
 ## Who it is for
 
 - **Yes:** a developer who has never shipped an iOS app, and wants the whole
-  road in one place: signing, TestFlight, App Review, an API, a landing page.
+  road in one place: signing, TestFlight, the store page and App Review.
 - **Yes:** someone who already ships, and wants the repeatable parts done the
   same way every time.
 - **Not yet:** someone who has never used a terminal. The skills explain each
@@ -110,20 +110,27 @@ codex plugin add <plugin>@onebox
 A plugin updates only when its version went up.
 [CHANGELOG.md](CHANGELOG.md) says what changed in each version.
 
-## The route
+## The road to the App Store
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/route-dark.png">
-  <img alt="How onebox fits together: your Mac runs your coding agent and every skill, builds the app and submits it to Apple, which delivers it to phones. Phones call your API through a Cloudflare tunnel into one box that runs the API, Postgres, staging, backups, Traefik and the landing page with pricing, privacy policy, support and terms. App Store Connect links to that landing page." src="docs/route-light.png">
-</picture>
+1. **Apple:** join the Apple Developer Program ($99 a year) and install Xcode.
+2. **TestFlight:** build on your own Mac, for free, and upload
+   (`ship-ios:expo-local-build`, `ship-ios:appstore-connect`).
+3. **Your phone:** a test build on your own iPhone, without TestFlight
+   (`ship-ios:ios-preview-build`).
+4. **Store page:** the icon, screenshots from real screens, and text that
+   search finds (`ship-ios:draw-app-icon`, `ship-ios:app-store-screenshots`,
+   `ship-ios:store-listing`).
+5. **App Review:** find what Apple will reject before Apple does, then submit
+   (`ship-ios:app-store-ready`, `ship-ios:appstore-connect`).
+6. **Updates:** a JavaScript fix without App Review, and every version after
+   the first (`ship-ios:eas-update`).
 
-Every skill runs in your coding agent on your Mac. The `box` skills reach your
-server over SSH. The landing page on the box holds the privacy policy, support
-and terms pages that App Store Connect and your paywall link to.
+Every skill runs in your coding agent on your Mac. A server is optional. If
+the app needs one, the `box` skills set it up on one machine over SSH.
 
 ## What is in the box
 
-15 skills in 4 plugins, and 30 guides. Install the `start` plugin first. It
+14 skills in 4 plugins, and 31 guides. Install the `start` plugin first. It
 tells you which of the others you need.
 
 | Plugin | Runs on | What it does | Skills |
@@ -148,7 +155,9 @@ tells you which of the others you need.
 
 ## How well tested is it
 
-onebox comes from shipping real apps, and I keep testing it on new ones. The
+I have shipped three iOS apps with this, and got each one through App Review.
+Getting people to download them is a different skill, and not one I have, so
+the kit does not teach marketing. I keep testing it on new apps. The
 latest runs built a new app from an empty folder with the skills and guides.
 Every problem they found became an issue and a fix. The three layouts (.NET
 API, Node API, no server) each ran end to end in the iOS Simulator.
