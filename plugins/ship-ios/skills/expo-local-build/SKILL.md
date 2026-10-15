@@ -76,6 +76,16 @@ Code signing needs the user's unlocked login keychain.
   `✔ Scheduled iOS submission` is. The `eas submit` exit
   code is not: the client can die afterwards while it polls. Do not resubmit.
   A second upload of the same build number is rejected as a duplicate.
+- **A new native module: check it is in the `.ipa`.** Typecheck, tests and
+  the JS bundle all pass without it. Most modules are linked into the app's
+  own binary, so search the binary, not the file list:
+  ```bash
+  d=$(mktemp -d); unzip -q build/<file>.ipa -d "$d"
+  strings "$d"/Payload/*.app/<app name> | grep -c <Module>   # 0 means it is missing
+  ```
+  `unzip -l` finds only modules that ship a `.bundle` or `.framework`
+  (RevenueCat does; expo-secure-store does not). A missing module crashes
+  the app or does nothing where it is called.
 - Confirm in App Store Connect, not in EAS output: use the `appstore-connect`
   skill (`asc.mjs builds`, then `asc.mjs wait <buildId>`).
 - **Never upload one build twice.** If an eas submit is still queued, a direct
