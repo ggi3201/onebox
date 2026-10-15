@@ -112,7 +112,8 @@ it with the user. This skill fills the fields the API allows.
 The skill does not set these. The user does them on the web, with the guide:
 the **App Privacy** answers and the **EU trader status** (the API cannot set
 them), the **price** (Free is fine) and the countries, the Paid Apps
-agreement, and adding a first subscription to the version. `review-status`
+agreement, and adding the first subscription to the version (one product
+only on the first submission; the rest after it is approved). `review-status`
 reads the price and the countries. Never guess the App Privacy answers. Read the
 app's code and SDKs with the user, and follow the guide.
 
