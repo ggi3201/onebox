@@ -228,7 +228,9 @@ yearly plan at level 1, or upgrades and downgrades run backwards.
 
 **iap-with-version**. The first subscription (or first IAP of each type) must
 be submitted with a new app version. Select it on the version page before
-submitting. Products stay "Missing Metadata" until a review screenshot of the
+submitting. On the first submission, select **one** product only: each one
+attached is reviewed with the build, and a problem with any of them sends the
+whole version back. The rest go to review on their own after it is approved. Products stay "Missing Metadata" until a review screenshot of the
 paywall is attached.
 
 **iap-reviewable** (2.1(b)). In-app purchases must be "complete, up-to-date,

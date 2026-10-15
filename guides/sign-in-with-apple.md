@@ -314,6 +314,45 @@ Apple allows two keys per primary App ID.
 This is a different key from the App Store Connect API key
 ([app-store-connect-api-key.md](app-store-connect-api-key.md)). They are not interchangeable.
 
+### 7. Move users to a new app
+
+Sometimes a second app takes over from the first: a rebuild, or one feature
+that grows into its own app. Users should keep their data without a new
+account and without a password.
+
+Apple makes this easy inside one developer team. The `sub` in the identity
+token is scoped to the **team**, not to the app. A user who signs in to your
+new app gets the same `sub` as in the old app, if both apps are in the same
+team. The hidden relay email is team-scoped too. In another team, the `sub` is
+different. Moving an app to another team has its own process, in Apple's
+TN3159.
+
+Checked 2026-10-15 at
+https://developer.apple.com/documentation/technotes/tn3159-migrating-sign-in-with-apple-users-for-an-app-transfer.
+
+The steps:
+
+1. **Accept both bundle IDs as the audience.** Each app puts its own bundle ID
+   in `aud`. Keep a list in the environment, for example
+   `APPLE_CLIENT_IDS=com.example.myapp,com.example.newapp`. With `jose`, pass
+   the array as `audience`. In .NET, set `ValidAudiences`. A token for any
+   other app is still refused. Token revocation (step 6) uses the client ID
+   of the app that made the token.
+2. **Find the account by `sub`, never by email.** The new app gets no email
+   and no name for a user who has signed in to the old app before (step 4).
+   An email match would then fail and create a second, empty account. The
+   `sub` match finds the old one. When both apps use one backend, this is the
+   whole move.
+3. **Add a per-user export and import.** When the two apps have separate
+   backends, the old API offers `GET /api/me/export`: the signed-in user's own
+   data as JSON. The old API accepts the new bundle ID (point 1), so the new
+   app can sign in to it with the same Apple account. It fetches the export
+   and posts it to its own API. No admin moves
+   data by hand, and each user decides when to move.
+
+The export also serves the user's right to get their own data, so it is
+useful even when no move is planned.
+
 ## Where the values go
 
 | Value | Secret? | Where |

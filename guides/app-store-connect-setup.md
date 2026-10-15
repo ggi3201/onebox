@@ -101,7 +101,9 @@ waits as "Missing Compliance" until you answer on its page.
 In your app, open the page for **Subscriptions** (or **In-App Purchases**):
 create a subscription group, then products with product IDs, durations and
 prices. The first subscription must be submitted together with an app
-version. Each product needs a review screenshot of your paywall.
+version. Submit only one product with that first version, and the rest after
+it is approved ([submit-for-review.md](submit-for-review.md)). Each product
+needs a review screenshot of your paywall.
 
 ### 8. The store page, and submit
 

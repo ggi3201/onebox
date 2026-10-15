@@ -96,6 +96,31 @@ it) gives each install a user id, but a reinstall gives a new
 one. Then the limits slow abuse down, and the app budget is the real
 backstop. Sign in with Apple makes the limits hold.
 
+### Paid plans
+
+A paid user can get a higher count than a free user. Read the user's tier on
+the server, from the entitlement your webhook stored
+([revenuecat.md](revenuecat.md)). Never from a flag the app sends.
+
+**A yearly buyer needs a yearly plan's allowance, not a monthly one.** The
+trap is an allowance that the webhook refills. RevenueCat sends `RENEWAL`
+once per billing period. On a yearly plan, that is once a year. Code that
+gives "100 calls" on `INITIAL_PURCHASE` and `RENEWAL` and resets them after a
+month leaves the yearly buyer with no AI from month two, until next year.
+
+- **Best: reset on your own clock.** The webhook writes only the tier and
+  the expiry date. The count resets by day (as in this guide) or by calendar
+  month, the same for monthly and yearly buyers. Then the plan's period does
+  not matter.
+- **If the webhook must grant the allowance,** size it by the product's
+  period. A yearly product gets 12 times the monthly allowance and a reset
+  date one year out. Read the period from the event's `product_id`. Keep a
+  daily or monthly cap as well, so one user cannot spend a year's allowance
+  in a week.
+
+Guard it with a test: a yearly buyer, 40 days after the purchase and with no
+new webhook event, can still make an AI call.
+
 ## Supabase
 
 ### 1. The usage table and the check

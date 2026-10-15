@@ -28,6 +28,11 @@ a guide: https://onebox.lokkesveen.com/guides/ai-consent/.
 
 ## start
 
+### 0.3.3 (2026-10-15)
+
+- `plan`: two optional items, share links and a Live Activity, with their
+  new guides.
+
 ### 0.3.2 (2026-10-15)
 
 - `new-app`: the new `AGENTS.md` tells the agent to keep `tasks/lessons.md`:
@@ -307,6 +312,13 @@ a guide: https://onebox.lokkesveen.com/guides/ai-consent/.
   `/start:new-app` makes a new app repo in the layout the kit expects.
 
 ## ship-ios
+
+### 0.2.3 (2026-10-15)
+
+- `store-listing`: a method to pick the search words (App Store suggestions,
+  who ranks for each phrase), not just fit them.
+- `app-store-ready`, `appstore-connect`: submit only one in-app purchase with
+  the first version, and the rest after it is approved.
 
 ### 0.2.2 (2026-10-15)
 

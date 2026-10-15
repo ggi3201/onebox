@@ -80,6 +80,8 @@ Skills read these from `~/.config/onebox/config.json`, or `.onebox.json` for thi
 - [ ] Get an LLM API key — guide: https://onebox.lokkesveen.com/guides/llm-api-key/ (raw: https://onebox.lokkesveen.com/guides/llm-api-key.md) <!-- guide:llm-api-key -->
 - [ ] The AI consent Apple asks for — guide: https://onebox.lokkesveen.com/guides/ai-consent/ (raw: https://onebox.lokkesveen.com/guides/ai-consent.md) <!-- guide:ai-consent -->
 - [ ] Ask for a rating at a good moment — guide: https://onebox.lokkesveen.com/guides/ask-for-a-rating/ (raw: https://onebox.lokkesveen.com/guides/ask-for-a-rating.md) <!-- guide:ask-for-a-rating -->
+- [ ] Optional: share links that open the app, and a share extension — guide: https://onebox.lokkesveen.com/guides/share-links/ (raw: https://onebox.lokkesveen.com/guides/share-links.md) <!-- guide:share-links -->
+- [ ] Optional: a Live Activity on the lock screen, for a timer or a delivery — guide: https://onebox.lokkesveen.com/guides/live-activities/ (raw: https://onebox.lokkesveen.com/guides/live-activities.md) <!-- guide:live-activities -->
 
 ## App Store Connect and builds
 

@@ -208,9 +208,15 @@ sign-in as required. An app with no accounts needs no demo account either.
 **Subscriptions.** The reviewer buys in the sandbox, with test money, in your
 production build. Make sure of three things:
 
-- the first subscription is attached to this version. On the version page,
-  in the section for in-app purchases and subscriptions, select it. Each
-  product needs its review screenshot of the paywall;
+- **only one** in-app purchase or subscription is attached to this version,
+  the first time. On the version page, in the section for in-app purchases
+  and subscriptions, select one product, for example the yearly plan. Each
+  product needs its review screenshot of the paywall. Every product you
+  attach is reviewed with the build, and a problem with any of them sends
+  the whole version back. Submit the other products after this one is
+  approved: from then on, they go to review on their own, without a new
+  build. Until then, the paywall must work when only that one product
+  loads;
 - a sandbox purchase unlocks the paid features in a production build.
   RevenueCat handles sandbox receipts for you. Your own server must accept
   them too;
@@ -277,7 +283,8 @@ Run the status once more. Fix every MISSING line. Check the CHECK lines on
 the web.
 
 On the version page, add the version for review, then submit it. You can
-also add a first subscription to the same submission there.
+also add the first subscription to the same submission there. Add one
+product only (see "Subscriptions" above).
 
 **With the skill:**
 
