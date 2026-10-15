@@ -644,6 +644,22 @@
       "needs": []
     },
     {
+      "id": "share-links",
+      "kind": "guide",
+      "phase": "features",
+      "title": "Optional: share links that open the app, and a share extension",
+      "nudge": "Share links",
+      "needs": []
+    },
+    {
+      "id": "live-activities",
+      "kind": "guide",
+      "phase": "features",
+      "title": "Optional: a Live Activity on the lock screen, for a timer or a delivery",
+      "nudge": "A Live Activity",
+      "needs": []
+    },
+    {
       "id": "app-store-connect-setup",
       "kind": "guide",
       "phase": "store",

@@ -128,8 +128,8 @@ An example. The median user costs 1.20 USD a month, the heavy user 5 USD:
 - **Price on the median user, not the heavy one.** A cost cap per user
   protects you from the heavy user ([hosted-ai-limits.md](hosted-ai-limits.md)).
   Without a cap, the median user pays for the heavy one.
-- **Make yearly clearly cheaper than 12 months.** About 40% off moves most
-  buyers to yearly. A yearly buyer pays up front and cancels less often.
+- **Make yearly clearly cheaper than 12 months of monthly.** A yearly buyer
+  pays up front and decides to stay only once a year.
 - **Give a free trial instead of a free AI allowance.** A 7-day trial on
   the yearly plan costs you one week of AI. A free allowance needs its own
   counter and reset, and it costs money forever. Apple gives each person one
