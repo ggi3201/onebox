@@ -12,7 +12,6 @@ const ORDER = [
   "domain",
   "cloudflare",
   "vps",
-  "uptime-alerts",
   "backend",
   "hosted-backend",
   "sign-in-with-apple",

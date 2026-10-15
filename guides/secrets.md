@@ -28,8 +28,7 @@ your other passwords.
   access belongs on your server, never in the app.
   `ship-ios:app-store-ready` checks the app for this.
 - **Staging gets its own values.** A staging bug must not be able to spend
-  production's money or sign tokens production accepts. `box:staging-env`
-  sets this up.
+  production's money or sign tokens production accepts.
 - **If a secret leaks, rotate it first.** Make a new key and revoke the old
   one. Cleaning git history comes after, because a pushed secret is already
   public.
@@ -136,7 +135,6 @@ account for each, so you can revoke one without breaking the others:
    `doppler secrets get NAME --plain -p <project> -c dev`.
 3. For the box and GitHub Actions, make a **service token** per config
    (`doppler configs tokens create`). A token for `stg` cannot read `prd`.
-   `box:staging-env` shows the exact steps.
 4. Set `"secrets": { "tool": "doppler", "doppler": { "project": "<project>", "config": "dev" } }`
    in the onebox config. Or start your agent with `doppler run -- claude`:
    then every secret is in its environment, and the skills need no config.

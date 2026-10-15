@@ -119,6 +119,34 @@ another bundle id is connected to your Metro.
   changes. When you remove the worktree, delete its simulator too:
   `xcrun simctl delete "$U"`. Some agent simulator tools ask the user to allow
   each new device once.
+- **No native build per worktree.** Start this worktree's Metro, then run
+  `scripts/dev-client.sh "$U" <port>` from the Expo app folder. It keys a
+  cache on the Expo fingerprint and the Xcode build
+  (`~/Library/Caches/onebox/dev-client/<bundle id>/`). A hit installs the
+  cached `.app`. A miss runs `expo run:ios --no-bundler` once and caches what
+  it installed. Then it launches with `--initialUrl http://localhost:<port>`,
+  which skips the "Open in ...?" prompt, so one cached build serves every
+  worktree's port. It keeps the last 3 builds per app.
+
+  Measured on 2026-10-14 (Xcode 26.6, Expo SDK 57 skeleton, iPhone 17 Pro,
+  iOS 26.5):
+
+  | | Time to a loaded app | Disk |
+  |---|---|---|
+  | New worktree, native build (no cache) | 3 to 5 min | a new simulator: about 2.6 GB |
+  | New worktree, cache hit, cloned simulator | about 1 min: `pnpm install` 4 s, clone 6 s, boot, install and launch 41 s, first bundle 5 s | the clone: about 250 MB written after its first boot; the worktree with `node_modules`: about 30 MB; the cache: 144 MB per build |
+
+  `du` counts a clone at its full size, because it cannot see what APFS
+  shares. Count the files written after the clone instead.
+
+  Dead ends, measured on Xcode 26 with the React Native prebuilt core, so
+  nobody retries them: DerivedData reused from another worktree path (full
+  rebuild, the paths are baked in), `USE_CCACHE=1` (Xcode never calls it),
+  Xcode's compilation cache across paths, one fixed build folder with branch
+  switches (`expo prebuild` and `pod install` force a full rebuild), and
+  symlinked paths. Never put build-cache settings in `app.json` or
+  `package.json`: the fingerprint hashes them, and the update runtime would
+  change.
 - **Do not stop a Metro or an API you did not start.** Check its project root
   first (the preflight prints it).
 - **A `dotnet watch` API needs `--non-interactive`.** Without it, a change

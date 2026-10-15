@@ -214,9 +214,9 @@ for some days. It stops every older build at once.
 
 Test the new API and the new app together before real users see them:
 
-1. Push the backend change to a `qa/**` branch. Skill: `box:staging-env`.
-   It deploys a second API and database on the same box, for example
-   `https://api-stg.example.com`. The migration runs there first.
+1. Deploy the backend change to a staging copy of the API, with its own
+   database and hostname (for example `https://api-stg.example.com`). The
+   migration runs there first.
 2. Build the new app as a preview build, pointed at staging, and install it
    on your phone. Skill: `ship-ios:ios-preview-build`.
 3. Use the main feature end to end.

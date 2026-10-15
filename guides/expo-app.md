@@ -173,7 +173,9 @@ A static `app.json` is enough for most apps. The parts this setup needs:
 - Each name in `plugins` is a package. Expo finds a plugin only in an
   installed package, so install each one before the first `npx expo config`
   or build: `npx expo install expo-apple-authentication expo-secure-store
-  expo-build-properties`. Without Sign in with Apple, leave out
+  expo-build-properties`. `expo install` adds each plugin to `app.json`
+  bare: replace that entry with the one above, so it is not there twice.
+  Without Sign in with Apple, leave out
   `usesAppleSignIn`, its plugin and its package.
 - `enableSceneSupport` (Expo SDK 57 and later) lets the app launch on iOS 27
   when you build with Xcode 27, the one the Mac App Store installs. Without it

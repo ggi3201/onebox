@@ -218,11 +218,13 @@ async function evaluate(c, ctx) {
     const t = c.timeout ?? TIMEOUT;
     const term = await terminalEnv();
     if (term.path) env.PATH = term.path;
-    let r = await run(c.run, { cwd: ctx.repo, env, timeout: t, stdout: !!c.version });
+    // From the home folder: in the repo, corepack answers with the repo's own
+    // pin (an older pnpm, or yarn), not the tool the user's terminal has.
+    let r = await run(c.run, { cwd: os.homedir(), env, timeout: t, stdout: !!c.version });
     if (term.path && r.code === 127) {
       // Not found where the user types. Is it found where this app runs?
       const { PATH: _, ...rest } = env;
-      const again = await run(c.run, { cwd: ctx.repo, env: rest, timeout: t });
+      const again = await run(c.run, { cwd: os.homedir(), env: rest, timeout: t });
       if (again.code === 0) return { status: "missing", why: "found for this app, but not in your own terminal", appOnly: true };
     }
     if (r.timedOut) return { status: "unknown", why: `the check took longer than ${t} s` };

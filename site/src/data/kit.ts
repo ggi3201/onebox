@@ -52,7 +52,6 @@ const TAGLINES: Record<string, string> = {
   "box-setup": "Takes a fresh VPS to a safe, working baseline in one go.",
   "expose-service": "Puts a service on the internet at your domain, with no open ports.",
   "new-landing-page": "A self-hosted landing page, or your Next.js site moved off Vercel.",
-  "staging-env": "A second backend for test branches, with its own database.",
   "test-loop": "Lint, types, tests, then the simulator. Proof before “done”.",
 };
 

@@ -3,8 +3,7 @@
 Runs on: your browser (the Cloudflare dashboard). `box:box-setup` does the
 tunnel part on the box.
 
-Used by: `box:box-setup`, `box:expose-service`, `box:new-landing-page`,
-`box:staging-env`, and the "Protect the API" part of [backend.md](backend.md).
+Used by: `box:box-setup`, `box:expose-service`, `box:new-landing-page`, and the "Protect the API" part of [backend.md](backend.md).
 
 Cloudflare runs DNS for your domain and sits in front of your box. The
 Cloudflare Tunnel (`cloudflared`) dials out from the box to Cloudflare, so no

@@ -106,3 +106,14 @@ node "$plan" write --repo "$r" --answers '{"backend":"hosted"}' >/dev/null 2>&1
 hasnt "$(cat "$r/PLAN.md")" "AI needs a server" "new answer"
 hasnt "$(cat "$r/PLAN.md")" "Kept from your old plan" "new answer"
 echo "ok: conflicts in questions, write and PLAN.md"
+
+# Tool checks run outside the repo: in it, corepack answers with the repo's own
+# pin (an older pnpm, or yarn), not the pnpm the user's terminal has.
+r="$tmp/pinned"; mkdir -p "$r"; echo '{"packageManager":"yarn@1.22.22"}' > "$r/package.json"
+st="$(node --input-type=module -e "
+import { checkNeeds } from '$here/plugins/start/skills/plan/scripts/needs.mjs';
+const N = new Map([['t', { id: 't', label: 't', check: { run: 'test ! -f package.json' } }]]);
+const out = await checkNeeds([{ ids: ['t'] }], N, { repo: process.argv[1], config: {} });
+console.log(JSON.stringify(out));" "$r")"
+has "$st" '"status":"ok"' "tool check cwd"
+echo "ok: tool checks run outside the repo"

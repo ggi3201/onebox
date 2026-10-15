@@ -22,7 +22,7 @@ type Route = {
 };
 
 // Skills drawn on routes, and the one skill that belongs on the phone.
-const ON_ROUTES = ["expo-local-build", "appstore-connect", "expose-service", "box-setup", "staging-env", "new-landing-page"];
+const ON_ROUTES = ["expo-local-build", "appstore-connect", "expose-service", "box-setup", "new-landing-page"];
 const AT_PHONE = ["ios-preview-build"];
 const atMac = SKILLS.filter((s) => s.plugin !== "box" && s.plugin !== "start" && !ON_ROUTES.includes(s.name) && !AT_PHONE.includes(s.name));
 
@@ -102,7 +102,7 @@ const ROUTES: Route[] = [
   { id: "r4", from: "cloudflare", to: "box", d: `M890 ${555 + DY} H745`, verb: "tunnel",
     skills: ["expose-service"], label: { x: 817.5, y: 555 + DY, anchor: "middle" } },
   { id: "r5", from: "mac", to: "box", d: `M165 ${mac.y + mac.h} V${480 + DY}`, verb: "ssh + git push",
-    skills: ["box-setup", "staging-env"], label: { x: 179, y: (mac.y + mac.h + 480 + DY) / 2, anchor: "start" } },
+    skills: ["box-setup"], label: { x: 179, y: (mac.y + mac.h + 480 + DY) / 2, anchor: "start" } },
   { id: "r6", from: "apple", to: "landing", d: `M600 280 V${585 + DY}`, verb: "privacy + support urls",
     skills: ["new-landing-page"], label: { x: 586, y: 385 + DY / 2, anchor: "end" } },
   { id: "r7", from: "outside", to: "box", d: `M890 ${735 + DY} H745`, verb: "webhooks",

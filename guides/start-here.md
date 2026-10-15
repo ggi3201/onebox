@@ -213,8 +213,7 @@ feature, and your server agrees that the user is paid.
 ### Phase 7: builds
 
 1. **Preview build on your phone.** A release build that installs directly on
-   registered devices, pointed at your API (staging, once you have
-   `box:staging-env`). Skill:
+   registered devices, pointed at your API. Skill:
    `ship-ios:ios-preview-build`.
 2. **TestFlight.** A production build, made on your Mac and uploaded to App
    Store Connect. Guide: [expo-eas.md](expo-eas.md). Skills: `ship-ios:expo-local-build`,
@@ -273,10 +272,8 @@ Done when: the app is approved and released.
 
 ### Phase 10: after launch
 
-- **Change things safely.** Test a backend change on a staging copy before
-  it reaches your users. Skills: `box:staging-env` (a second API and database
-  on the same box) and `ship-ios:ios-preview-build` (a phone build pointed at
-  it).
+- **Change things safely.** Test a change on a phone build before it reaches
+  your users. Skill: `ship-ios:ios-preview-build`.
 - **A landing page** for the app, on the same box. Skill:
   `box:new-landing-page`.
 - **Keep the box healthy.** About 15 minutes a month, and an agent can do it
@@ -290,8 +287,7 @@ Done when: the app is approved and released.
   - Make sure last night's backup ran (`onebox-backup --list`). Restore one
     once, so you know it works.
   - Watch the disk (`df -h`). Docker images and logs grow.
-- **See crashes, and know when the box is down.** Guides:
-  [crash-reports.md](crash-reports.md) and [uptime-alerts.md](uptime-alerts.md).
+- **See crashes.** Guide: [crash-reports.md](crash-reports.md).
 - **Push notifications,** when the app needs them. Guide:
   [push-notifications.md](push-notifications.md).
 - **Ship an update.** Version 1.1 and every release after it: a build or an

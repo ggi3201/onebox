@@ -106,7 +106,7 @@
         },
         {
           "id": "import",
-          "label": "Turn a shared link or page into data (recipes, products, …)"
+          "label": "Turn a shared link or page into data (recipes, products, \u2026)"
         }
       ],
       "default": []
@@ -488,19 +488,6 @@
       }
     },
     {
-      "id": "uptime-alerts",
-      "kind": "guide",
-      "phase": "box",
-      "title": "Get an alert when the box or the API is down",
-      "nudge": "Alerts when the box is down",
-      "needs": [],
-      "when": {
-        "backend": [
-          "box"
-        ]
-      }
-    },
-    {
       "id": "backend",
       "kind": "guide",
       "phase": "backend",
@@ -541,24 +528,6 @@
         "plugin-box",
         "box-ssh",
         "cloudflare-token"
-      ],
-      "when": {
-        "backend": [
-          "box"
-        ]
-      }
-    },
-    {
-      "id": "staging-env",
-      "kind": "skill",
-      "plugin": "box",
-      "phase": "backend",
-      "title": "A staging API for test builds",
-      "nudge": "A test copy of your API",
-      "needs": [
-        "plugin-box",
-        "box-ssh",
-        "gh-login"
       ],
       "when": {
         "backend": [

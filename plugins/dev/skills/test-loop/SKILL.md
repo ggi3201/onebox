@@ -54,6 +54,11 @@ It checks, read-only:
 After every native build (`npx expo run:ios`), run it once with
 `--mark-built`. Later runs then compare against that build.
 
+In a new worktree, get the dev client with `<skill-dir>/scripts/dev-client.sh
+<udid> <port>` from the Expo app folder, not a rebuild. It installs a cached
+build with the same fingerprint, or builds once and caches it
+(`references/preflight.md`, "Several agent sessions at once").
+
 Fix every FAIL before you look at the bug. Read `references/preflight.md` for
 the fixes, the reload-or-rebuild table, one Metro port per app and per worktree, and the
 traps from real sessions. To prove the bundle is yours, change a visible
