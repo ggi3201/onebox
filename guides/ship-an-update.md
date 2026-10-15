@@ -305,6 +305,59 @@ puts the old API back. A migration that only added things (expand) needs no
 undo. A migration that dropped data needs the backup. That is why the drop
 waits for a later release.
 
+### 9. Know what ships how
+
+Once a few releases are out, it is easy to lose track of which fix reaches
+users by which road. Before each release, make a short release-train report
+from git. It has three parts.
+
+**The next build.** Every commit on `main` since the tag of the last build.
+Mark the ones that touch native inputs. They reach users only in a new build:
+
+```bash
+last=$(git tag -l 'v*' --sort=-creatordate | head -1)
+native='^(app\.json|app\.config\.[jt]s|package\.json|.*lock.*|eas\.json|fingerprint\.config\.js|plugins/|modules/|widgets/)'
+git log --format='%H %h %s' "$last..main" | while read -r sha short subject; do
+  git diff-tree --no-commit-id --name-only -r "$sha" | grep -qE "$native" \
+    && echo "$short $subject [native]" || echo "$short $subject"
+done
+```
+
+Fit the `native` pattern to your repo. In a monorepo, add the app's folder
+in front of each path.
+
+**What waits for an update.** A fix on `main` that must also reach a build
+users already have gets a trailer, the last line of its commit message:
+
+```
+Fix the empty list after sign-in
+
+OTA: 1.1.0
+```
+
+List the commits marked for `1.1.0` that its release branch (step 2) does not
+have yet:
+
+```bash
+v=1.1.0
+git log --reverse --cherry-pick --right-only --format='%H %(trailers:key=OTA,valueonly,separator=%x20)' \
+  "release/$v...main" | awk -v v="$v" '$2 == v { print $1 }'
+```
+
+To ship them, switch to `release/1.1.0` and `git cherry-pick -x` each one.
+`-x` writes the source commit into the message, so you can see later what
+went out. Then check the runtime version is still the one of the build (step
+1). If it changed, the fix needs a new build. Publish the update from the
+release branch only.
+
+**The backend not yet deployed.** If you deploy the API by hand, tag each
+deploy (`api-2026-10-15`). List the backend commits on `main` since the last
+`api-*` tag. Deploy them before an app update that needs them (step 3). If
+every push to `main` deploys, this part is always empty.
+
+Keep it as a short script in the repo, and have your agent run it before it
+answers "what is in the next release?".
+
 ## Where the values go
 
 | Value | Where |

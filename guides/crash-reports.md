@@ -275,6 +275,55 @@ was in memory, in the URL or in the log. Rules:
 - **No session replay** unless you need it and have checked its masking. It is
   off unless you add it.
 
+## In-app bug reports for testers
+
+A crash report covers what threw. Most bugs do not throw: a wrong number, a
+button under the keyboard, a screen that does not refresh. A tester sees them,
+and a message like "the list was wrong" is hard to act on. Give admins and
+testers a way to send a full report from inside the app, in two taps.
+
+The pattern:
+
+1. **Open it.** The tester shakes the phone, or taps a "Report a bug" button.
+   Listen to the accelerometer (`expo-sensors`) and ask for several strong
+   jolts within about a second, so a bump or a dropped phone does not count.
+2. **Take the screenshot first.** Capture the screen
+   (`react-native-view-shot`) before the report sheet opens, or the
+   screenshot shows the sheet.
+3. **Collect the context.** The app keeps small rolling logs from the start:
+   - the current screen and the last 15 or so screens, from the navigation
+     container;
+   - the last 30 or so API calls: method, path, status and time in ms, from a
+     wrapper around `fetch`; no bodies and no headers;
+   - the last console warnings and errors;
+   - the app version and build number, the EAS Update id, channel and runtime
+     version (`expo-updates`), and the API URL;
+   - the device model, iOS version, locale and time zone (`expo-device`).
+4. **Add a note.** The tester types it, or speaks it with the keyboard's
+   dictation key.
+5. **Send it to your own API.** `POST /api/bug-reports` with the report and
+   the screenshot as base64.
+6. **The API makes the issue.** It checks that the user may report, uploads
+   the screenshot and creates an issue in your tracker (GitHub Issues, Linear,
+   Jira) with all the fields. The tracker's API key lives only on the server,
+   in your secret store ([secrets.md](secrets.md)). The app never sees it.
+
+Rules:
+
+- **Admins and testers only.** Turn it on from a flag on the user record that
+  the server sets. The endpoint checks the same flag, so a public user cannot
+  call it.
+- **The same privacy rules as above.** Log paths, not query strings, and no
+  request or response bodies. Identify the user by your own id.
+- **Draw the sheet above everything.** Native modals and sheets sit above
+  normal React views. Use a full-window overlay (`FullWindowOverlay` in
+  `react-native-screens`) so the report opens over them too.
+- **It needs a new build.** `expo-sensors` and `react-native-view-shot` are
+  native modules.
+
+Keep it as a small module in the app and one endpoint in the API. It is not
+worth a paid service while your testers are a handful of people.
+
 ## Product analytics (only if you need it)
 
 Crash reports tell you what broke. Analytics tell you what people do: which

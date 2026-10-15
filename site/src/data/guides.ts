@@ -18,6 +18,7 @@ const ORDER = [
   "revenuecat",
   "push-notifications",
   "share-links",
+  "live-activities",
   "ask-for-a-rating",
   "app-store-connect-setup",
   "app-store-connect-api-key",
