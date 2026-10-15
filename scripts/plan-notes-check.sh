@@ -71,4 +71,19 @@ node "$plan" write --answers '{"stage":"idea"}' --repo "$tmp/conv" --convert >/d
 cp "$tmp/conv/PLAN.md" "$tmp/converted.md"
 out="$(node "$plan" write --repo "$tmp/conv" | head -n 1)"
 case "$out" in *": unchanged."*) echo "ok: converted plan unchanged" ;; *) echo "convert: expected \"unchanged\", got: $out"; diff -u "$tmp/converted.md" "$tmp/conv/PLAN.md"; fail=1 ;; esac
+# An item whose skill left the kit: dropped when untouched, kept when ticked.
+mkdir -p "$tmp/gone"
+node "$plan" write --answers '{"stage":"idea"}' --repo "$tmp/gone" >/dev/null
+node - "$tmp/gone/PLAN.md" <<'JS'
+const fs = require("fs"), f = process.argv[2];
+const lines = fs.readFileSync(f, "utf8").split("\n");
+const i = lines.findIndex((l) => /^- \[[ x]\] .*<!-- (guide|skill):\S+ -->$/.test(l));
+lines.splice(i + 1, 0, "- [ ] An old step — skill: /dev:old-skill <!-- skill:dev/old-skill -->",
+  "- [x] A done old step — skill: /dev:done-skill <!-- skill:dev/done-skill -->");
+fs.writeFileSync(f, lines.join("\n"));
+JS
+node "$plan" write --repo "$tmp/gone" >/dev/null
+if grep -q "old-skill" "$tmp/gone/PLAN.md"; then echo "gone: an untouched item of a removed skill was kept"; fail=1
+elif ! grep -q "done-skill" "$tmp/gone/PLAN.md"; then echo "gone: a ticked item of a removed skill was dropped"; fail=1
+else echo "ok: removed skills dropped unless ticked"; fi
 exit "$fail"
