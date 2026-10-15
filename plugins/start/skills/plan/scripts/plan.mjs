@@ -504,11 +504,14 @@ function buildPlan({ readonly = false } = {}) {
   }
 
   // Anything left: old items that no longer fit (ticked, edited or with notes), and orphan text.
+  // An untouched item whose key left the catalog (its skill or guide is gone) is
+  // dropped: its text matches no current item, so it would look hand-written forever.
   const kept = [];
+  const inCatalog = new Set(catalog.items.map(keyOf));
   for (const [key, it] of parsed.items) {
     if (newKeys.has(key)) continue;
     const notes = blocksFor((b) => b.anchor.type === "item" && b.anchor.key === key).flatMap(userLines);
-    if (it.ticked || notes.length || !staticLooksGenerated(it.body)) kept.push(it.line, ...notes);
+    if (it.ticked || notes.length || (inCatalog.has(key) && !staticLooksGenerated(it.body))) kept.push(it.line, ...notes);
   }
   kept.push(...blocksFor(() => true).flatMap(userLines));
   if (kept.length) out.push("", KEPT, "", KEPT_INTRO, "", ...kept);

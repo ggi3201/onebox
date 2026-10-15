@@ -28,6 +28,12 @@ a guide: https://onebox.lokkesveen.com/guides/ai-consent/.
 
 ## start
 
+### 0.3.4 (2026-10-15)
+
+- `plan`: a step whose skill or guide left the kit drops out of an old plan,
+  unless you ticked it or wrote notes under it. The Cloudflare step is ticked
+  when the config has `box.domain` and `box.tunnel`.
+
 ### 0.3.3 (2026-10-15)
 
 - `plan`: two optional items, share links and a Live Activity, with their
