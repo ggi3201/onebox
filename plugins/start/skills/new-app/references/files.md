@@ -643,13 +643,7 @@ root one, and it has `test`, not `test:mobile`. So the last `mobile` step is:
 
 ## `AGENTS.md`
 
-Start with the block for this layout. Put the test-loop block under it. Both
-layouts end their block with these lines:
-
-```markdown
-- Lessons: read `tasks/lessons.md` before you start. After the user corrects
-  you, add the lesson there in one or two lines, as a rule.
-```
+Start with the block for this layout. Put the test-loop block under it.
 
 With an API in the repo:
 
@@ -676,6 +670,8 @@ With an API in the repo:
   Sign-in, refresh and sign-out routes take the stricter `auth` limit. The
   rest of that section (AI quotas, SSRF, tokens, logs) comes with the
   feature that needs it.
+- Lessons: read `tasks/lessons.md` before you start. After the user corrects
+  you, add the lesson there in one or two lines, as a rule.
 ```
 
 Hosted backend or no server. The template's `AGENTS.md` is already at the
@@ -693,6 +689,8 @@ root, so put this block at its top:
 - `ios/` and `android/` are generated. Change `app.json` or a config plugin,
   then rebuild.
 - All checks: `pnpm check` (typecheck, lint, tests).
+- Lessons: read `tasks/lessons.md` before you start. After the user corrects
+  you, add the lesson there in one or two lines, as a rule.
 ```
 
 With a hosted backend, change the first line to: "The Expo app is the repo

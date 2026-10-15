@@ -311,7 +311,7 @@ a guide: https://onebox.lokkesveen.com/guides/ai-consent/.
 ### 0.2.2 (2026-10-15)
 
 - `expo-local-build`: after adding a native module, check that it is in the
-  `.ipa` with `unzip -l`.
+  `.ipa`, by searching the app binary.
 
 ### 0.2.1 (2026-10-14)
 

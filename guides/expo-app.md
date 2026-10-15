@@ -457,6 +457,13 @@ log must show the request.
 - **"Missing Compliance" on every TestFlight build.** Add
   `ITSAppUsesNonExemptEncryption: false` (if it is true for your app) and
   build again. For the build already uploaded, use `ship-ios:appstore-connect`.
+- **Photo uploads fail with "Unsupported FormDataPart implementation"
+  (Expo SDK 57 and later).** Expo's own `fetch` replaced React Native's, and
+  it cannot send form-data parts like `{ uri, name, type }`. Set
+  `EXPO_PUBLIC_USE_RN_FETCH=true` in every build profile's `env` in
+  `eas.json`, and in `.env` for the dev client. It goes into the JS bundle,
+  so restart Metro with `--clear` after you change it. Code that streams can
+  still import `expo/fetch` directly.
 - **A bold or light word shows in the system font.** A `fontWeight` on a
   custom font falls back to San Francisco. Load each weight as its own font,
   and set `fontFamily` to it.
