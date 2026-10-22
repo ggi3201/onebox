@@ -2,6 +2,7 @@
 import type { APIRoute } from "astro";
 import { GUIDES } from "../data/guides";
 import { PLUGINS, SKILLS, REPO, REPO_SLUG, OTHERS } from "../data/kit";
+import { SIZES, CHECK_PRICE, UPDATE_PRICE } from "../data/help";
 
 export const GET: APIRoute = ({ site }) => {
   const base = site!.origin;
@@ -25,6 +26,10 @@ export const GET: APIRoute = ({ site }) => {
     "- The landing page holds pricing, privacy policy, support and terms. App Store Connect and the paywall link to it.",
     "- Your Mac sets up the box over SSH; a git push deploys. RevenueCat (optional) sends webhooks to the API.",
     "- The box needs about 15 minutes of care a month (updates, the box check, backups), which an agent can do. It is one point of failure: bigger apps, sensitive data or a team need a larger setup.",
+    "",
+    "## Paid help",
+    "",
+    `- [Get your Expo app through App Review](${base}/help/): the author gets Expo apps built with AI tools through App Review, on the customer's own Apple account. Free first answer in writing. ${CHECK_PRICE} App Review check: a fix list and a fixed quote within 48 hours, counted toward the job within 14 days. Sizes: ${SIZES.map((s) => `${s.name} ${s.price}`).join(", ")}. Update pass ${UPDATE_PRICE} per release. No approval promise; Apple decides. iOS only.`,
     "",
     "## Guides",
     "",
