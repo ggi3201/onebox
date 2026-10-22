@@ -84,10 +84,10 @@ export const skillsFor = (plugin: string) => SKILLS.filter((s) => s.plugin === p
 
 // Apps shipped with this setup. Proof, not decoration.
 export const APPS = [
-  { name: "Foodie", what: "Recipes from any reel, turned into a cook mode.", status: "On the App Store", url: "https://apps.apple.com/app/id6757007757" },
-  { name: "Thraed", what: "A digital closet with AI outfit help.", status: "On the App Store", url: "https://apps.apple.com/us/app/thraed/id6757984436" },
-  { name: "Chewable", what: "The first one. A fitness app, 2019 onwards.", status: "On the App Store", url: "https://apps.apple.com/app/chewablefit/id6740989274" },
-  { name: "Lift", what: "A strength log that feels native. Built in eight days.", status: "In TestFlight", url: null },
+  { name: "Foodie", site: "https://foodie.chewable.fit", what: "Recipes from any reel, turned into a cook mode.", status: "On the App Store", url: "https://apps.apple.com/app/id6757007757" },
+  { name: "Thraed", site: "https://thraed.chewable.fit", what: "A digital closet with AI outfit help.", status: "On the App Store", url: "https://apps.apple.com/us/app/thraed/id6757984436" },
+  { name: "Chewable", site: "https://chewable.app", what: "The first one. A fitness app, 2019 onwards.", status: "On the App Store", url: "https://apps.apple.com/app/chewablefit/id6740989274" },
+  { name: "Lift", site: "https://lift.chewable.fit", what: "A strength log that feels native. Built in eight days.", status: "In TestFlight", url: null },
 ];
 
 // Skills by other people that work well next to these. Links only; each has its own licence.

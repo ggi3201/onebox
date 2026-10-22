@@ -241,12 +241,13 @@ const mailto =
           <p class="about-links">
             <a href="mailto:geir@lokkesveen.com">geir@lokkesveen.com</a>
             <a href="https://github.com/ggi3201">GitHub ↗</a>
+            <a href="https://chewable.app">My apps: chewable.app ↗</a>
           </p>
         </div>
         <ul class="apps">
           {APPS.map((a) => (
             <li>
-              <span class="app-name">{a.name}</span>
+              <a class="app-name" href={a.site}>{a.name}</a>
               <span class="app-what">{a.what}</span>
               {a.url
                 ? <a class="app-status" href={a.url}>{a.status} ↗</a>
@@ -421,6 +422,8 @@ const mailto =
   .apps { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--ink); }
   .apps li { display: grid; grid-template-columns: minmax(120px, 220px) 1fr auto; gap: 8px 24px; align-items: baseline; padding: 18px 0; border-bottom: 1px solid var(--rule); }
   .app-name { font-family: var(--display); font-stretch: 125%; font-weight: 800; font-size: clamp(1.4rem, 2.6vw, 2rem); letter-spacing: -0.02em; }
+  a.app-name { color: inherit; text-decoration: none; }
+  a.app-name:hover { text-decoration: underline; text-underline-offset: 4px; }
   .app-what { color: var(--ink-2); }
   .app-status { font-family: var(--mono); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; }
   .app-status.soon { color: var(--ink-3); }

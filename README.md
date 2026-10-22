@@ -166,6 +166,19 @@ Not tested yet: a clean Mac with nothing installed, and a person who is new to
 all of it. [docs/clean-user-test.md](docs/clean-user-test.md) is the script
 for that. If you try it, tell me where you got stuck.
 
+## Built with onebox
+
+My own apps ship with these skills and guides:
+
+- [Foodie](https://foodie.chewable.fit): save recipes from TikTok, Instagram
+  and YouTube, plan the week and shop by aisle. On the App Store.
+- [Thraed](https://thraed.chewable.fit): a digital closet with AI try-on and
+  colour analysis. On the App Store.
+- [Lift](https://lift.chewable.fit): a strength log with an AI coach. In
+  TestFlight.
+
+All of them are on [chewable.app](https://chewable.app).
+
 ## Contributing and problems
 
 A skill or guide wrong or unclear? [Open an issue](https://github.com/ggi3201/onebox/issues/new?template=dogfood.md).
