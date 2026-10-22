@@ -2,7 +2,7 @@
 import type { APIRoute } from "astro";
 import { GUIDES } from "../data/guides";
 
-const PAGES = ["/", "/guides/", "/example-plan/", "/changelog/"];
+const PAGES = ["/", "/help/", "/guides/", "/example-plan/", "/changelog/"];
 
 export const GET: APIRoute = ({ site }) => {
   const base = site!.origin;

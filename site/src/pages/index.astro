@@ -41,13 +41,6 @@ const tested = [
 
 const count = SKILLS.length;
 const n = (k: number, word: string) => `${k} ${word}${k === 1 ? "" : "s"}`;
-const mailto =
-  "mailto:geir@lokkesveen.com?subject=" +
-  encodeURIComponent("Get my app live") +
-  "&body=" +
-  encodeURIComponent(
-    "The app (link or repo):\n\nWhat works now:\n\nWhere I am stuck:\n\nTestFlight or the App Store:\n\nWhen I want it live:\n",
-  );
 ---
 
 <Base
@@ -68,7 +61,7 @@ const mailto =
           </p>
           <div class="hero-actions">
             <a class="btn" href="#start">Start in three steps <span aria-hidden="true">↓</span></a>
-            <a class="btn ghost" href="#help">Or ask me for help</a>
+            <a class="btn ghost" href="/help/">Or ask me for help</a>
           </div>
         </div>
 
@@ -288,20 +281,9 @@ const mailto =
           <h2 class="display h2">I can help you get it live.</h2>
         </div>
         <div class="help-body">
-          <p>
-            I help you get your Expo app onto TestFlight and submitted to App Review. Apple makes the final
-            call on approval. You keep your own Apple account
-            and your own server. I set them up with you and hand them over.
-          </p>
-          <ol class="how">
-            <li><strong>You write.</strong> Send a link to the app or the repo, and where you are stuck.</li>
-            <li><strong>I quote.</strong> One fixed price for the whole job, before any work starts.</li>
-            <li><strong>We ship.</strong> I do the work on your accounts, and you get notes on every step.</li>
-          </ol>
-          <p class="small">
-            The first three launches get a reduced price, in return for a short case study.
-          </p>
-          <a class="btn" href={mailto}>Write to me <span aria-hidden="true">→</span></a>
+          <p>I get Expo apps through App Review. You keep your Apple account.</p>
+          <p>You know the price before I start.</p>
+          <a class="btn" href="/help/">See how pricing works <span aria-hidden="true">→</span></a>
         </div>
       </div>
     </section>
@@ -466,14 +448,6 @@ const mailto =
   .signal { color: var(--signal); margin: 0 0 14px; }
   .help-body p { margin: 0 0 16px; max-width: 42ch; font-size: 1.2rem; }
   .help-body .btn { margin-top: 10px; }
-  .how { margin: 0 0 18px; padding: 0; list-style: none; counter-reset: how; max-width: 42ch; }
-  .how li { counter-increment: how; position: relative; padding: 10px 0 10px 40px; border-top: 1px solid var(--rule); font-size: 1.08rem; }
-  .how li::before {
-    content: counter(how); position: absolute; left: 0; top: 10px;
-    display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%;
-    border: 2px solid var(--signal); color: var(--signal); font-family: var(--display); font-weight: 800; font-size: 0.85rem;
-  }
-  .help-body .small { font-size: 1rem; color: var(--ink-2); }
 
   /* about */
   .about { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px 32px; align-items: end; margin: 0 0 clamp(24px, 4vw, 40px); }

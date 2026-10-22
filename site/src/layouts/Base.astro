@@ -5,7 +5,7 @@ import { REPO } from "../data/kit";
 interface Props {
   title: string;
   description: string;
-  section?: "home" | "guides";
+  section?: "home" | "guides" | "help";
 }
 const { title, description, section = "home" } = Astro.props;
 // Shared links need absolute URLs. The image is docs/social-preview.png, copied to public/.
@@ -63,7 +63,7 @@ const imageAlt = "onebox: Get your app on the App Store. The route from your Mac
           <a href="/#route">Road</a>
           <a href="/#contents">In the box</a>
           <a href="/guides/" aria-current={section === "guides" ? "page" : undefined}>Guides</a>
-          <a href="/#help">Help</a>
+          <a href="/help/" aria-current={section === "help" ? "page" : undefined}>Help</a>
         </nav>
       </div>
     </header>

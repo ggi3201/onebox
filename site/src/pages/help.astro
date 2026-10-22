@@ -1,0 +1,472 @@
+---
+import Base from "../layouts/Base.astro";
+import { APPS, REPO } from "../data/kit";
+import {
+  SIZES, FIRST_JOBS, FIRST_JOBS_LEFT, FIRST_JOBS_DISCOUNT, CHECK_PRICE, UPDATE_PRICE, ASK_MAIL, CHECK_MAIL,
+} from "../data/help";
+
+// The four questions of the size picker. The script below maps the answers to a size.
+const questions = [
+  { id: "rejected", text: "Was it rejected by Apple already?" },
+  { id: "login", text: "Do people log in?" },
+  { id: "payments", text: "Does it take payments or subscriptions?" },
+  { id: "wrapper", text: "Is it a website inside an app wrapper?" },
+];
+
+const shipped = ["Thraed", "Foodie", "Lift"].map((name) => {
+  const app = APPS.find((a) => a.name === name);
+  if (!app) throw new Error(`kit.ts has no app "${name}"`);
+  return app;
+});
+
+const promise = [
+  "A fix plan within 48 hours.",
+  "Your Apple account stays yours. You stay Account Holder. I join by invitation, with the lowest role that works. You remove me at hand-over. I never ask for your Apple ID password.",
+  "One free re-fix of the same rejection reason within 30 days.",
+];
+const dont = [
+  "I do not promise approval. Apple decides.",
+  "No Android, no web wrappers, and no Guideline 4.3 spam cases.",
+  "No security audit.",
+];
+const status = [
+  { tag: "Done", yes: true, text: "My own apps through TestFlight and App Review, with the same skills I use for you." },
+  { tag: "Done", yes: true, text: "The skills and guides are open, so you can read every step I take." },
+  { tag: "Not yet", yes: false, text: "Paid jobs for other people. The first jobs are also the first real test with people who are new to all of it." },
+];
+const faq = [
+  {
+    q: "Why “from” prices and not one price?",
+    a: `Apps differ a lot. Two apps that look the same can need very different work. The ${CHECK_PRICE} check turns “it depends” into a fixed number before you pay for the work.`,
+  },
+  {
+    q: "What if Apple rejects it again?",
+    a: "Two rejection rounds are included. After that, I re-fix the same reason once more for free within 30 days. A new reason gets a quote first.",
+  },
+  {
+    q: "Do I pay VAT?",
+    a: "Prices are in USD for customers outside Norway, where no Norwegian VAT applies. Customers in Norway get a quote in NOK with all taxes included.",
+  },
+  {
+    q: "Can I cancel?",
+    a: "If you buy as a private person in the EU or EEA, you have 14 days to cancel. If you ask me to start inside those 14 days, you pay for the work done until you cancel, and the right ends when the job is done.",
+  },
+  {
+    q: "How do I pay?",
+    a: `By invoice from Chewable AS. Half at the start, half when the app is submitted. The ${CHECK_PRICE} check is paid up front.`,
+  },
+];
+---
+
+<Base
+  title="Get your Expo app through App Review · onebox"
+  description="I get Expo apps built with AI tools through App Review. You keep your Apple account. Fixed prices from $149, set before I start."
+  section="help"
+>
+  <main>
+    <!-- ============ HERO ============ -->
+    <section class="hero">
+      <div class="wrap">
+        <p class="kicker">App Review help · Expo · iOS</p>
+        <h1 class="display hero-title"><span>Your app works.</span> <span>Apple is the</span> <span>hard part.</span></h1>
+        <p class="lede">
+          I get Expo apps built with AI tools (Claude Code, Cursor, Rork, Bolt) through App Review.
+          You keep your Apple account. You know the price before I start.
+        </p>
+        <div class="actions">
+          <a class="btn" href={ASK_MAIL}>Ask where you’re stuck <span aria-hidden="true">→</span></a>
+          <a class="btn ghost" href="#price">Find your price <span aria-hidden="true">↓</span></a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ HOW THE PRICE IS SET ============ -->
+    <section id="how" class="band">
+      <div class="wrap">
+        <header class="section-head">
+          <h2 class="display h2">How the price is set</h2>
+          <p class="muted">You never pay for work without a number first.</p>
+        </header>
+        <ol class="steps">
+          <li>
+            <span class="step-n" aria-hidden="true">1</span>
+            <div>
+              <h3>Free answer</h3>
+              <p>Tell me where you’re stuck. I reply in writing.</p>
+            </div>
+          </li>
+          <li>
+            <span class="step-n" aria-hidden="true">2</span>
+            <div>
+              <h3>App Review check, {CHECK_PRICE}</h3>
+              <p>
+                You get a fix list and a fixed quote within 48 hours. The {CHECK_PRICE} counts toward the job if you
+                go ahead within 14 days. <a href={CHECK_MAIL}>Book the {CHECK_PRICE} check</a>.
+              </p>
+            </div>
+          </li>
+          <li>
+            <span class="step-n" aria-hidden="true">3</span>
+            <div>
+              <h3>Fixed price</h3>
+              <p>You pay half at the start and half when the app is submitted.</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ============ PICKER + SIZES ============ -->
+    <section id="price" class="band">
+      <div class="wrap">
+        <header class="section-head">
+          <h2 class="display h2">Which size is your app?</h2>
+          <p class="muted">Four questions. Your answers point to one of the sizes below.</p>
+        </header>
+
+        <div class="sizer" data-sizer hidden>
+          <ol class="sizer-qs">
+            {questions.map((q, i) => (
+              <li>
+                <span class="label n" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
+                <span class="sq" id={`q-${q.id}`}>{q.text}</span>
+                <span class="yn" role="group" aria-labelledby={`q-${q.id}`}>
+                  <button type="button" data-q={q.id} data-v="yes" aria-pressed="false">Yes</button>
+                  <button type="button" data-q={q.id} data-v="no" aria-pressed="false">No</button>
+                </span>
+              </li>
+            ))}
+          </ol>
+          <div class="result" aria-live="polite" data-result>
+            <p>Answer all four to see your size.</p>
+          </div>
+        </div>
+
+        <ul class="sizes">
+          {SIZES.map((s) => (
+            <li class="size" id={`size-${s.id}`} data-size={s.id} data-name={s.name} data-price={s.price}>
+              <p class="size-head">
+                <span class="kicker">{s.name}</span>
+                <span class="tag match" hidden>Your size</span>
+              </p>
+              <p class="display size-price">{s.price}</p>
+              <p class="size-lead">{s.lead}</p>
+              <ul class="size-items">
+                {s.items.map((it) => <li>{it}</li>)}
+              </ul>
+            </li>
+          ))}
+        </ul>
+        {FIRST_JOBS_LEFT > 0 && (
+          <p class="founding">
+            First {FIRST_JOBS} jobs: {FIRST_JOBS_DISCOUNT} off, in return for a short case study. <strong>{FIRST_JOBS_LEFT} left.</strong>
+          </p>
+        )}
+      </div>
+    </section>
+
+    <!-- ============ AFTER LAUNCH ============ -->
+    <section id="after" class="band">
+      <div class="wrap after">
+        <h2 class="display h2">After launch</h2>
+        <div class="after-card">
+          <p class="kicker">Update pass</p>
+          <p class="display size-price">{UPDATE_PRICE} per release</p>
+          <p>An over-the-air update or a new build, and the replies to App Review.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PROMISE ============ -->
+    <section id="promise" class="band">
+      <div class="wrap">
+        <header class="section-head">
+          <h2 class="display h2">What I promise, and what I don’t</h2>
+        </header>
+        <div class="two">
+          <div>
+            <h3 class="display h3">I promise</h3>
+            <ul class="tag-list">
+              {promise.map((t) => (
+                <li><span class="tag">Yes</span><span class="line">{t}</span></li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <h3 class="display h3">I don’t</h3>
+            <ul class="tag-list">
+              {dont.map((t) => (
+                <li><span class="tag no">No</span><span class="line">{t}</span></li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PROOF ============ -->
+    <section id="proof" class="band">
+      <div class="wrap">
+        <header class="section-head">
+          <h2 class="display h2">Apps I shipped this way</h2>
+          <p class="muted">
+            The skills I use are open source. <a href={REPO}>Read them on GitHub ↗</a>.
+          </p>
+        </header>
+        <ul class="apps">
+          {shipped.map((a) => (
+            <li>
+              <a class="app-name" href={a.site}>{a.name}</a>
+              <span class="app-what">{a.what}</span>
+              {a.url
+                ? <a class="app-status" href={a.url}>{a.status} ↗</a>
+                : <span class="app-status soon">{a.status}</span>}
+            </li>
+          ))}
+        </ul>
+        <div class="honest">
+          <p>
+            This offer is new. I know the Apple part from my own apps. Helping other people with theirs is
+            the next step, and I want to be clear about that.
+          </p>
+          <ul class="tag-list">
+            {status.map((t) => (
+              <li>
+                <span class:list={["tag", { no: !t.yes }]}>{t.tag}</span>
+                <span class="line">{t.text}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ FAQ ============ -->
+    <section id="faq" class="band">
+      <div class="wrap">
+        <header class="section-head">
+          <h2 class="display h2">Questions</h2>
+        </header>
+        <div class="faq">
+          {faq.map((f) => (
+            <details>
+              <summary>{f.q}</summary>
+              <p>{f.a}</p>
+            </details>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ CTA ============ -->
+    <section class="cta">
+      <div class="wrap cta-grid">
+        <div>
+          <p class="kicker signal">The first answer is free</p>
+          <h2 class="display h2">Tell me where you’re stuck.</h2>
+        </div>
+        <div class="cta-body">
+          <p>Send a link, the tool you used, and Apple’s message if you have one. I reply in writing.</p>
+          <div class="actions">
+            <a class="btn" href={ASK_MAIL}>Ask where you’re stuck <span aria-hidden="true">→</span></a>
+            <a class="btn ghost" href={CHECK_MAIL}>Book the {CHECK_PRICE} check</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</Base>
+
+<script>
+  // The size picker. Without JS it stays hidden and every size card is shown as is.
+  const root = document.querySelector<HTMLElement>("[data-sizer]");
+  if (root) {
+    root.hidden = false;
+    const result = root.querySelector<HTMLElement>("[data-result]")!;
+    const cards = [...document.querySelectorAll<HTMLElement>("[data-size]")];
+    const answers: Record<string, boolean> = {};
+
+    const sizeFor = (a: Record<string, boolean>) => {
+      if (a.wrapper) return "large";
+      if (a.rejected && !a.login && !a.payments) return "rejected";
+      if (a.login && a.payments) return "large";
+      if (a.login || a.payments) return "medium";
+      return "small";
+    };
+
+    const render = () => {
+      const done = Object.keys(answers).length === 4;
+      const id = done ? sizeFor(answers) : null;
+      for (const c of cards) {
+        const on = c.dataset.size === id;
+        c.classList.toggle("is-match", on);
+        c.querySelector<HTMLElement>(".match")!.hidden = !on;
+      }
+      if (!id) return;
+      const card = cards.find((c) => c.dataset.size === id)!;
+      const p = document.createElement("p");
+      const name = document.createElement("strong");
+      name.textContent = card.dataset.name ?? "";
+      const link = document.createElement("a");
+      link.href = `#size-${id}`;
+      link.textContent = "See what it includes";
+      const price = card.dataset.price ?? "";
+      p.append("Your size: ", name, price.startsWith("from") ? `, ${price}. ` : `. ${price}. `, link, ".");
+      const parts: HTMLElement[] = [p];
+      if (answers.wrapper) {
+        const note = document.createElement("p");
+        note.className = "note";
+        note.textContent =
+          "A website in an app wrapper often fails Guideline 4.2. The check tells you if a rebuild is needed.";
+        parts.push(note);
+      }
+      result.replaceChildren(...parts);
+    };
+
+    root.addEventListener("click", (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLButtonElement>("button[data-q]");
+      if (!btn) return;
+      const q = btn.dataset.q!;
+      answers[q] = btn.dataset.v === "yes";
+      for (const b of root.querySelectorAll<HTMLButtonElement>(`button[data-q="${q}"]`)) {
+        b.setAttribute("aria-pressed", String(b === btn));
+      }
+      render();
+    });
+  }
+</script>
+
+<style>
+  section { padding-block: clamp(56px, 9vw, 112px); }
+  .muted { color: var(--ink-2); margin: 0; }
+  .band { border-top: 1px solid var(--rule); }
+
+  /* hero */
+  .hero { padding-block: clamp(40px, 7vw, 96px) clamp(48px, 8vw, 104px); }
+  .hero-title { font-size: clamp(2.4rem, 5.4vw, 4.7rem); margin-block: 14px 26px; max-width: 14ch; }
+  .hero-title span { display: inline-block; }
+  .lede { font-size: clamp(1.15rem, 1.6vw, 1.32rem); max-width: 34em; color: var(--ink-2); margin: 0; }
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+
+  /* sections */
+  .section-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 32px; margin-bottom: clamp(28px, 4vw, 48px); }
+  .h2 { font-size: clamp(2rem, 4.6vw, 3.6rem); }
+  .h3 { font-size: clamp(1.4rem, 2.6vw, 1.9rem); margin-bottom: 14px; }
+  .section-head .muted { max-width: 36ch; }
+
+  /* how the price is set */
+  .steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .steps li { display: grid; grid-template-columns: auto 1fr; gap: 14px; padding: 18px; border: 2px solid var(--ink); }
+  .step-n {
+    display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%;
+    border: 2.5px solid var(--signal); color: var(--signal);
+    font-family: var(--display); font-stretch: 125%; font-weight: 800; font-size: 1.2rem;
+  }
+  .steps h3 { margin: 4px 0 6px; font-family: var(--display); font-stretch: 112%; font-weight: 700; font-size: 1.12rem; line-height: 1.25; }
+  .steps p { margin: 0; color: var(--ink-2); font-size: 1.02rem; }
+
+  /* picker */
+  .sizer { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 20px clamp(24px, 4vw, 56px); align-items: start; margin-bottom: clamp(28px, 4vw, 44px); }
+  .sizer[hidden] { display: none; }
+  .sizer-qs { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--ink); }
+  .sizer-qs li { display: grid; grid-template-columns: 34px 1fr auto; gap: 8px 12px; align-items: center; padding: 12px 0; border-bottom: 1px dashed var(--rule); }
+  .sq { font-family: var(--display); font-stretch: 112%; font-weight: 700; font-size: 1.05rem; line-height: 1.3; }
+  .yn { display: flex; }
+  .yn button {
+    min-width: 56px; padding: 8px 12px; cursor: pointer;
+    border: 2px solid var(--ink); background: var(--paper); color: var(--ink);
+    font-family: var(--mono); font-size: 0.8rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase;
+    transition: background 140ms, color 140ms;
+  }
+  .yn button + button { border-left: 0; }
+  .yn button:hover { background: var(--paper-2); }
+  .yn button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+  .result { border: 2px solid var(--ink); background: var(--paper-2); padding: 16px 18px; box-shadow: 8px 8px 0 var(--paper-3); }
+  .result :global(p) { margin: 0; font-size: 1.08rem; }
+  .result :global(.note) { margin-top: 10px; color: var(--ink-2); font-size: 1rem; }
+
+  /* sizes */
+  .sizes { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+  .size { padding: 18px; border: 2px solid var(--ink); background: var(--paper); transition: box-shadow 160ms, border-color 160ms; scroll-margin-top: 80px; }
+  .size.is-match { border-color: var(--signal); box-shadow: 8px 8px 0 var(--signal); }
+  .size-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 0 0 8px; min-height: 26px; }
+  .size-price { font-size: clamp(1.4rem, 2.2vw, 1.8rem); line-height: 1.05; margin: 0 0 10px; }
+  .size-lead { margin: 0 0 10px; color: var(--ink-2); font-size: 1.02rem; }
+  .size-items { margin: 0; padding: 0; list-style: none; }
+  .size-items li { position: relative; padding: 6px 0 6px 18px; border-top: 1px dashed var(--rule); font-size: 0.98rem; line-height: 1.4; }
+  .size-items li::before { content: ""; position: absolute; left: 2px; top: 13px; width: 8px; height: 8px; background: var(--signal); }
+  .founding { margin: 22px 0 0; font-size: 1.08rem; }
+  .founding strong { color: var(--signal); }
+
+  /* after launch */
+  .after { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px clamp(32px, 6vw, 80px); align-items: center; }
+  .after-card { border: 2px solid var(--ink); padding: 18px; }
+  .after-card .kicker { margin: 0 0 8px; }
+  .after-card p:last-child { margin: 0; color: var(--ink-2); }
+
+  /* promise, status */
+  .two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px clamp(32px, 6vw, 80px); }
+  .tag-list { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--ink); }
+  .tag-list li { display: grid; grid-template-columns: 96px 1fr; gap: 6px 16px; align-items: baseline; padding: 14px 0; border-bottom: 1px dashed var(--rule); }
+  .tag {
+    justify-self: start; padding: 3px 8px; border: 2px solid var(--signal); color: var(--signal);
+    font-family: var(--mono); font-size: 0.72rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap;
+  }
+  .tag.no { border-color: var(--ink-3); color: var(--ink-3); border-style: dashed; }
+  .tag[hidden] { display: none; }
+  .line { color: var(--ink-2); font-size: 1.05rem; }
+
+  /* proof */
+  .apps { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--ink); }
+  .apps li { display: grid; grid-template-columns: minmax(120px, 220px) 1fr auto; gap: 8px 24px; align-items: baseline; padding: 18px 0; border-bottom: 1px solid var(--rule); }
+  .app-name { font-family: var(--display); font-stretch: 125%; font-weight: 800; font-size: clamp(1.4rem, 2.6vw, 2rem); letter-spacing: -0.02em; }
+  a.app-name { color: inherit; text-decoration: none; }
+  a.app-name:hover { text-decoration: underline; text-underline-offset: 4px; }
+  .app-what { color: var(--ink-2); }
+  .app-status { font-family: var(--mono); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; }
+  .app-status.soon { color: var(--ink-3); }
+  .honest { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 24px clamp(32px, 6vw, 80px); margin-top: clamp(40px, 6vw, 64px); align-items: start; }
+  .honest > p { margin: 0; max-width: 42ch; font-size: 1.12rem; }
+
+  /* faq */
+  .faq { border-bottom: 2px solid var(--ink); }
+  .faq details { border-top: 2px solid var(--ink); }
+  .faq summary {
+    display: flex; justify-content: space-between; gap: 16px; align-items: baseline;
+    padding-block: 16px; cursor: pointer; list-style: none;
+    font-family: var(--display); font-stretch: 112%; font-weight: 700; font-size: 1.2rem; line-height: 1.3;
+  }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::after {
+    content: "+"; flex: none; font-weight: 800; font-size: 1.5rem; line-height: 1; width: 1ch; text-align: center;
+    transition: transform 160ms cubic-bezier(.2,.8,.2,1);
+  }
+  .faq details[open] summary::after { transform: rotate(45deg); color: var(--signal); }
+  .faq summary:hover { text-decoration: underline; text-decoration-color: var(--signal); text-decoration-thickness: 2px; text-underline-offset: 0.2em; }
+  .faq details p { margin: 0 0 18px; max-width: 62ch; color: var(--ink-2); }
+
+  /* cta */
+  .cta { background: var(--paper-2); border-block: 1px solid var(--rule); }
+  .cta-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px clamp(32px, 6vw, 80px); align-items: end; }
+  .signal { color: var(--signal); margin: 0 0 14px; }
+  .cta-body p { margin: 0; max-width: 42ch; font-size: 1.2rem; }
+  .cta-body .actions { margin-top: 22px; }
+
+  /* tablet, phone */
+  @media (max-width: 1000px) {
+    .sizes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 860px) {
+    .steps, .sizer, .after, .two, .honest, .cta-grid { grid-template-columns: 1fr; }
+    .result { box-shadow: 6px 6px 0 var(--paper-3); }
+  }
+  @media (max-width: 640px) {
+    .sizes { grid-template-columns: 1fr; }
+    .size.is-match { box-shadow: 6px 6px 0 var(--signal); }
+    .sizer-qs li { grid-template-columns: 26px 1fr; }
+    .yn { grid-column: 2; }
+    .apps li { grid-template-columns: 1fr auto; }
+    .app-what { grid-column: 1 / -1; grid-row: 2; }
+    .tag-list li { grid-template-columns: 1fr; }
+  }
+</style>
