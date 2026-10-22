@@ -2,3 +2,5 @@ User-agent: *
 Allow: /
 
 # Agents: start at /llms.txt. Every guide is also at /guides/<name>.md
+
+Sitemap: https://onebox.lokkesveen.com/sitemap.xml
