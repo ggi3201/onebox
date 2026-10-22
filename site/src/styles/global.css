@@ -139,12 +139,34 @@ img, svg { display: block; max-width: 100%; }
   letter-spacing: -0.01em;
 }
 .brand svg { width: 22px; height: 22px; }
+.top-end { display: flex; align-items: center; gap: clamp(12px, 3vw, 28px); min-width: 0; }
 .topbar nav { display: flex; gap: clamp(12px, 3vw, 28px); min-width: 0; overflow-x: auto; scrollbar-width: none; }
 .topbar nav::-webkit-scrollbar { display: none; }
+/* The paid help, as a button. On a phone the nav drops items before the button goes. */
+.topcta {
+  flex: none;
+  padding: 6px 12px;
+  border: 2px solid var(--signal);
+  background: var(--signal);
+  color: var(--signal-ink);
+  font-family: var(--display);
+  font-stretch: 112%;
+  font-weight: 700;
+  font-size: 0.88rem;
+  line-height: 1.2;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 160ms, border-color 160ms, color 160ms;
+}
+.topcta:hover { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.topcta[aria-current="page"] { background: transparent; color: var(--signal); }
+.topcta[aria-current="page"]:hover { background: var(--ink); border-color: var(--ink); color: var(--paper); }
 @media (max-width: 440px) {
   .brand { font-size: 0.95rem; gap: 8px; }
+  .top-end { gap: 12px; }
   .topbar nav a { font-size: 0.84rem; }
-  .topbar nav a[href="/#route"] { display: none; }
+  .topbar nav a[href="/#route"], .topbar nav a[href="/#contents"] { display: none; }
+  .topcta { padding: 5px 10px; font-size: 0.84rem; }
 }
 .topbar nav a {
   flex: none;
@@ -177,6 +199,8 @@ img, svg { display: block; max-width: 100%; }
 .btn:active { transform: translateY(1px); }
 .btn.ghost { background: transparent; color: var(--ink); }
 .btn.ghost:hover { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.btn.accent { background: var(--signal); border-color: var(--signal); color: var(--signal-ink); }
+.btn.accent:hover { background: var(--ink); border-color: var(--ink); color: var(--paper); }
 
 .cmd {
   display: flex;
@@ -211,6 +235,32 @@ img, svg { display: block; max-width: 100%; }
 }
 .cmd button:hover { background: var(--ink); color: var(--paper); }
 .cmd button[data-done] { background: var(--signal); color: var(--signal-ink); }
+
+/* ---------- ask bar (phones, / and /help/ only) ---------- */
+
+.askbar { display: none; }
+@media (max-width: 640px) {
+  body.has-askbar { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
+  .askbar {
+    display: block;
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 50;
+    background: var(--paper);
+    border-top: 2px solid var(--ink);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    transition: transform 200ms cubic-bezier(.2,.8,.2,1), visibility 0s;
+  }
+  .askbar .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 60px; }
+  .askbar p { margin: 0; font-family: var(--display); font-stretch: 112%; font-weight: 700; font-size: 1rem; line-height: 1.2; }
+  .askbar .btn { flex: none; padding: 9px 16px; }
+  /* With JS, it waits until no CTA is on screen (see Base.astro). */
+  .js .askbar:not([data-show]) {
+    transform: translateY(100%);
+    visibility: hidden;
+    transition: transform 200ms cubic-bezier(.2,.8,.2,1), visibility 0s 200ms;
+  }
+}
 
 /* ---------- motion ---------- */
 

@@ -4,6 +4,18 @@ import Picker from "../components/Picker.astro";
 import { PLUGINS, SKILLS, skillsFor, APPS, REPO, REPO_SLUG, OTHERS } from "../data/kit";
 import { GUIDES } from "../data/guides";
 import catalog from "../../../plugins/start/skills/plan/references/catalog.json";
+import {
+  SIZES, SHIPPED, FROM_PRICE, CHECK_PRICE, FIRST_JOBS, FIRST_JOBS_LEFT, FIRST_JOBS_DISCOUNT, ASK_MAIL,
+} from "../data/help";
+
+// "From $149 · First 3 jobs 40% off · 3 left". The founding part goes when no jobs are left.
+const offerLine = [`From ${FROM_PRICE}`, ...(FIRST_JOBS_LEFT > 0 ? [`First ${FIRST_JOBS} jobs ${FIRST_JOBS_DISCOUNT} off`, `${FIRST_JOBS_LEFT} left`] : [])];
+// The proof line: "Thraed and Foodie on the App Store, Lift in TestFlight."
+const shippedBy = [...new Set(SHIPPED.map((a) => a.status))].map((status) => ({
+  where: status.charAt(0).toLowerCase() + status.slice(1),
+  apps: SHIPPED.filter((a) => a.status === status),
+}));
+const sep = (i: number, len: number) => (i === 0 ? "" : i === len - 1 ? " and " : ", ");
 
 // The example chat uses the plan's real nudge lines, so it says what the agent says.
 const nudge = (id: string) => {
@@ -44,27 +56,61 @@ const n = (k: number, word: string) => `${k} ${word}${k === 1 ? "" : "s"}`;
 ---
 
 <Base
-  title="onebox — get your app on the App Store"
-  description="Free agent skills and plain guides for getting an Expo app onto the App Store: signing, TestFlight, the store page and App Review."
+  title="onebox · Get your AI-built Expo app through App Review"
+  description={`I get AI-built Expo apps through App Review at a fixed price, from ${FROM_PRICE}. Or do it yourself with free agent skills and guides.`}
+  askbar
 >
   <main>
     <!-- ============ HERO ============ -->
     <section class="hero">
       <div class="wrap hero-grid">
         <div class="hero-copy">
-          <p class="kicker">Agent skills · Expo · iOS</p>
-          <h1 class="display hero-title"><span>Get your app</span> <span>on the</span> <span>App Store.</span></h1>
-          <p class="lede">
-            You built something with Claude Code, Codex or Cursor. It works on your phone. Then come signing,
-            TestFlight, the store page and App Review.
-            These skills and guides take you the rest of the way.
-          </p>
-          <div class="hero-actions">
-            <a class="btn" href="#start">Start in three steps <span aria-hidden="true">↓</span></a>
-            <a class="btn ghost" href="/help/">Or ask me for help</a>
+          <p class="kicker">App Review help · Expo · iOS</p>
+          <h1 class="display hero-title"><span>Get your <span class="nowrap">AI-built</span></span> <span>Expo app through</span> <span>App Review.</span></h1>
+          <p class="lede">I do the Apple part with you. You know the price before I start, and you keep your Apple account.</p>
+          <div class="hero-actions" data-cta>
+            <a class="btn" href={ASK_MAIL}>Ask where you’re stuck <span aria-hidden="true">→</span></a>
+            <a class="btn ghost" href="/help/#picker">Find your price</a>
           </div>
+          <p class="offer-line label">{offerLine.join(" · ")}</p>
+          <p class="diy">Or do it yourself: <a href="#start">the skills are free <span aria-hidden="true">↓</span></a></p>
+          <p class="shipped">
+            <span class="label">Shipped with these skills</span>
+            <span>
+              {shippedBy.map((g, i) => (
+                <>{i > 0 && ", "}{g.apps.map((a, j) => <>{sep(j, g.apps.length)}<a href={a.url ?? a.site}>{a.name}</a></>)} {g.where}</>
+              ))}.
+            </span>
+          </p>
         </div>
 
+      </div>
+    </section>
+
+    <!-- ============ PRICES: the paid path in one strip ============ -->
+    <section id="help" class="prices">
+      <div class="wrap">
+        <header class="section-head">
+          <h2 class="display h2">What it costs</h2>
+          <p class="muted">The {CHECK_PRICE} check counts toward the job if you go ahead within 14 days.</p>
+        </header>
+        <ol class="path" aria-label="How it works">
+          <li>Free answer</li>
+          <li>{CHECK_PRICE} App Review check</li>
+          <li>Fixed price, half at the start, half at submission</li>
+        </ol>
+        <ul class="price-cards">
+          {SIZES.map((s) => (
+            <li>
+              <a class="price-card" href={`/help/#size-${s.id}`}>
+                <span class="kicker">{s.name}</span>
+                <span class="display price">{s.price}</span>
+                <span class="price-lead">{s.lead}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+        <p class="prices-more"><a href="/help/">How the price is set, and what each size includes <span aria-hidden="true">→</span></a></p>
       </div>
     </section>
 
@@ -153,7 +199,7 @@ const n = (k: number, word: string) => `${k} ${word}${k === 1 ? "" : "s"}`;
             <span class="step-n" aria-hidden="true">3</span>
             <div>
               <h3>Work down the plan</h3>
-              <p>Skills do the work. <a href="/guides/">Guides</a> cover the clicks only you can make. Stuck? <a href="/guides/when-you-are-stuck/">Here is how to get unstuck</a>, or <a href="#help">ask me</a>.</p>
+              <p>Skills do the work. <a href="/guides/">Guides</a> cover the clicks only you can make. Stuck? <a href="/guides/when-you-are-stuck/">Here is how to get unstuck</a>, or <a href={ASK_MAIL}>ask me</a>.</p>
             </div>
           </li>
         </ol>
@@ -273,21 +319,6 @@ const n = (k: number, word: string) => `${k} ${word}${k === 1 ? "" : "s"}`;
       </div>
     </section>
 
-    <!-- ============ HELP ============ -->
-    <section id="help" class="help">
-      <div class="wrap help-grid">
-        <div>
-          <p class="kicker signal">Stuck on the last mile?</p>
-          <h2 class="display h2">I can help you get it live.</h2>
-        </div>
-        <div class="help-body">
-          <p>I get Expo apps through App Review. You keep your Apple account.</p>
-          <p>You know the price before I start.</p>
-          <a class="btn" href="/help/">See how pricing works <span aria-hidden="true">→</span></a>
-        </div>
-      </div>
-    </section>
-
 
     <!-- ============ GOOD COMPANY ============ -->
     <section id="others" class="others">
@@ -305,6 +336,23 @@ const n = (k: number, word: string) => `${k} ${word}${k === 1 ? "" : "s"}`;
             </li>
           ))}
         </ul>
+      </div>
+    </section>
+
+    <!-- ============ CTA ============ -->
+    <section class="cta" data-cta>
+      <div class="wrap cta-grid">
+        <div>
+          <p class="kicker signal">The first answer is free</p>
+          <h2 class="display h2">Tell me where you’re stuck.</h2>
+        </div>
+        <div class="cta-body">
+          <p>Send a link, the tool you used, and Apple’s message if you have one. I reply in writing.</p>
+          <div class="hero-actions">
+            <a class="btn" href={ASK_MAIL}>Ask where you’re stuck <span aria-hidden="true">→</span></a>
+            <a class="btn ghost" href="/help/">See prices</a>
+          </div>
+        </div>
       </div>
     </section>
   </main>
@@ -328,9 +376,35 @@ const n = (k: number, word: string) => `${k} ${word}${k === 1 ? "" : "s"}`;
   }
   .hero-title { font-size: clamp(2.4rem, 5.4vw, 4.7rem); margin-block: 14px 26px; }
   .hero-title span { display: inline-block; }
+  .hero-title .nowrap { white-space: nowrap; }
   .lede { font-size: clamp(1.15rem, 1.6vw, 1.32rem); max-width: 34em; color: var(--ink-2); margin: 0; }
   .lede code { background: var(--code-bg); padding: 1px 6px; color: var(--ink); }
   .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+  .offer-line { margin: 14px 0 0; text-transform: none; letter-spacing: 0.02em; font-size: 0.8rem; color: var(--ink-2); }
+  .diy { margin: 18px 0 0; color: var(--ink-2); font-size: 1.05rem; }
+  .diy a { color: var(--ink); text-decoration-color: color-mix(in oklab, var(--signal) 70%, transparent); }
+  .shipped {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px;
+    margin: clamp(28px, 4vw, 44px) 0 0; padding-top: 14px; border-top: 1px dashed var(--rule);
+    color: var(--ink-2); font-size: 1.02rem;
+  }
+  .shipped a { color: var(--ink); }
+
+  /* prices */
+  .prices { background: var(--paper-2); border-block: 1px solid var(--rule); padding-block: clamp(40px, 6vw, 72px); }
+  .path { list-style: none; margin: 0 0 20px; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 10px; font-family: var(--display); font-stretch: 112%; font-weight: 700; font-size: 1.02rem; }
+  .path li + li::before { content: "→"; margin-right: 10px; color: var(--signal); }
+  .price-cards { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  .price-card {
+    display: grid; align-content: start; gap: 6px; height: 100%; padding: 14px 16px;
+    border: 2px solid var(--ink); background: var(--paper); color: inherit; text-decoration: none;
+    transition: border-color 160ms, box-shadow 160ms;
+  }
+  .price-card:hover { color: inherit; border-color: var(--signal); box-shadow: 6px 6px 0 var(--signal); }
+  .price-card .kicker { color: var(--ink-2); }
+  .price { font-size: clamp(1.25rem, 2vw, 1.55rem); line-height: 1.05; }
+  .price-lead { color: var(--ink-2); font-size: 0.98rem; line-height: 1.4; }
+  .prices-more { margin: 18px 0 0; }
 
 
 
@@ -442,12 +516,12 @@ const n = (k: number, word: string) => `${k} ${word}${k === 1 ? "" : "s"}`;
   .h3 { font-size: clamp(1.6rem, 3vw, 2.3rem); margin-bottom: 18px; }
   .tested-copy p { margin: 0 0 14px; max-width: 42ch; font-size: 1.12rem; }
 
-  /* help */
-  .help { background: var(--paper-2); border-block: 1px solid var(--rule); }
-  .help-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px clamp(32px, 6vw, 80px); align-items: end; }
+  /* cta */
+  .cta { background: var(--paper-2); border-block: 1px solid var(--rule); }
+  .cta-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px clamp(32px, 6vw, 80px); align-items: end; }
   .signal { color: var(--signal); margin: 0 0 14px; }
-  .help-body p { margin: 0 0 16px; max-width: 42ch; font-size: 1.2rem; }
-  .help-body .btn { margin-top: 10px; }
+  .cta-body p { margin: 0; max-width: 42ch; font-size: 1.2rem; }
+  .cta-body .hero-actions { margin-top: 22px; }
 
   /* about */
   .about { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px 32px; align-items: end; margin: 0 0 clamp(24px, 4vw, 40px); }
@@ -456,10 +530,14 @@ const n = (k: number, word: string) => `${k} ${word}${k === 1 ? "" : "s"}`;
 
 
   /* phone */
+  @media (max-width: 1000px) {
+    .price-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
   @media (max-width: 860px) {
-    .hero-grid, .help-grid, .steps, .about, .feel-grid, .tested { grid-template-columns: 1fr; }
+    .hero-grid, .cta-grid, .steps, .about, .feel-grid, .tested { grid-template-columns: 1fr; }
     .chat { box-shadow: 6px 6px 0 var(--paper-3); }
-    @media (max-width: 640px) {
+  }
+  @media (max-width: 640px) {
     .comp-head { grid-template-columns: auto 1fr auto; }
     .runs { grid-column: 2; grid-row: 2; white-space: normal; }
     .comp-head::after { grid-column: 3; grid-row: 1; }
@@ -472,5 +550,8 @@ const n = (k: number, word: string) => `${k} ${word}${k === 1 ? "" : "s"}`;
     .app-what { grid-column: 1 / -1; grid-row: 2; }
     .tag-list li { grid-template-columns: 1fr; }
     .turns li { grid-template-columns: 1fr; gap: 2px; }
+  }
+  @media (max-width: 520px) {
+    .price-cards { grid-template-columns: 1fr; }
   }
 </style>
