@@ -2,7 +2,7 @@
 import Base from "../layouts/Base.astro";
 import { REPO } from "../data/kit";
 import {
-  SIZES, FIRST_JOBS, FIRST_JOBS_LEFT, FIRST_JOBS_DISCOUNT, CHECK_PRICE, UPDATE_PRICE, FROM_PRICE, SHIPPED, ASK_MAIL, CHECK_MAIL,
+  SIZES, FIRST_JOBS, FIRST_JOBS_LEFT, FIRST_JOBS_DISCOUNT, CHECK_PRICE, UPDATE_PRICE, FROM_PRICE, SHIPPED, ASK_MAIL, CHECK_MAIL, FEATURE_MAIL,
 } from "../data/help";
 
 // The four questions of the size picker. The script below maps the answers to a size.
@@ -29,6 +29,10 @@ const status = [
   { tag: "Not yet", yes: false, text: "Paid jobs for other people. The first jobs are also the first real test with people who are new to all of it." },
 ];
 const faq = [
+  {
+    q: "Can you build features too?",
+    a: "Yes, case by case. Tell me what you want built. I tell you if it fits, and you get a fixed quote before I start.",
+  },
   {
     q: "Why “from” prices and not one price?",
     a: `Apps differ a lot. Two apps that look the same can need very different work. The ${CHECK_PRICE} check turns “it depends” into a fixed number before you pay for the work.`,
@@ -163,11 +167,18 @@ const faq = [
     <!-- ============ AFTER LAUNCH ============ -->
     <section id="after" class="band">
       <div class="wrap after">
-        <h2 class="display h2">After launch</h2>
-        <div class="after-card">
-          <p class="kicker">Update pass</p>
-          <p class="display size-price">{UPDATE_PRICE} per release</p>
-          <p>An over-the-air update or a new build, and the replies to App Review.</p>
+        <h2 class="display h2">After launch, and new features</h2>
+        <div class="after-cards">
+          <div class="after-card">
+            <p class="kicker">Update pass</p>
+            <p class="display size-price">{UPDATE_PRICE} per release</p>
+            <p>An over-the-air update or a new build, and the replies to App Review.</p>
+          </div>
+          <div class="after-card">
+            <p class="kicker">Feature work</p>
+            <p class="display size-price">Case by case</p>
+            <p>Need something built in your Expo app? Tell me what. I say if it fits, and you get a fixed quote before I start. <a href={FEATURE_MAIL}>Ask about a feature</a>.</p>
+          </div>
         </div>
       </div>
     </section>
@@ -395,6 +406,7 @@ const faq = [
 
   /* after launch */
   .after { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px clamp(32px, 6vw, 80px); align-items: center; }
+  .after-cards { display: grid; gap: 16px; }
   .after-card { border: 2px solid var(--ink); padding: 18px; }
   .after-card .kicker { margin: 0 0 8px; }
   .after-card p:last-child { margin: 0; color: var(--ink-2); }

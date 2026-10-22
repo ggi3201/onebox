@@ -29,7 +29,7 @@ export const GET: APIRoute = ({ site }) => {
     "",
     "## Paid help",
     "",
-    `- [Get your Expo app through App Review](${base}/help/): the author gets Expo apps built with AI tools through App Review, on the customer's own Apple account. Free first answer in writing. ${CHECK_PRICE} App Review check: a fix list and a fixed quote within 48 hours, counted toward the job within 14 days. Sizes: ${SIZES.map((s) => `${s.name} ${s.price}`).join(", ")}. Update pass ${UPDATE_PRICE} per release. No approval promise; Apple decides. iOS only.`,
+    `- [Get your Expo app through App Review](${base}/help/): the author gets Expo apps built with AI tools through App Review, on the customer's own Apple account. Free first answer in writing. ${CHECK_PRICE} App Review check: a fix list and a fixed quote within 48 hours, counted toward the job within 14 days. Sizes: ${SIZES.map((s) => `${s.name} ${s.price}`).join(", ")}. Update pass ${UPDATE_PRICE} per release. Feature work case by case, quoted first. No approval promise; Apple decides. iOS only.`,
     "",
     "## Guides",
     "",
