@@ -82,3 +82,7 @@ export const mailto = (subject: string, body?: string) =>
 const intake = "Link to the app or repo:\n\nTool you built it with:\n\nWhere you are stuck (paste Apple's message if you have one):\n";
 export const ASK_MAIL = mailto("Where I'm stuck", intake);
 export const CHECK_MAIL = mailto("App Review check", intake);
+export const FEATURE_MAIL = mailto(
+  "Feature work",
+  "Link to the app or repo:\n\nWhat you want built:\n\nWhen you need it:\n",
+);

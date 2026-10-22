@@ -22,6 +22,7 @@ const help = (origin: string) =>
     "",
     ...SIZES.map((s) => `- ${s.name}, ${s.price}. ${s.lead} ${s.items.join(". ")}.`),
     `- After launch: Update pass, ${UPDATE_PRICE} per release.`,
+    `- Feature work in an Expo app: case by case, with a fixed quote before work starts.`,
     "",
     "No approval promise; Apple decides. No Android, no web wrappers, no Guideline 4.3 spam cases, no security audit.",
     "",
