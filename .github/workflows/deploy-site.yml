@@ -92,3 +92,20 @@ jobs:
             echo "$path -> $code"
             [ "$code" = 404 ] || { echo "::error::$site$path answered $code, not 404"; exit 1; }
           done
+
+      # IndexNow tells Bing (and the engines that share it) which URLs exist,
+      # so a deploy is seen in minutes instead of at the next crawl. The key
+      # file is site/public/9d40ece7ea195e4c568d8b6aef630345.txt; the protocol fetches it back to check
+      # we own the host. Best-effort: a rejected ping must not fail a deploy
+      # that already succeeded.
+      - name: Ping IndexNow
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        continue-on-error: true
+        run: |
+          host="onebox.lokkesveen.com"
+          key="9d40ece7ea195e4c568d8b6aef630345"
+          urls="$(curl -fsS "https://$host/sitemap.xml" | grep -o '<loc>[^<]*</loc>' | sed 's|</\?loc>||g' | sed 's|.*|"&"|' | paste -sd, -)"
+          curl -fsS -o /dev/null -w 'indexnow: HTTP %{http_code}\n' \
+            -H 'Content-Type: application/json; charset=utf-8' \
+            -d "{\"host\":\"$host\",\"key\":\"$key\",\"keyLocation\":\"https://$host/$key.txt\",\"urlList\":[$urls]}" \
+            https://api.indexnow.org/IndexNow
