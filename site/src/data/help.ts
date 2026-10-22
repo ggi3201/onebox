@@ -1,6 +1,8 @@
 // The paid help offer on /help/. Prices live here once, so the page, the
 // size picker and llms.txt never disagree.
 
+import { APPS } from "./kit";
+
 export const EMAIL = "geir@lokkesveen.com";
 
 // The founding discount: the first FIRST_JOBS jobs get it. Lower
@@ -62,6 +64,17 @@ export const SIZES: Size[] = [
     ],
   },
 ];
+
+// The lowest "from" price, for "From $149" lines on the homepage and in meta text.
+const fromPrices = SIZES.map((s) => Number(s.price.match(/^from \$(\d+)$/)?.[1])).filter((n) => n > 0);
+export const FROM_PRICE = `$${Math.min(...fromPrices)}`;
+
+// The apps shipped with these skills, as proof on / and /help/.
+export const SHIPPED = ["Thraed", "Foodie", "Lift"].map((name) => {
+  const app = APPS.find((a) => a.name === name);
+  if (!app) throw new Error(`kit.ts has no app "${name}"`);
+  return app;
+});
 
 export const mailto = (subject: string, body?: string) =>
   `mailto:${EMAIL}?subject=${encodeURIComponent(subject)}` + (body ? `&body=${encodeURIComponent(body)}` : "");

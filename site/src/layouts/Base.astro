@@ -1,13 +1,16 @@
 ---
 import "../styles/global.css";
 import { REPO } from "../data/kit";
+import { ASK_MAIL } from "../data/help";
 
 interface Props {
   title: string;
   description: string;
   section?: "home" | "guides" | "help";
+  // The sticky "Stuck on App Review?" bar on phones. Only / and /help/ set it.
+  askbar?: boolean;
 }
-const { title, description, section = "home" } = Astro.props;
+const { title, description, section = "home", askbar = false } = Astro.props;
 // Shared links need absolute URLs. The image is docs/social-preview.png, copied to public/.
 const SITE = Astro.site ?? "https://onebox.lokkesveen.com";
 const image = new URL("/social-preview.png", SITE).href;
@@ -39,6 +42,8 @@ const imageAlt = "onebox: Get your app on the App Store. The route from your Mac
     <meta name="theme-color" content="#f2eee4" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#131210" media="(prefers-color-scheme: dark)" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <!-- Lets CSS keep the ask bar hidden until the script below has checked for a CTA on screen. -->
+    <script is:inline>document.documentElement.classList.add("js");</script>
     <link rel="alternate" type="text/plain" href="/llms.txt" title="llms.txt" />
     <slot name="head" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -48,7 +53,7 @@ const imageAlt = "onebox: Get your app on the App Store. The route from your Mac
       href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&display=swap"
     />
   </head>
-  <body>
+  <body class:list={{ "has-askbar": askbar }}>
     <header class="topbar">
       <div class="wrap">
         <a class="brand" href="/">
@@ -58,13 +63,15 @@ const imageAlt = "onebox: Get your app on the App Store. The route from your Mac
           </svg>
           onebox
         </a>
-        <nav aria-label="Main">
-          <a href="/#start">Start</a>
-          <a href="/#route">Road</a>
-          <a href="/#contents">In the box</a>
-          <a href="/guides/" aria-current={section === "guides" ? "page" : undefined}>Guides</a>
-          <a href="/help/" aria-current={section === "help" ? "page" : undefined}>Help</a>
-        </nav>
+        <div class="top-end">
+          <nav aria-label="Main">
+            <a href="/#start">Start</a>
+            <a href="/#route">Road</a>
+            <a href="/#contents">In the box</a>
+            <a href="/guides/" aria-current={section === "guides" ? "page" : undefined}>Guides</a>
+          </nav>
+          <a class="topcta" href="/help/" aria-current={section === "help" ? "page" : undefined}>Get it live</a>
+        </div>
       </div>
     </header>
 
@@ -82,7 +89,33 @@ const imageAlt = "onebox: Get your app on the App Store. The route from your Mac
       </div>
     </footer>
 
+    {askbar && (
+      <aside class="askbar" aria-label="Ask for help" data-askbar>
+        <div class="wrap">
+          <p>Stuck on App Review?</p>
+          <a class="btn accent" href={ASK_MAIL}>Ask <span aria-hidden="true">→</span></a>
+        </div>
+      </aside>
+    )}
+
     <script>
+      // The ask bar shows only while no CTA ([data-cta]) is on screen, so it never
+      // repeats a button the reader can already see. Without JS it simply stays.
+      const bar = document.querySelector<HTMLElement>("[data-askbar]");
+      if (bar) {
+        const ctas = document.querySelectorAll("[data-cta]");
+        if (!("IntersectionObserver" in window) || ctas.length === 0) {
+          bar.dataset.show = "";
+        } else {
+          const seen = new Set<Element>();
+          const io = new IntersectionObserver((entries) => {
+            for (const e of entries) e.isIntersecting ? seen.add(e.target) : seen.delete(e.target);
+            bar.toggleAttribute("data-show", seen.size === 0);
+          });
+          ctas.forEach((c) => io.observe(c));
+        }
+      }
+
       document.querySelectorAll<HTMLButtonElement>("[data-copy]").forEach((btn) => {
         const label = btn.textContent;
         btn.addEventListener("click", async () => {

@@ -1,8 +1,8 @@
 ---
 import Base from "../layouts/Base.astro";
-import { APPS, REPO } from "../data/kit";
+import { REPO } from "../data/kit";
 import {
-  SIZES, FIRST_JOBS, FIRST_JOBS_LEFT, FIRST_JOBS_DISCOUNT, CHECK_PRICE, UPDATE_PRICE, ASK_MAIL, CHECK_MAIL,
+  SIZES, FIRST_JOBS, FIRST_JOBS_LEFT, FIRST_JOBS_DISCOUNT, CHECK_PRICE, UPDATE_PRICE, FROM_PRICE, SHIPPED, ASK_MAIL, CHECK_MAIL,
 } from "../data/help";
 
 // The four questions of the size picker. The script below maps the answers to a size.
@@ -12,12 +12,6 @@ const questions = [
   { id: "payments", text: "Does it take payments or subscriptions?" },
   { id: "wrapper", text: "Is it a website inside an app wrapper?" },
 ];
-
-const shipped = ["Thraed", "Foodie", "Lift"].map((name) => {
-  const app = APPS.find((a) => a.name === name);
-  if (!app) throw new Error(`kit.ts has no app "${name}"`);
-  return app;
-});
 
 const promise = [
   "A fix plan within 48 hours.",
@@ -60,8 +54,9 @@ const faq = [
 
 <Base
   title="Get your Expo app through App Review · onebox"
-  description="I get Expo apps built with AI tools through App Review. You keep your Apple account. Fixed prices from $149, set before I start."
+  description={`I get Expo apps built with AI tools through App Review. You keep your Apple account. Fixed prices from ${FROM_PRICE}, set before I start.`}
   section="help"
+  askbar
 >
   <main>
     <!-- ============ HERO ============ -->
@@ -73,9 +68,9 @@ const faq = [
           I get Expo apps built with AI tools (Claude Code, Cursor, Rork, Bolt) through App Review.
           You keep your Apple account. You know the price before I start.
         </p>
-        <div class="actions">
+        <div class="actions" data-cta>
           <a class="btn" href={ASK_MAIL}>Ask where you’re stuck <span aria-hidden="true">→</span></a>
-          <a class="btn ghost" href="#price">Find your price <span aria-hidden="true">↓</span></a>
+          <a class="btn ghost" href="#picker">Find your price <span aria-hidden="true">↓</span></a>
         </div>
       </div>
     </section>
@@ -119,7 +114,7 @@ const faq = [
     <!-- ============ PICKER + SIZES ============ -->
     <section id="price" class="band">
       <div class="wrap">
-        <header class="section-head">
+        <header class="section-head" id="picker">
           <h2 class="display h2">Which size is your app?</h2>
           <p class="muted">Four questions. Your answers point to one of the sizes below.</p>
         </header>
@@ -214,7 +209,7 @@ const faq = [
           </p>
         </header>
         <ul class="apps">
-          {shipped.map((a) => (
+          {SHIPPED.map((a) => (
             <li>
               <a class="app-name" href={a.site}>{a.name}</a>
               <span class="app-what">{a.what}</span>
@@ -259,7 +254,7 @@ const faq = [
     </section>
 
     <!-- ============ CTA ============ -->
-    <section class="cta">
+    <section class="cta" data-cta>
       <div class="wrap cta-grid">
         <div>
           <p class="kicker signal">The first answer is free</p>
