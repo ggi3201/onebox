@@ -39,8 +39,17 @@ if [ -z "$CMD" ]; then
   case "$(cfg | jq -r '.secrets.tool // "env"')" in
     doppler)
       CMD="doppler secrets get {ref} --plain"
-      P="$(cfg | jq -r '.secrets.doppler.project // empty')"; [ -n "$P" ] && CMD="$CMD -p $(quote "$P")"
-      C="$(cfg | jq -r '.secrets.doppler.config // empty')"; [ -n "$C" ] && CMD="$CMD -c $(quote "$C")" ;;
+      for k in project config; do
+        v="$(cfg | jq -r ".secrets.doppler.$k // empty")"
+        if [ -n "$v" ]; then CMD="$CMD --$k $(quote "$v")"
+        # Without it doppler stops with "You must specify a project". `doppler setup` sets both for a folder.
+        # A service token (DOPPLER_TOKEN) carries both, and DOPPLER_PROJECT / DOPPLER_CONFIG set one each.
+        elif [ -z "${DOPPLER_TOKEN:-}" ] && e="DOPPLER_$(echo "$k" | tr a-z A-Z)" && [ -z "${!e:-}" ] \
+          && command -v doppler >/dev/null && [ -z "$(doppler configure get "$k" --plain 2>/dev/null)" ]; then
+          echo "secrets.tool is doppler, but no Doppler $k is set. Set secrets.doppler.$k in ~/.config/onebox/config.json, or run \`doppler setup\` in this folder. CONFIG.md, \"Secrets\"." >&2
+          exit 1
+        fi
+      done ;;
     1password) CMD="op read {ref}" ;;
   esac
 fi

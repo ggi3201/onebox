@@ -12,7 +12,7 @@ cannot run counts as a problem, not a pass: a silent false negative here is
 worse than no audit.
 
   audit-exposure.py --domain example.com [--domain other.example] [--token-stdin]
-                    [--public-ok grafana.example.com] [--tunnel none]
+                    [--public-ok grafana.example.com] [--tunnel none] [--account ID]
 
 --tunnel none (box.tunnel): proxied records to the origin are how that box
 works, so they pass, and the tunnel checks are skipped. An unproxied one
@@ -24,7 +24,9 @@ Cloudflare Access login redirect. --public-ok accepts one you made public on
 purpose, for example a tool with its own strong login.
 
 Token: CLOUDFLARE_API_TOKEN in the environment, or one line on stdin with
---token-stdin. It needs DNS read on the zone(s). It is never printed.
+--token-stdin. It needs DNS read on the zone(s), and Cloudflare Tunnel read for a
+remotely managed tunnel. A user token and an account token (cfat_) both work;
+--account sets the account when the zone's is not the tunnel's. It is never printed.
 """
 import argparse
 import ipaddress
@@ -37,8 +39,10 @@ import urllib.error
 import urllib.request
 
 API = "https://api.cloudflare.com/client/v4"
+UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 problems = []
 notes = []
+accounts = {}  # zone name -> account id, filled by records()
 
 
 def get(url, headers=None, timeout=20):
@@ -57,6 +61,7 @@ def records(domain, tok):
     z = cf(f"/zones?name={domain}", tok)
     if not z:
         raise RuntimeError("zone not found, or the token cannot read it")
+    accounts[domain] = (z[0].get("account") or {}).get("id")
     out, page = [], 1
     while True:
         rs = cf(f"/zones/{z[0]['id']}/dns_records?per_page=100&page={page}", tok)
@@ -85,6 +90,24 @@ ADMIN_NAMES = re.compile(
 class NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, *args, **kwargs):
         return None
+
+
+def is_catch_all(rule):
+    # The remote (dashboard) config returns it as {"service": "http_status:404", "originRequest": {}}.
+    return not rule.get("hostname") and rule.get("service") == "http_status:404"
+
+
+def remote_units(units):
+    """Units whose ingress comes from Cloudflare, not the local file: run with a token, or (run with --config)
+    the journal shows a configuration pushed from the dashboard. Same test as expose.py."""
+    out = []
+    for u in units:
+        es = sh(["systemctl", "show", "-p", "ExecStart", "-p", "Environment", "--value", u])
+        if "--token" in es or "TUNNEL_TOKEN" in es:
+            out.append(u)
+        elif sh(["journalctl", "-u", u, "-b", "--no-pager", "-q", "-g", "Updated to new configuration"]).strip():
+            out.append(u)
+    return out
 
 
 def access_state(host):
@@ -116,6 +139,8 @@ def main():
     p.add_argument("--tunnel", choices=["cloudflare", "none"], default=os.environ.get("BOX_TUNNEL", "cloudflare"),
                    help="box.tunnel")
     p.add_argument("--token-stdin", action="store_true")
+    p.add_argument("--account", default=os.environ.get("CLOUDFLARE_ACCOUNT_ID"),
+                   help="Cloudflare account id, for the tunnel's ingress (default: the zone's account)")
     p.add_argument("--public-ok", action="append", default=[], help="admin-looking hostname that is public on purpose; repeat for more")
     a = p.parse_args()
     domains = a.domain or [d for d in [os.environ.get("BOX_DOMAIN")] if d]
@@ -144,6 +169,12 @@ def main():
         origins.add(origin6)
         print(f"origin IPv6: {origin6}")
 
+    unit_list = [] if a.tunnel == "none" else [
+        line.split()[0] for line in
+        sh(["systemctl", "list-units", "cloudflared*.service", "--all", "--plain", "--no-legend"]).splitlines()
+        if line.strip() and line.split()[0] != "cloudflared-update.service"]   # a timer-run oneshot
+    remote = bool(remote_units(unit_list))
+
     # -- tunnel config first: DNS checks compare against it
     conf = ""
     try:
@@ -162,7 +193,8 @@ def main():
         except Exception as exc:
             problems.append("ingress:unparsable")
             print(f"ingress: COULD NOT PARSE - {exc}")
-    ing_hosts = {r.get("hostname") for r in ingress if r.get("hostname")}
+    if remote:
+        ingress = []  # the local file is not what runs; the API's copy replaces it below
 
     print("\n== DNS records pointing at the origin ==")
     by_zone = {}
@@ -185,6 +217,28 @@ def main():
             print(f"  {d}: {r['type']} {r['name']} - {how}")
             problems.append(f"origin-record:{r['name']}")
 
+    # A remote tunnel's ingress lives in Cloudflare. Its id: the local config's (an id, or a name to look up),
+    # or the one tunnel the CNAMEs name.
+    remote_read = None
+    if remote:
+        targets = {r["content"].split(".")[0] for rs in by_zone.values() for r in rs
+                   if r["type"] == "CNAME" and r["content"].endswith(".cfargotunnel.com")}
+        tid = tunnel_id if tunnel_id and UUID_RE.match(tunnel_id) else (targets.pop() if len(targets) == 1 else None)
+        account = a.account or next((x for x in accounts.values() if x), None)
+        try:
+            if not tid and tunnel_id and account:
+                found = cf(f"/accounts/{account}/cfd_tunnel?name={tunnel_id}&is_deleted=false", tok)
+                tid = found[0]["id"] if found else None
+            if not (tid and account):
+                raise RuntimeError("tunnel or account unknown")
+            got = cf(f"/accounts/{account}/cfd_tunnel/{tid}/configurations", tok)
+            ingress = ((got or {}).get("config") or {}).get("ingress") or []
+            tunnel_id, remote_read = tid, True
+        except Exception as exc:
+            remote_read = False
+            notes.append(f"remote tunnel: ingress not audited ({str(exc)[:80]}; the token needs Cloudflare Tunnel read)")
+    ing_hosts = {r.get("hostname") for r in ingress if r.get("hostname")}
+
     print("\n== wildcard records (answer for names that never existed) ==")
     for d, rs in by_zone.items():
         w = [r["name"] for r in rs if r["name"].startswith("*")]
@@ -203,7 +257,7 @@ def main():
         if not pv:
             print(f"  {d}: none")
 
-    if tunnel_id:
+    if tunnel_id and (not remote or remote_read):
         print("\n== tunnel CNAMEs vs ingress ==")
         target = f"{tunnel_id}.cfargotunnel.com"
         cn = {r["name"] for rs in by_zone.values() for r in rs if r["type"] == "CNAME" and r["content"] == target}
@@ -259,31 +313,22 @@ def main():
             print(f"  none  ({len(routers)} routers checked, all on '{a.resolver}' or no TLS)")
 
     print("\n== tunnel ==")
-    unit_list = [] if a.tunnel == "none" else [
-        line.split()[0] for line in
-        sh(["systemctl", "list-units", "cloudflared*.service", "--all", "--plain", "--no-legend"]).splitlines()
-        if line.strip() and line.split()[0] != "cloudflared-update.service"]   # a timer-run oneshot
     if a.tunnel == "none":
         print("  skipped (box.tunnel is none)")
         conf = ""
     elif not unit_list:
         print("  no cloudflared unit found")
         problems.append("unit:none")
-    remote = False
     for u in unit_list:
         state = sh(["systemctl", "is-active", u]).strip() or "unknown"
         print(f"  {u:<28} {state}")
         if state != "active":
             problems.append(f"unit:{u}")
-        es = sh(["systemctl", "show", "-p", "ExecStart", "-p", "Environment", "--value", u])
-        if "--token" in es or "TUNNEL_TOKEN" in es:
-            remote = True
-    if remote:
-        print("  remotely managed: the local config is NOT what runs. Check ingress in the dashboard or API.")
-        notes.append("remote tunnel: ingress not audited")
-    elif conf.strip() and ingress:
-        print(f"  ingress rules: {len(ingress)}")
-        if ingress[-1] != {"service": "http_status:404"}:
+    if remote and not remote_read:
+        print("  remotely managed: the local config is NOT what runs, and the API's copy could not be read.")
+    elif ingress and (remote or conf.strip()):
+        print(f"  ingress rules: {len(ingress)}" + ("  (remotely managed: read from the API)" if remote else ""))
+        if not is_catch_all(ingress[-1]):
             print("  the http_status:404 catch-all is not the last rule")
             problems.append("ingress:catch-all-not-last")
         loop = [r.get("hostname") for r in ingress

@@ -64,4 +64,88 @@ for state, want in (("HTTP 200", 1), ("access", 0)):
     if (rc != 0) != bool(want):
         sys.exit(f"box-check: audit with Access state {state!r}: exit {rc}, wanted {'non-zero' if want else '0'}")
 PY
+# expose.py: the catch-all as the remote (dashboard) config returns it, with an empty originRequest.
+python3 -I - "$here/plugins/box/skills/expose-service/scripts/expose.py" <<'PY'
+import importlib.util, sys
+sys.dont_write_bytecode = True
+spec = importlib.util.spec_from_file_location("expose", sys.argv[1])
+m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+app = {"hostname": "app.example.com", "service": "https://localhost:443"}
+if m.check_ingress([app, {"service": "http_status:404", "originRequest": {}}]) is not None:
+    sys.exit("box-check: expose.py rejects the remote config's catch-all")
+if m.check_ingress([{"service": "http_status:404"}, app]) is None:
+    sys.exit("box-check: expose.py accepts a catch-all that is not last")
+PY
+
+# expose.py on a remote tunnel: a dry run never PUTs; a real run backs up, and restores when a witness changes.
+python3 -I - "$here/plugins/box/skills/expose-service/scripts/expose.py" "$tmp" <<'PY'
+import argparse, contextlib, glob, importlib.util, io, json, sys
+sys.dont_write_bytecode = True
+spec = importlib.util.spec_from_file_location("expose", sys.argv[1])
+m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+conf = {"ingress": [{"hostname": "app.example.com", "service": "https://localhost:443"},
+                    {"service": "http_status:404", "originRequest": {}}], "warp-routing": {"enabled": False}}
+class FakeCF:
+    def __init__(self): self.puts = []
+    def call(self, method, path, body=None):
+        if method == "PUT": self.puts.append(json.loads(json.dumps(body))); return {}
+        return {"config": json.loads(json.dumps(conf))}
+m.time.sleep = lambda s: None
+def run(dry, probes):
+    m.probe_all = lambda hosts: probes.pop(0)
+    a = argparse.Namespace(target="https://localhost:443", dry_run=dry, tunnel_config=f"{sys.argv[2]}/config.yml")
+    api, out = FakeCF(), io.StringIO()
+    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(out):
+        try: m.ingress_remote(a, "new.example.com", api, "acct", "tid")
+        except SystemExit: pass
+    return api.puts, out.getvalue()
+puts, out = run(True, [{"app.example.com": "200 1b text/html"}])
+if puts: sys.exit(f"box-check: expose.py dry run PUT the remote config\n{out}")
+puts, out = run(False, [{"app.example.com": "200 1b text/html"}, {"app.example.com": "404 0b -"}])
+if len(puts) != 2 or puts[1] != {"config": conf} or not glob.glob(f"{sys.argv[2]}/remote-config.bak-*.json"):
+    sys.exit(f"box-check: expose.py did not back up and restore the remote config\n{out}")
+if [r.get("hostname") for r in puts[0]["config"]["ingress"]] != ["app.example.com", "new.example.com", None] \
+        or "warp-routing" not in puts[0]["config"]:
+    sys.exit(f"box-check: expose.py wrote the wrong remote ingress: {puts[0]}")
+PY
+
+# audit-exposure.py: a tunnel run with --config but managed from the dashboard (the journal says so). Its
+# ingress must come from the API, not the stale local file, and the catch-all may carry an empty originRequest.
+python3 -I - "$audit" <<'PY'
+import contextlib, importlib.util, io, os, sys
+sys.dont_write_bytecode = True
+spec = importlib.util.spec_from_file_location("audit", sys.argv[1])
+m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+tid = "11111111-2222-3333-4444-555555555555"
+def fake_urlopen(url, timeout=None):
+    if url.endswith("//api.ipify.org"): return io.BytesIO(b"203.0.113.10")
+    raise OSError("no IPv6")
+m.urllib.request.urlopen = fake_urlopen
+def fake_records(d, tok):
+    m.accounts[d] = "acct"
+    return [{"type": "CNAME", "name": "app.example.com", "content": f"{tid}.cfargotunnel.com", "proxied": True}]
+m.records = fake_records
+def fake_sh(cmd):
+    if cmd[1] == "list-units": return "cloudflared.service loaded active running Cloudflare Tunnel\n"
+    if cmd[1] == "is-active": return "active\n"
+    if cmd[0] == "journalctl": return "INF Updated to new configuration\n"
+    return "/usr/bin/cloudflared tunnel --config /etc/cloudflared/config.yml run\n"
+m.sh = fake_sh
+os.environ["CLOUDFLARE_API_TOKEN"] = "dummy"
+for hosts, want in ((["app.example.com"], "DNS and ingress match"), ([], "DNS but no ingress")):
+    def fake_get(url, headers=None, timeout=20, hosts=hosts):
+        if url.endswith(f"/accounts/acct/cfd_tunnel/{tid}/configurations"):
+            rules = [{"hostname": h, "service": "https://localhost:443"} for h in hosts]
+            return {"success": True, "result": {"config": {"ingress": rules + [{"service": "http_status:404", "originRequest": {}}]}}}
+        return []
+    m.get = fake_get
+    m.problems.clear(); m.notes.clear()
+    sys.argv = ["audit-exposure.py", "--domain", "example.com", "--tunnel-config", "/nonexistent/config.yml"]
+    out = io.StringIO()
+    with contextlib.redirect_stdout(out):
+        rc = m.main()
+    text = out.getvalue()
+    if rc != 0 or want not in text or "read from the API" not in text:
+        sys.exit(f"box-check: audit of a dashboard-managed tunnel ({hosts}): exit {rc}\n{text}")
+PY
 echo "box-check: ok"
