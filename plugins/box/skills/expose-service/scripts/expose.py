@@ -17,10 +17,12 @@ Safe to re-run: the ingress insert and the DNS write are both idempotent.
   --ingress-only / --dns-only   split the steps (migrations: ingress, soak, then DNS)
   --target URL                  ingress service (default https://localhost:443 = Traefik)
   --tunnel-mode auto|local|remote
+  --account ID                  Cloudflare account id (default: the zone's account)
   --dry-run                     show what would change
 
 Token: CLOUDFLARE_API_TOKEN in the environment, or one line on stdin with
---token-stdin. It is never printed.
+--token-stdin. It is never printed. A user token and an account token (cfat_)
+both work. A remotely managed tunnel needs Cloudflare Tunnel Edit on it too.
 """
 import argparse
 import concurrent.futures as cf
@@ -76,11 +78,27 @@ class CF:
             raise RuntimeError(f"{method} {path.split('?')[0]}: {json.dumps(d.get('errors'))[:300]}")
         return d["result"]
 
-    def zone(self, domain):
-        z = self.call("GET", f"/zones?name={domain}")
+    def zone(self, domain, account=None):
+        try:
+            z = self.call("GET", f"/zones?name={domain}")
+        except RuntimeError as e:
+            die(f"{e}. {self.verify(account)}")
         if not z:
-            die(f"zone {domain} not found, or the token cannot read it")
-        return z[0]["id"], z[0]["account"]["id"]
+            die(f"zone {domain} not found, or the token cannot read it. {self.verify(account)}")
+        return z[0]["id"], account or z[0]["account"]["id"]
+
+    def verify(self, account=None):
+        """Why a call failed, in one sentence. A user token verifies at /user, an account token (cfat_) at its account."""
+        paths = ["/user/tokens/verify"] + ([f"/accounts/{account}/tokens/verify"] if account else [])
+        for path in paths:
+            try:
+                status = self.call("GET", path).get("status")
+            except RuntimeError:
+                continue
+            return f"The token is {status}, so it lacks access to this zone (Zone Read, DNS Edit)."
+        if self.token.startswith("cfat_") and not account:
+            return "This is an account token: pass --account <account id> to check it."
+        return "The token is not valid."
 
 
 def read_token(from_stdin):
@@ -284,8 +302,13 @@ def ingress_local(a, host):
 def ingress_remote(a, host, cfapi, account, tid):
     # The tunnel fetches its ingress from Cloudflare and ignores the local file.
     path = f"/accounts/{account}/cfd_tunnel/{tid}/configurations"
-    conf = cfapi.call("GET", path).get("config") or {}
+    try:
+        got = cfapi.call("GET", path)
+    except RuntimeError as e:
+        die(f"cannot read the remote tunnel config ({e}). The token needs Cloudflare Tunnel Read and Edit.")
+    conf = (got or {}).get("config") or {}
     ing = conf.get("ingress") or [{"service": "http_status:404"}]
+    say(f"remote ingress: {len(ing)} rules (tunnel {tid})")
     if any(r.get("hostname") == host for r in ing):
         say("already in the remote ingress, no change")
         return False
@@ -298,19 +321,46 @@ def ingress_remote(a, host, cfapi, account, tid):
     err = check_ingress(new)
     if err:
         die(err)
-    if a.dry_run:
-        say(f"(dry run) would PUT {len(new)} rules to the remote tunnel config")
-        return False
     witnesses = [r["hostname"] for r in ing if r.get("hostname") and not r["hostname"].startswith("*")]
+    if a.dry_run:
+        say(f"(dry run) would insert before the catch-all, then PUT {len(new)} rules:")
+        print(json.dumps(rule, indent=2))
+        log(f"Witness probe (dry run): {len(witnesses)} tunnelled hostnames")
+        for h, r in probe_all(witnesses).items():
+            say(f"{h:<40} {r}")
+        return False
+
+    bdir = os.path.dirname(a.tunnel_config)
+    bdir = bdir if os.path.isdir(bdir) and os.access(bdir, os.W_OK) else os.path.expanduser("~")
+    bak = os.path.join(bdir, f"remote-config.bak-{dt.datetime.now(dt.timezone.utc):%Y%m%dT%H%M%SZ}.json")
+    with open(os.open(bak, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), "w") as f:
+        json.dump({"config": conf}, f, indent=2)
+    say(f"backup: {bak}")
+
+    log("Witness probe BEFORE the update")
     before = probe_all(witnesses)
-    conf["ingress"] = new
-    cfapi.call("PUT", path, {"config": conf})
+    for h, r in before.items():
+        say(f"{h:<40} {r}")
+
+    cfapi.call("PUT", path, {"config": {**conf, "ingress": new}})
     say(f"remote ingress updated ({len(new)} rules). No restart needed.")
-    time.sleep(10)
+    time.sleep(10)  # cloudflared picks up the new version within seconds
+
+    log("Witness probe AFTER the update")
     after = probe_all(witnesses)
-    bad = [h for h in witnesses if before[h].split()[0] != after[h].split()[0]]
-    if bad:
-        die(f"hostnames changed status after the update: {bad}")
+    for h, r in after.items():
+        say(f"{h:<40} {r}")
+    changed = {h: (before[h], after[h]) for h in witnesses if before[h].split()[0] != after[h].split()[0]}
+    if changed:
+        say("*** a tunnelled hostname changed status ***")
+        for h, (b, c) in changed.items():
+            say(f"{h}: {b} -> {c}")
+        try:
+            cfapi.call("PUT", path, {"config": conf})
+            die(f"remote config restored from {bak}")
+        except RuntimeError as e:
+            die(f"restore FAILED ({e}). PUT the backup by hand: {bak}")
+    say("OK: no other tunnelled hostname changed status")
     return True
 
 
@@ -361,6 +411,8 @@ def main():
     p.add_argument("--tunnel-config", default="/etc/cloudflared/config.yml")
     p.add_argument("--tunnel-name", default=os.environ.get("BOX_TUNNEL_NAME"))
     p.add_argument("--tunnel-mode", choices=["auto", "local", "remote"], default="auto")
+    p.add_argument("--account", default=os.environ.get("CLOUDFLARE_ACCOUNT_ID"),
+                   help="Cloudflare account id (default: the zone's account)")
     g = p.add_mutually_exclusive_group()
     g.add_argument("--ingress-only", action="store_true")
     g.add_argument("--dns-only", action="store_true")
@@ -382,7 +434,7 @@ def main():
         die("ingress must target 443, not 80: Traefik redirects 80 to 443 and the tunnel loops", 2)
 
     cfapi = CF(read_token(a.token_stdin))
-    zone, account = cfapi.zone(a.domain)
+    zone, account = cfapi.zone(a.domain, a.account)
     if a.dry_run:
         log("DRY RUN: nothing will be changed")
 

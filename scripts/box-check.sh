@@ -77,6 +77,38 @@ if m.check_ingress([{"service": "http_status:404"}, app]) is None:
     sys.exit("box-check: expose.py accepts a catch-all that is not last")
 PY
 
+# expose.py on a remote tunnel: a dry run never PUTs; a real run backs up, and restores when a witness changes.
+python3 -I - "$here/plugins/box/skills/expose-service/scripts/expose.py" "$tmp" <<'PY'
+import argparse, contextlib, glob, importlib.util, io, json, sys
+sys.dont_write_bytecode = True
+spec = importlib.util.spec_from_file_location("expose", sys.argv[1])
+m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+conf = {"ingress": [{"hostname": "app.example.com", "service": "https://localhost:443"},
+                    {"service": "http_status:404", "originRequest": {}}], "warp-routing": {"enabled": False}}
+class FakeCF:
+    def __init__(self): self.puts = []
+    def call(self, method, path, body=None):
+        if method == "PUT": self.puts.append(json.loads(json.dumps(body))); return {}
+        return {"config": json.loads(json.dumps(conf))}
+m.time.sleep = lambda s: None
+def run(dry, probes):
+    m.probe_all = lambda hosts: probes.pop(0)
+    a = argparse.Namespace(target="https://localhost:443", dry_run=dry, tunnel_config=f"{sys.argv[2]}/config.yml")
+    api, out = FakeCF(), io.StringIO()
+    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(out):
+        try: m.ingress_remote(a, "new.example.com", api, "acct", "tid")
+        except SystemExit: pass
+    return api.puts, out.getvalue()
+puts, out = run(True, [{"app.example.com": "200 1b text/html"}])
+if puts: sys.exit(f"box-check: expose.py dry run PUT the remote config\n{out}")
+puts, out = run(False, [{"app.example.com": "200 1b text/html"}, {"app.example.com": "404 0b -"}])
+if len(puts) != 2 or puts[1] != {"config": conf} or not glob.glob(f"{sys.argv[2]}/remote-config.bak-*.json"):
+    sys.exit(f"box-check: expose.py did not back up and restore the remote config\n{out}")
+if [r.get("hostname") for r in puts[0]["config"]["ingress"]] != ["app.example.com", "new.example.com", None] \
+        or "warp-routing" not in puts[0]["config"]:
+    sys.exit(f"box-check: expose.py wrote the wrong remote ingress: {puts[0]}")
+PY
+
 # audit-exposure.py: a tunnel run with --config but managed from the dashboard (the journal says so). Its
 # ingress must come from the API, not the stale local file, and the catch-all may carry an empty originRequest.
 python3 -I - "$audit" <<'PY'

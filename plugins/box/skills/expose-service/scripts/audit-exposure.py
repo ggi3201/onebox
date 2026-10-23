@@ -12,7 +12,7 @@ cannot run counts as a problem, not a pass: a silent false negative here is
 worse than no audit.
 
   audit-exposure.py --domain example.com [--domain other.example] [--token-stdin]
-                    [--public-ok grafana.example.com] [--tunnel none]
+                    [--public-ok grafana.example.com] [--tunnel none] [--account ID]
 
 --tunnel none (box.tunnel): proxied records to the origin are how that box
 works, so they pass, and the tunnel checks are skipped. An unproxied one
@@ -24,7 +24,9 @@ Cloudflare Access login redirect. --public-ok accepts one you made public on
 purpose, for example a tool with its own strong login.
 
 Token: CLOUDFLARE_API_TOKEN in the environment, or one line on stdin with
---token-stdin. It needs DNS read on the zone(s). It is never printed.
+--token-stdin. It needs DNS read on the zone(s), and Cloudflare Tunnel read for a
+remotely managed tunnel. A user token and an account token (cfat_) both work;
+--account sets the account when the zone's is not the tunnel's. It is never printed.
 """
 import argparse
 import ipaddress
@@ -137,6 +139,8 @@ def main():
     p.add_argument("--tunnel", choices=["cloudflare", "none"], default=os.environ.get("BOX_TUNNEL", "cloudflare"),
                    help="box.tunnel")
     p.add_argument("--token-stdin", action="store_true")
+    p.add_argument("--account", default=os.environ.get("CLOUDFLARE_ACCOUNT_ID"),
+                   help="Cloudflare account id, for the tunnel's ingress (default: the zone's account)")
     p.add_argument("--public-ok", action="append", default=[], help="admin-looking hostname that is public on purpose; repeat for more")
     a = p.parse_args()
     domains = a.domain or [d for d in [os.environ.get("BOX_DOMAIN")] if d]
@@ -213,14 +217,18 @@ def main():
             print(f"  {d}: {r['type']} {r['name']} - {how}")
             problems.append(f"origin-record:{r['name']}")
 
-    # A remote tunnel's ingress lives in Cloudflare. Its id: the local config's, or the one tunnel the CNAMEs name.
+    # A remote tunnel's ingress lives in Cloudflare. Its id: the local config's (an id, or a name to look up),
+    # or the one tunnel the CNAMEs name.
     remote_read = None
     if remote:
         targets = {r["content"].split(".")[0] for rs in by_zone.values() for r in rs
                    if r["type"] == "CNAME" and r["content"].endswith(".cfargotunnel.com")}
         tid = tunnel_id if tunnel_id and UUID_RE.match(tunnel_id) else (targets.pop() if len(targets) == 1 else None)
-        account = next((x for x in accounts.values() if x), None)
+        account = a.account or next((x for x in accounts.values() if x), None)
         try:
+            if not tid and tunnel_id and account:
+                found = cf(f"/accounts/{account}/cfd_tunnel?name={tunnel_id}&is_deleted=false", tok)
+                tid = found[0]["id"] if found else None
             if not (tid and account):
                 raise RuntimeError("tunnel or account unknown")
             got = cf(f"/accounts/{account}/cfd_tunnel/{tid}/configurations", tok)

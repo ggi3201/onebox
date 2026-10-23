@@ -44,6 +44,24 @@ export function secretCommand(cfg, ref) {
   return template ? template.replaceAll("{ref}", quote(ref)) : null;
 }
 
+/** "project" or "config" when neither the onebox config nor `doppler setup` sets it, else null.
+ *  Without it doppler stops with "You must specify a project". DOPPLER_PROJECT / DOPPLER_CONFIG set one each. */
+export function dopplerMissing(cfg) {
+  if (process.env.DOPPLER_TOKEN) return null; // a service token carries both
+  for (const key of ["project", "config"]) {
+    if (cfg?.secrets?.doppler?.[key] || process.env[`DOPPLER_${key.toUpperCase()}`]) continue;
+    let set;
+    try {
+      set = execFileSync("doppler", ["configure", "get", key, "--plain"], {
+        encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: 10_000 }).trim();
+    } catch {
+      return null; // doppler is missing or broken: the command itself says so
+    }
+    if (!set) return key;
+  }
+  return null;
+}
+
 /** The value of NAME in the nearest .env, walking up from `start`, or null. */
 export function dotenvValue(name, start = process.cwd()) {
   if (!NAME.test(name)) return null;
@@ -69,6 +87,12 @@ export function readSecret(cfg, ref, { timeoutMs = 60_000 } = {}) {
   if (NAME.test(ref) && process.env[ref]) return process.env[ref];
 
   const command = secretCommand(cfg, ref);
+  const missing = command && !userSecretsCommand() && cfg?.secrets?.tool === "doppler" && dopplerMissing(cfg);
+  if (missing) {
+    throw new Error(
+      `secrets.tool is doppler, but no Doppler ${missing} is set. Set secrets.doppler.${missing} in ` +
+      "~/.config/onebox/config.json, or run `doppler setup` in this folder. CONFIG.md, \"Secrets\".");
+  }
   if (command) {
     let out;
     try {
