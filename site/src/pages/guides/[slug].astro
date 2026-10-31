@@ -2,6 +2,7 @@
 import Base from "../../layouts/Base.astro";
 import "../../styles/prose.css";
 import { GUIDES, type Guide } from "../../data/guides";
+import { seoFor } from "../../data/guide-seo";
 import { REPO } from "../../data/kit";
 import { ASK_MAIL } from "../../data/help";
 
@@ -14,9 +15,43 @@ const { Content } = guide.module;
 const prev = GUIDES[guide.n - 1];
 const next = GUIDES[guide.n + 1];
 const toc = guide.module.getHeadings().filter((h) => h.depth === 2);
+
+// What search results show, and the structured data behind them.
+const seo = seoFor(guide.slug);
+const SITE = Astro.site ?? "https://onebox.lokkesveen.com";
+const abs = (path: string) => new URL(path, SITE).href;
+const url = abs(`/guides/${guide.slug}/`);
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "TechArticle",
+      "@id": `${url}#article`,
+      headline: seo.title,
+      description: seo.description,
+      url,
+      mainEntityOfPage: url,
+      inLanguage: "en",
+      image: abs("/social-preview.png"),
+      author: { "@type": "Person", name: "Geir-Stian Løkkesveen", url: "https://lokkesveen.com" },
+      publisher: { "@type": "Organization", name: "onebox", url: abs("/") },
+    },
+    {
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "onebox", item: abs("/") },
+        { "@type": "ListItem", position: 2, name: "Guides", item: abs("/guides/") },
+        { "@type": "ListItem", position: 3, name: guide.title, item: url },
+      ],
+    },
+  ],
+};
+// "<" is escaped so a title can never close the script tag.
+const jsonLdText = JSON.stringify(jsonLd).replace(/</g, "\\u003c");
 ---
 
-<Base title={`${guide.title} — onebox guides`} description={`${guide.title}. A plain guide from onebox.`} section="guides">
+<Base title={seo.fullTitle} description={seo.description} section="guides">
+  <script slot="head" type="application/ld+json" set:html={jsonLdText} />
   <link slot="head" rel="alternate" type="text/markdown" href={`/guides/${guide.slug}.md`} title="This guide as markdown" />
   <div class="wrap guide-grid">
     <aside class="side">
