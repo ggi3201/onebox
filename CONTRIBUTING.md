@@ -97,3 +97,7 @@ what it costs; steps (numbered, what to click, what to copy); where the value
 goes (which config key, which secret reference); how to check it works;
 common errors. Do not guess at UI labels you have not verified; say "the page
 for X" rather than inventing a button name.
+
+A new guide also needs a search title and a meta description in
+`site/src/data/guide-seo.ts` (title about 50 to 60 characters, description 140 to
+160). The site build stops without them.
