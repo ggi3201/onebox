@@ -182,8 +182,13 @@ def ingress_entry(host, target, indent):
     return "\n".join(lines) + "\n"
 
 
+def is_catch_all(rule):
+    # The remote (dashboard) config returns it as {"service": "http_status:404", "originRequest": {}}.
+    return not rule.get("hostname") and rule.get("service") == "http_status:404"
+
+
 def check_ingress(ing):
-    if not ing or ing[-1] != {"service": "http_status:404"}:
+    if not ing or not is_catch_all(ing[-1]):
         return "the http_status:404 catch-all is not the last rule"
     loop = [r.get("hostname") for r in ing
             if re.match(r"^https?://(localhost|127\.0\.0\.1):80/?$", str(r.get("service", "")))]
@@ -284,7 +289,7 @@ def ingress_remote(a, host, cfapi, account, tid):
     if any(r.get("hostname") == host for r in ing):
         say("already in the remote ingress, no change")
         return False
-    if ing[-1].get("hostname"):
+    if not is_catch_all(ing[-1]):
         die("remote ingress has no catch-all last. Fix it in the dashboard first.")
     rule = {"hostname": host, "service": a.target}
     if a.target.startswith("https://localhost") or a.target.startswith("https://127.0.0.1"):

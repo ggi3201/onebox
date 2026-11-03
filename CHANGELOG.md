@@ -459,6 +459,13 @@ a guide: https://onebox.lokkesveen.com/guides/ai-consent/.
 
 ## box
 
+### 0.2.1 (2026-10-18)
+
+- `expose-service` works with a tunnel managed from the dashboard. `expose.py`
+  no longer stops at the remote catch-all, which carries an empty
+  `originRequest`. The audit now finds such a tunnel from the journal too,
+  reads its ingress from the API instead of the stale local file, and checks it.
+
 ### 0.2.0 (2026-10-14)
 
 - `staging-env` left the kit. It helps only once the app is live. Its one
