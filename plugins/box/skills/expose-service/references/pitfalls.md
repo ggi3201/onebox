@@ -140,7 +140,10 @@ journalctl -u cloudflared -b | grep 'Updated to new configuration'      # presen
 
 For a remote tunnel, edit the ingress with the API
 (`PUT /accounts/<account>/cfd_tunnel/<id>/configurations`) or in the dashboard.
-`expose.py` detects this and uses the API. The token then also needs the
+`expose.py` detects this and uses the API: it saves the remote config to a
+`remote-config.bak-*.json` file next to the local one, probes the other
+tunnelled hosts before and after the `PUT`, and puts the backup back if one
+changes. The audit reads the same remote ingress. The token then also needs the
 Cloudflare Tunnel edit permission. A scoped token often cannot list accounts;
 read the account ID from the zone: `GET /zones?name=<domain>` ->
 `.result[0].account.id`.

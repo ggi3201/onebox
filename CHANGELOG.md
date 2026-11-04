@@ -28,6 +28,14 @@ a guide: https://onebox.lokkesveen.com/guides/ai-consent/.
 
 ## start
 
+### 0.3.5 (2026-10-23)
+
+- With `secrets.tool` set to `doppler`, a missing Doppler project or config
+  now stops with a sentence that names the key to set
+  (`secrets.doppler.project`, `secrets.doppler.config`), instead of Doppler's
+  "You must specify a project". `doppler setup` in the folder, a
+  `DOPPLER_TOKEN`, or `DOPPLER_PROJECT` / `DOPPLER_CONFIG` count as set.
+
 ### 0.3.4 (2026-10-15)
 
 - `plan`: a step whose skill or guide left the kit drops out of an old plan,
@@ -319,6 +327,14 @@ a guide: https://onebox.lokkesveen.com/guides/ai-consent/.
 
 ## ship-ios
 
+### 0.2.4 (2026-10-23)
+
+- With `secrets.tool` set to `doppler`, a missing Doppler project or config
+  now stops with a sentence that names the key to set
+  (`secrets.doppler.project`, `secrets.doppler.config`), instead of Doppler's
+  "You must specify a project". `doppler setup` in the folder, a
+  `DOPPLER_TOKEN`, or `DOPPLER_PROJECT` / `DOPPLER_CONFIG` count as set.
+
 ### 0.2.3 (2026-10-15)
 
 - `store-listing`: a method to pick the search words (App Store suggestions,
@@ -458,6 +474,24 @@ a guide: https://onebox.lokkesveen.com/guides/ai-consent/.
   store listing, and publish EAS updates.
 
 ## box
+
+### 0.2.1 (2026-10-23)
+
+- `expose-service` works with a tunnel managed from the dashboard. `expose.py`
+  no longer stops at the remote catch-all, which carries an empty
+  `originRequest`. The audit now finds such a tunnel from the journal too,
+  reads its ingress from the API instead of the stale local file, and checks it.
+- On such a tunnel, `expose.py` now saves the remote config to a backup file,
+  probes the other tunnelled hosts before and after the change, and puts the
+  backup back if one changes. A dry run shows the new rule and the probes.
+- Account API tokens (`cfat_`) work. `--account` sets the account id when the
+  zone's account is not the tunnel's. When the token cannot read the zone,
+  `expose.py` says whether the token is valid at all.
+- With `secrets.tool` set to `doppler`, a missing Doppler project or config
+  now stops with a sentence that names the key to set
+  (`secrets.doppler.project`, `secrets.doppler.config`), instead of Doppler's
+  "You must specify a project". `doppler setup` in the folder, a
+  `DOPPLER_TOKEN`, or `DOPPLER_PROJECT` / `DOPPLER_CONFIG` count as set.
 
 ### 0.2.0 (2026-10-14)
 

@@ -58,6 +58,9 @@ certificates, through one scoped token.
 This token cannot list accounts. That is expected. Skills read the account ID
 from the zone instead.
 
+An account API token (**Manage Account > API Tokens**, it starts with `cfat_`)
+works too, with the same permissions. Only the verify call differs (below).
+
 ### 4. The tunnel
 
 You do not create the tunnel by hand. `box:box-setup` runs
@@ -146,6 +149,8 @@ Traefik needs it to renew certificates.
 # read the token with your secrets tool, e.g. T=$(doppler secrets get CLOUDFLARE_API_TOKEN --plain)
 T=$(printenv CLOUDFLARE_API_TOKEN)
 curl -s https://api.cloudflare.com/client/v4/user/tokens/verify -H "Authorization: Bearer $T" | jq .result.status
+# an account token (it starts with cfat_) says "Invalid API Token" above. Check it at its account instead:
+# curl -s https://api.cloudflare.com/client/v4/accounts/<account id>/tokens/verify -H "Authorization: Bearer $T" | jq .result.status
 curl -s "https://api.cloudflare.com/client/v4/zones?name=example.com" -H "Authorization: Bearer $T" | jq -r '.result[0].status'
 unset T
 dig ns example.com @1.1.1.1 +short
