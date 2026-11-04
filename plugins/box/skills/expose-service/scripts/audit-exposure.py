@@ -94,7 +94,7 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
 
 def is_catch_all(rule):
     # The remote (dashboard) config returns it as {"service": "http_status:404", "originRequest": {}}.
-    return not rule.get("hostname") and rule.get("service") == "http_status:404"
+    return not rule.get("hostname") and not rule.get("path") and rule.get("service") == "http_status:404"
 
 
 def remote_units(units):

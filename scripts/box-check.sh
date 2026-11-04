@@ -75,6 +75,10 @@ if m.check_ingress([app, {"service": "http_status:404", "originRequest": {}}]) i
     sys.exit("box-check: expose.py rejects the remote config's catch-all")
 if m.check_ingress([{"service": "http_status:404"}, app]) is None:
     sys.exit("box-check: expose.py accepts a catch-all that is not last")
+if m.check_ingress([app, {"service": "http_status:404", "path": "/old"}]) is None:
+    sys.exit("box-check: expose.py accepts a last rule limited to a path as the catch-all")
+if m.check_ingress([app, {"service": "http_status:404", "hostname": "", "path": "", "originRequest": {}}]) is not None:
+    sys.exit("box-check: expose.py rejects a catch-all with empty keys")
 PY
 
 # expose.py on a remote tunnel: a dry run never PUTs; a real run backs up, and restores when a witness changes.
@@ -117,6 +121,8 @@ sys.dont_write_bytecode = True
 spec = importlib.util.spec_from_file_location("audit", sys.argv[1])
 m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
 tid = "11111111-2222-3333-4444-555555555555"
+if m.is_catch_all({"service": "http_status:404", "path": "/old"}) or not m.is_catch_all({"service": "http_status:404", "originRequest": {}}):
+    sys.exit("box-check: audit-exposure.py misreads the catch-all")
 def fake_urlopen(url, timeout=None):
     if url.endswith("//api.ipify.org"): return io.BytesIO(b"203.0.113.10")
     raise OSError("no IPv6")
