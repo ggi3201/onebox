@@ -1,6 +1,6 @@
 ---
 name: appstore-connect
-description: Talk to Apple App Store Connect through its API with an API key, for any iOS app. Lists apps and TestFlight builds, waits for a build to finish processing, answers export compliance, expires old builds, manages beta groups and testers, and creates subscription groups and products. For App Review it shows what the version page still misses, sets the age rating, copyright, categories, review notes and contact, picks the build and the release type, submits the version and releases it after approval. Use when the user asks "is my build on TestFlight yet", "why is my build stuck processing", "Missing Compliance", "expire a build", "add a tester", "invite someone to TestFlight", "create my subscriptions", "set up in-app purchase products", "submit for review", "send it to App Review", "what is missing on the version page", "age rating", "review notes", "is my app in review", "release my app", or mentions App Store Connect, ASC, TestFlight builds, beta groups or processing state.
+description: Talk to Apple App Store Connect through its API with an API key, for any iOS app. Lists apps and TestFlight builds, waits for a build to finish processing, answers export compliance, expires old builds, manages beta groups and testers, and creates subscription groups and products. For App Review it shows what the version page still misses, sets the age rating, copyright, categories, review notes and contact, picks the build and the release type, submits the version and releases it after approval. Use when the user asks "is my build on TestFlight yet", "why is my build stuck processing", "Missing Compliance", "expire a build", "add a tester", "invite someone to TestFlight", "create my subscriptions", "set up in-app purchase products", "submit for review", "send it to App Review", "resubmit after a rejection", "read the rejection message", "what is missing on the version page", "age rating", "review notes", "is my app in review", "release my app", or mentions App Store Connect, ASC, TestFlight builds, beta groups or processing state.
 ---
 
 # App Store Connect
@@ -108,6 +108,17 @@ it with the user. This skill fills the fields the API allows.
    `node $A submit --app com.example.myapp --dry-run`.
 4. After approval, a manual release waits for the user:
    `node $A release --app com.example.myapp --dry-run`.
+
+After a rejection, fix the app, attach the new build if there is one, and run
+`submit` again. It reuses the open submission and marks each rejected item as
+resolved first. This path has not run on a live account yet, so read
+`references/api.md`, "Resubmit after a rejection". If Apple still answers "not
+ready", run `submit` once more after a minute. If the answer stays the same, do
+not keep retrying. The user clicks "Update Review" on the version page, then
+"Resubmit to App Review".
+
+The API has no rejection text. The user reads it on the App Review page in App
+Store Connect, or `references/api.md` shows how to fetch it from that page.
 
 The skill does not set these. The user does them on the web, with the guide:
 the **App Privacy** answers and the **EU trader status** (the API cannot set
