@@ -332,7 +332,10 @@ of app, and what to do, are in [start-here.md, Phase 9](start-here.md#phase-9-su
 - If the reviewer misunderstood, reply to the message and explain. Short and
   polite works best.
 - `node $A submit --app com.example.myapp` resubmits after a rejection. It
-  reuses the open submission.
+  reuses the open submission. If Apple answers "Version is not ready to be
+  submitted yet", run it once more after a minute. If the answer stays the
+  same, waiting does not help. On the version page in App Store Connect, click
+  **Update Review**, then **Resubmit to App Review**.
 
 For a critical fix after launch, you can ask for an expedited review on
 Apple's App Review contact page. Use it rarely.

@@ -20,9 +20,33 @@ cat > "$tmp/stub.mjs" <<'JS'
 import fs from 'fs';
 const res = (json, status = 200) => ({ ok: status < 300, status, text: async () => json == null ? '' : typeof json === 'string' ? json : JSON.stringify(json),
   arrayBuffer: async () => new TextEncoder().encode('PNG').buffer });
+// The open review submission, when SUBMISSION names its state. it2 has no version: a live
+// submission also holds items that show no relationship in the public API.
+const version = i => ({ appStoreVersion: { data: i ? { type: 'appStoreVersions', id: 'v1' } : null } });
+const items = [{ id: 'it1', attributes: { state: 'READY_FOR_REVIEW' }, relationships: version(true) }];
+if (process.env.SUBMISSION === 'UNRESOLVED_ISSUES') {
+  items[0].attributes.state = 'REJECTED';
+  items.push({ id: 'it2', attributes: { state: 'REJECTED' }, relationships: version(false) }, { id: 'it3', attributes: { state: 'READY_FOR_REVIEW' }, relationships: version(false) });
+}
+const notReady = 'Version is not ready to be submitted yet, please try again later';
 globalThis.fetch = async (url, o = {}) => {
   const u = new URL(url), m = (o.method || 'GET').toUpperCase(), p = u.pathname;
   fs.appendFileSync(process.env.LOG, `${m} ${p}\n`);
+  if (process.env.SUBMISSION) {
+    const attrs = o.body ? JSON.parse(o.body).data.attributes : {};
+    if (m === 'GET' && p === '/v1/appStoreVersions/v1') return res({ data: { id: 'v1', attributes: { versionString: '1.1', appStoreState: 'PREPARE_FOR_SUBMISSION' }, relationships: { build: { data: { type: 'builds', id: 'b1' } } } },
+      included: [{ type: 'builds', id: 'b1', attributes: { usesNonExemptEncryption: false } }] });
+    if (m === 'GET' && p === '/v1/reviewSubmissions') return res({ data: [{ id: 's1', attributes: { state: process.env.SUBMISSION } }] });
+    if (m === 'GET' && p === '/v1/reviewSubmissions/s1/items') return res({ data: items });
+    if (m === 'PATCH' && p.startsWith('/v1/reviewSubmissionItems/')) {
+      const item = items.find(i => p.endsWith('/' + i.id));
+      if (attrs.resolved === true) item.attributes.state = 'READY_FOR_REVIEW';
+      return res({ data: item });
+    }
+    // What Apple does: `submitted` answers 409 while an item is REJECTED, however long you wait.
+    if (m === 'PATCH' && p === '/v1/reviewSubmissions/s1' && attrs.submitted === true && (process.env.APPLE_REFUSES || items.some(i => i.attributes.state === 'REJECTED')))
+      return res({ errors: [{ status: '409', code: 'STATE_ERROR.ENTITY_STATE_INVALID', detail: process.env.APPLE_REFUSES || notReady }] }, 409);
+  }
   const loc = p.match(/loc-(\w+)\/appScreenshotSets$/), set = p.match(/set-(\w+)\/appScreenshots$/);
   if (u.hostname === 'cdn.example' || u.hostname === 'upload.example') return res('x');
   if (m === 'DELETE') return res(null, 204);
@@ -53,6 +77,29 @@ run rc "$shots" replace --app "$BUNDLE" --dir "$tmp/shots" --dryrun
 
 BUNDLE=com.example.myapp.staging run rc "$asc" submit --app com.example.myapp --dry-run
 [ "$rc" != 0 ] && ! grep -q appStoreVersions "$LOG" || fail "submit must refuse a similar bundle id (exit $rc): $out"
+
+# Resubmit after a rejection: each rejected item is marked resolved, then the submission is sent.
+want="$(printf 'PATCH /v1/reviewSubmissionItems/%s\n' it1 it2; echo 'PATCH /v1/reviewSubmissions/s1')"
+SUBMISSION=UNRESOLVED_ISSUES run rc "$asc" submit --app "$BUNDLE" --dry-run
+[ "$rc" = 0 ] && ! grep -q '^PATCH' "$LOG" || fail "submit --dry-run on a rejected version must send no PATCH (exit $rc): $out"
+[ "$(echo "$out" | sed -n 's/^dry run: //p')" = "$want" ] || fail "submit --dry-run on a rejected version must show the item PATCHes, then the submit: $out"
+echo "$out" | grep -q '"resolved": true' || fail "submit --dry-run on a rejected version must show resolved: true: $out"
+SUBMISSION=UNRESOLVED_ISSUES run rc "$asc" submit --app "$BUNDLE"
+[ "$rc" = 0 ] && [ "$(grep '^PATCH' "$LOG")" = "$want" ] || fail "submit on a rejected version sent the wrong requests (exit $rc): $out / $(cat "$LOG")"
+echo "$out" | grep -q 'sent to App Review' || fail "submit on a rejected version did not report the send: $out"
+
+# Apple still refuses: one try, and the message names the web step and the page.
+not_ready='Version is not ready to be submitted yet, please try again later'
+SUBMISSION=UNRESOLVED_ISSUES APPLE_REFUSES="$not_ready" run rc "$asc" submit --app "$BUNDLE"
+[ "$rc" != 0 ] && [ "$(grep -c '^PATCH /v1/reviewSubmissions/' "$LOG")" = 1 ] || fail "a refused resubmit must fail after one try (exit $rc): $out / $(cat "$LOG")"
+echo "$out" | grep -q 'Update Review' && echo "$out" | grep -q '/apps/1/distribution/ios/version/inflight' || fail "a refused resubmit must name Update Review and the page: $out"
+if echo "$out" | grep -q 'sent to App Review'; then fail "a refused resubmit must not report a send: $out"; fi
+
+# A draft has nothing to resolve. Any other refusal keeps Apple's own message, without the web step.
+SUBMISSION=READY_FOR_REVIEW run rc "$asc" submit --app "$BUNDLE"
+[ "$rc" = 0 ] && ! grep -q '^PATCH /v1/reviewSubmissionItems' "$LOG" || fail "submit on a draft must not touch its items (exit $rc): $out"
+SUBMISSION=UNRESOLVED_ISSUES APPLE_REFUSES='The copyright is missing' run rc "$asc" submit --app "$BUNDLE"
+if [ "$rc" = 0 ] || ! echo "$out" | grep -q 'The copyright is missing' || echo "$out" | grep -q 'Update Review'; then fail "another refusal must show Apple's message, not the web step (exit $rc): $out"; fi
 
 # An app info approved and waiting for release is locked: no PATCH to it.
 run rc "$asc" listing --app "$BUNDLE"

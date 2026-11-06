@@ -33,6 +33,7 @@ Reference: https://developer.apple.com/documentation/appstoreconnectapi
 | Content rights | `PATCH /v1/apps/<appId>` with `contentRightsDeclaration` |
 | Price and countries (read only here) | `GET /v1/apps/<appId>/appPriceSchedule`, `GET /v1/apps/<appId>/appAvailabilityV2` |
 | Submit | `POST /v1/reviewSubmissions` (platform `IOS`), `POST /v1/reviewSubmissionItems` (the `appStoreVersion`), then `PATCH /v1/reviewSubmissions/<id>` with `submitted: true` |
+| Mark a rejected item as fixed | `PATCH /v1/reviewSubmissionItems/<id>` with `resolved: true` |
 | Open submissions | `GET /v1/reviewSubmissions?filter[app]=<appId>&filter[platform]=IOS` |
 | Release an approved version | `POST /v1/appStoreVersionReleaseRequests` (state `PENDING_DEVELOPER_RELEASE`) |
 
@@ -297,8 +298,9 @@ A file with any of these fields:
   export compliance answer, or when a submission is already waiting or in
   review. It reuses a draft (`READY_FOR_REVIEW`) or a rejected
   (`UNRESOLVED_ISSUES`) submission, adds the version as an item if it is not
-  there, and sets `submitted: true`. When Apple refuses, its message names the
-  missing fields.
+  there, marks each `REJECTED` item as resolved, and sets `submitted: true`.
+  When Apple refuses, its message usually names the missing fields. For the
+  one refusal that does not, see "Resubmit after a rejection" below.
 - `release` works only on a version in `PENDING_DEVELOPER_RELEASE` (approved,
   manual release).
 
@@ -306,10 +308,62 @@ The old `appStoreVersionSubmissions` resource is deprecated. The script uses
 `reviewSubmissions`.
 
 The write commands follow Apple's documented request bodies. They were
-tested against a fake API, not yet against a live account. Watch the first
-real run, and report what differs. Two parts most likely to differ: the
-reuse of an `UNRESOLVED_ISSUES` submission, and a phased release created
-without a `phasedReleaseState` (the API takes it as optional).
+tested against a fake API. Watch the first real run, and report what differs.
+One part most likely to differ: a phased release created without a
+`phasedReleaseState` (the API takes it as optional).
+
+### Resubmit after a rejection
+
+Seen on a real app on 2026-11-05, with the old `submit`:
+
+- After `attach-build`, the version was `PREPARE_FOR_SUBMISSION`, the
+  submission was `UNRESOLVED_ISSUES`, and its item was `REJECTED`.
+- `submitted: true` answered 409 `STATE_ERROR.ENTITY_STATE_INVALID`, "Version
+  is not ready to be submitted yet, please try again later". It is not a wait:
+  15 tries over 15 minutes changed nothing.
+- On the web, "Resubmit to App Review" was disabled. "Update Review" on the
+  version page (`/apps/<appId>/distribution/ios/version/inflight`) enabled it.
+  One click then gave `WAITING_FOR_REVIEW`. Every item then read
+  `READY_FOR_REVIEW`.
+
+The public call is `PATCH /v1/reviewSubmissionItems/<id>` with
+`attributes.resolved = true`. `submit` sends it for every `REJECTED` item in
+the submission, then sets `submitted: true`. That includes items that do not
+point at this version: a real submission also held items with no relationship
+in the public API. The dry run lists each item it would mark.
+
+**This path has not run from this script on a live account.** The evidence:
+
+- Apple's reference lists `resolved` and `removed` on the item, with no
+  description. (Checked 2026-11-05.)
+- Two public projects do the same thing after this same 409:
+  [big-wallet](https://github.com/lil-org/big-wallet/blob/main/Scripts/asc/submit_review.sh),
+  whose script requires `READY_FOR_REVIEW` in the answer, and
+  [EffectDeck](https://github.com/satomasahiro2005/EffectDeck/blob/main/Tools/asc.py).
+  A third, [Mihrab](https://github.com/MihrabHQ/Mihrab/blob/main/docs/release-log.md),
+  records it in its release log.
+
+Nothing says this call does all that "Update Review" does, or how soon Apple
+accepts the submit after it. big-wallet retries for up to 3 minutes. So when
+Apple still answers "not ready", `submit` stops and says what to do: run it once
+more after a minute, then use the web. Click "Update Review", then "Resubmit to
+App Review". Running `submit` again is safe. A resolved item no longer reads
+`REJECTED`, so it is not sent twice. Report what the first real rejection does.
+
+### Apple's rejection text
+
+The public API does not have it. It gives the states only. Read the text on the
+App Review page in App Store Connect.
+
+An agent with the page open, and the user signed in, can fetch it from that page
+with the site's own private API. An API key does not work here, and Apple can
+change this API without notice:
+
+```
+/iris/v1/resolutionCenterThreads?filter[reviewSubmission]=<id>&include=resolutionCenterMessages
+```
+
+`<id>` is the submission ID that `review-status` prints.
 
 
 ## Deprecated resources this skill still uses

@@ -610,7 +610,17 @@ const commands = {
     if (!items.some(i => i.relationships?.appStoreVersion?.data?.id === p.version.id))
       await write('POST', '/v1/reviewSubmissionItems', { data: { type: 'reviewSubmissionItems', relationships: {
         reviewSubmission: { data: { type: 'reviewSubmissions', id: sub.id } }, appStoreVersion: { data: { type: 'appStoreVersions', id: p.version.id } } } } });
-    await write('PATCH', `/v1/reviewSubmissions/${sub.id}`, { data: { type: 'reviewSubmissions', id: sub.id, attributes: { submitted: true } } });
+    // While an item is REJECTED, `submitted` answers 409 "not ready ... try again later", and waiting
+    // does not help. `resolved` is the public call for the web's "Update Review". See api.md.
+    for (const i of items.filter(i => i.attributes?.state === 'REJECTED'))
+      await write('PATCH', `/v1/reviewSubmissionItems/${i.id}`, { data: { type: 'reviewSubmissionItems', id: i.id, attributes: { resolved: true } } });
+    try {
+      await write('PATCH', `/v1/reviewSubmissions/${sub.id}`, { data: { type: 'reviewSubmissions', id: sub.id, attributes: { submitted: true } } });
+    } catch (e) {
+      if (!/not ready to be submitted/i.test(e.message)) throw e;
+      throw new Error(`${e.message}\nVersion ${vs} did not go to App Review. If App Review rejected this version: run submit once more in a minute. If Apple answers the same, `
+        + `open https://appstoreconnect.apple.com/apps/${app.id}/distribution/ios/version/inflight, click "Update Review", then "Resubmit to App Review". More retries do not help.`);
+    }
     console.log(DRY ? 'dry run, nothing changed' : `Version ${vs} is sent to App Review. Apple emails you when the state changes. Check it with review-status.`);
   },
 

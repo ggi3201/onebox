@@ -319,6 +319,14 @@ a guide: https://onebox.lokkesveen.com/guides/ai-consent/.
 
 ## ship-ios
 
+### 0.2.4 (2026-11-05)
+
+- `appstore-connect`: `submit` now resubmits a rejected version. It marks each
+  rejected item as resolved first. Without that, Apple answers "not ready" with
+  a 409 for as long as you retry. If Apple still refuses, it names the web step,
+  "Update Review". Not yet run on a live account.
+- The docs say where Apple's rejection text is: not in the public API.
+
 ### 0.2.3 (2026-10-15)
 
 - `store-listing`: a method to pick the search words (App Store suggestions,
